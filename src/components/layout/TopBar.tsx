@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Menu, Search, Bell, ChevronDown, User, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ROLE_LABELS } from '../../lib/constants';
@@ -13,6 +14,7 @@ interface TopBarProps {
 
 export default function TopBar({ onMenuClick, title }: TopBarProps) {
   const { user, logout } = useAuth();
+  const router = useRouter();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -131,10 +133,16 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
 
           {showUserMenu && (
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl border border-[#D6E4E8] shadow-xl z-50 py-1">
-              <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#263238] hover:bg-[#EAF2F4]">
+              <button
+                onClick={() => { setShowUserMenu(false); router.push('/profile'); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#263238] hover:bg-[#EAF2F4]"
+              >
                 <User size={16} /> My Profile
               </button>
-              <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#263238] hover:bg-[#EAF2F4]">
+              <button
+                onClick={() => { setShowUserMenu(false); router.push('/settings'); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#263238] hover:bg-[#EAF2F4]"
+              >
                 <Settings size={16} /> Settings
               </button>
               <div className="border-t border-[#D6E4E8] my-1" />
