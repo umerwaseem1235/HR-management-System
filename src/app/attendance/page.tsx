@@ -10,9 +10,10 @@ import SearchBar from '../../components/ui/SearchBar';
 import Select from '../../components/ui/Select';
 import EmptyState from '../../components/ui/EmptyState';
 import { UserCheck, UserX, Clock, CalendarDays } from 'lucide-react';
-import { mockAttendance, mockDashboardStats, mockEmployees, mockLeaveRequests } from '../../lib/mock-data';
+import { mockAttendance, mockDashboardStats, mockEmployees } from '../../lib/mock-data';
 import { AttendanceRecord } from '../../lib/types';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLeave } from '../../contexts/LeaveContext';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All Status' },
@@ -72,6 +73,7 @@ function toDateStr(d: Date) {
 
 export default function AttendancePage() {
   const { user } = useAuth();
+  const { leaveRequests } = useLeave();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const stats = mockDashboardStats;
@@ -120,7 +122,7 @@ export default function AttendancePage() {
     const monthStart = new Date(year, month, 1);
     const monthEnd = new Date(year, month + 1, 0);
     let approvedLeaveDays = 0;
-    mockLeaveRequests
+    leaveRequests
       .filter((l) => (empId ? l.employeeId === empId : l.employeeName.toLowerCase() === user.name.toLowerCase()) && l.status === 'Approved')
       .forEach((l) => {
         const start = new Date(l.startDate);
@@ -135,7 +137,7 @@ export default function AttendancePage() {
       });
 
     return { monthLabel, monthlyRecords, presentDays, absentDays, lateDays, leavesTaken: attendanceLeaveDates.size + approvedLeaveDays };
-  }, [user, isEmployee, employee]);
+  }, [user, isEmployee, employee, leaveRequests]);
 
   if (!user) return null;
 
