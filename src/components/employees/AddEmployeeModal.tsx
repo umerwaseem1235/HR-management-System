@@ -13,7 +13,7 @@ interface AddEmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
   employee?: Employee;
-  onSave?: (values: Record<string, string>) => void;
+  onSave?: (values: Record<string, string>, photo: string | null) => void;
 }
 
 export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: AddEmployeeModalProps) {
@@ -21,8 +21,17 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
   const [photoError, setPhotoError] = useState('');
 
   useEffect(() => {
+    if (isOpen && employee?.avatar) {
+      setPhotoPreview(employee.avatar);
+    } else if (isOpen && !employee) {
+      setPhotoPreview(null);
+    }
+    setPhotoError('');
+  }, [isOpen, employee?.avatar]);
+
+  useEffect(() => {
     return () => {
-      if (photoPreview) URL.revokeObjectURL(photoPreview);
+      if (photoPreview && photoPreview.startsWith('blob:')) URL.revokeObjectURL(photoPreview);
     };
   }, [photoPreview]);
 
@@ -41,14 +50,16 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
     }
 
     setPhotoError('');
+    if (photoPreview && photoPreview.startsWith('blob:')) URL.revokeObjectURL(photoPreview);
     setPhotoPreview(URL.createObjectURL(file));
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (employee && onSave) {
-      const values = Object.fromEntries(new FormData(event.currentTarget).entries());
-      onSave(Object.fromEntries(Object.entries(values).map(([key, value]) => [key, String(value)])));
+    const values = Object.fromEntries(new FormData(event.currentTarget).entries());
+    const stringValues = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, String(value)])) as Record<string, string>;
+    if (onSave) {
+      onSave(stringValues, photoPreview);
     }
     onClose();
   };
@@ -83,6 +94,7 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
                       <button
                         type="button"
                         onClick={() => {
+                          if (photoPreview && photoPreview.startsWith('blob:')) URL.revokeObjectURL(photoPreview);
                           setPhotoPreview(null);
                           setPhotoError('');
                         }}
@@ -101,7 +113,8 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
             <Input name="phone" label="Phone" type="tel" placeholder="+1 (555) 000-0000" defaultValue={employee?.phone} />
             <Input name="email" label="Email" type="email" placeholder="name@company.com" defaultValue={employee?.email} required />
             <Input name="dateOfBirth" label="Date of Birth" type="date" defaultValue={employee?.dateOfBirth} />
-            <Input name="address" label="Address" placeholder="Street address" defaultValue={employee?.address} className="sm:col-span-2" />
+            <Input name="address" label="Address" placeholder="Street address" defaultValue={employee?.address} />
+            <Input name="city" label="City" placeholder="City" defaultValue={employee?.city} />
           </div>
         </div>
 
@@ -115,6 +128,7 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
             <Select name="employmentType" label="Employment Type" defaultValue={employee?.employmentType} options={[{ value: '', label: 'Select Type' }, { value: 'Full-time', label: 'Full-time' }, { value: 'Part-time', label: 'Part-time' }, { value: 'Contract', label: 'Contract' }, { value: 'Intern', label: 'Intern' }]} required />
             <Input name="joiningDate" label="Joining Date" type="date" defaultValue={employee?.joiningDate} required />
             <Input name="probationEndDate" label="Probation End Date" type="date" defaultValue={employee?.probationEndDate} />
+            <Input name="confirmationDate" label="Confirmation Date" type="date" defaultValue={employee?.confirmationDate} />
             <Select name="shift" label="Shift" defaultValue={employee?.shift} options={[{ value: '', label: 'Select Shift' }, ...SHIFTS.map(shift => ({ value: shift.id, label: `${shift.name} (${shift.startTime} - ${shift.endTime})` }))]} required />
           </div>
         </div>

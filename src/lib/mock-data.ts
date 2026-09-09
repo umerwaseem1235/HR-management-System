@@ -6,7 +6,7 @@ export const mockEmployees: Employee[] = [
     dateOfBirth: '1990-05-15', gender: 'Male', address: '123 Tech Street', city: 'New York', country: 'USA',
     emergencyContactName: 'Lisa Chen', emergencyContactPhone: '+1-555-0102',
     department: 'Engineering', designation: 'Senior Software Engineer', branch: 'Headquarters', reportingManager: 'David Kim',
-    employmentType: 'Full-time', joiningDate: '2022-03-01', status: 'Active', shift: 'Morning Shift', salary: 95000,
+    employmentType: 'Full-time', joiningDate: '2022-03-01', probationEndDate: '2022-09-01', confirmationDate: '2022-09-15', status: 'Active', shift: 'Morning Shift', salary: 95000,
   },
   {
     id: '2', employeeCode: 'EMP002', firstName: 'Sarah', lastName: 'Williams', email: 'sarah.williams@codeqor.com', phone: '+1-555-0201', avatar: 'SW',
