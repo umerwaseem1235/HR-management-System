@@ -8,14 +8,43 @@ import Tabs from '../../../components/ui/Tabs';
 import Badge from '../../../components/ui/Badge';
 import Avatar from '../../../components/ui/Avatar';
 import Button from '../../../components/ui/Button';
-import { Mail, Phone, MapPin, Calendar, Building2, Briefcase, Edit, ArrowLeft } from 'lucide-react';
+import Input from '../../../components/ui/Input';
+import Select from '../../../components/ui/Select';
+import Modal from '../../../components/ui/Modal';
+import { Mail, Phone, MapPin, Calendar, Edit, ArrowLeft, Bell, CheckCircle2, Clock, Download, Eye, FileText, Lock, ShieldCheck, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { mockEmployees, mockAttendance, mockLeaveBalances, mockPayslips, mockGoals, mockAssets } from '../../../lib/mock-data';
+import { useAuth } from '../../../contexts/AuthContext';
+
+type EmployeeDocument = {
+  id: string;
+  name: string;
+  type: string;
+  uploadedDate: string;
+  expiryDate?: string;
+  status: 'Active' | 'Expiring Soon' | 'Acknowledged' | 'Pending Acknowledgement';
+};
+
+const documentTemplates: Record<string, EmployeeDocument[]> = {
+  '1': [
+    { id: 'doc-1', name: 'Employment Contract', type: 'Contract', uploadedDate: '2022-03-01', status: 'Active' },
+    { id: 'doc-2', name: 'Passport Copy', type: 'Identification', uploadedDate: '2022-03-01', expiryDate: '2027-03-01', status: 'Active' },
+    { id: 'doc-3', name: 'Computer Science Degree', type: 'Education / Certification', uploadedDate: '2022-03-02', status: 'Active' },
+    { id: 'doc-4', name: 'Offer Letter', type: 'Offer / Joining', uploadedDate: '2022-02-20', status: 'Active' },
+    { id: 'doc-5', name: 'Code of Conduct Policy', type: 'Policy Acknowledgement', uploadedDate: '2024-01-05', status: 'Acknowledged' },
+  ],
+};
 
 export default function EmployeeProfilePage() {
   const params = useParams();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('personal');
   const employee = mockEmployees.find(e => e.id === params.id) || mockEmployees[0];
+  const [documents, setDocuments] = useState<EmployeeDocument[]>(() => documentTemplates[employee.id] || []);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [showPayrollDetails, setShowPayrollDetails] = useState(false);
+  const [reminderSetFor, setReminderSetFor] = useState<string[]>([]);
+  const canViewPayroll = user?.role === 'super_admin' || user?.role === 'hr_manager';
 
   const tabs = [
     { id: 'personal', label: 'Personal Info' },
@@ -40,6 +69,30 @@ export default function EmployeeProfilePage() {
       <span className="text-sm font-medium text-[#263238]">{value || '—'}</span>
     </div>
   );
+
+  const handleDocumentUpload = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const values = Object.fromEntries(new FormData(event.currentTarget).entries()) as Record<string, string>;
+    const file = event.currentTarget.elements.namedItem('documentFile') as HTMLInputElement | null;
+    const document: EmployeeDocument = {
+      id: `doc-${Date.now()}`,
+      name: file?.files?.[0]?.name || values.documentName,
+      type: values.documentType,
+      uploadedDate: new Date().toISOString().slice(0, 10),
+      expiryDate: values.expiryDate || undefined,
+      status: values.documentType === 'Policy Acknowledgement' ? 'Pending Acknowledgement' : 'Active',
+    };
+    setDocuments(current => [document, ...current]);
+    setIsUploadOpen(false);
+  };
+
+  const toggleReminder = (documentId: string) => {
+    setReminderSetFor(current => current.includes(documentId) ? current.filter(id => id !== documentId) : [...current, documentId]);
+  };
+
+  const acknowledgeDocument = (documentId: string) => {
+    setDocuments(current => current.map(document => document.id === documentId ? { ...document, status: 'Acknowledged' } : document));
+  };
 
   return (
     <DashboardLayout>
@@ -102,6 +155,8 @@ export default function EmployeeProfilePage() {
                 <InfoRow label="Reporting Manager" value={employee.reportingManager} />
                 <InfoRow label="Employment Type" value={employee.employmentType} />
                 <InfoRow label="Joining Date" value={employee.joiningDate} />
+                <InfoRow label="Probation End Date" value={employee.probationEndDate || 'Not set'} />
+                <InfoRow label="Confirmation Date" value={employee.confirmationDate || 'Not confirmed'} />
                 <InfoRow label="Shift" value={employee.shift} />
                 <InfoRow label="Status" value={employee.status} />
               </div>
@@ -153,6 +208,16 @@ export default function EmployeeProfilePage() {
             )}
             {activeTab === 'payroll' && (
               <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div><h3 className="text-base font-semibold text-[#17324D]">Payroll & Bank Information</h3><p className="text-xs text-gray-500 mt-1">Restricted to authorized HR and Super Admin users.</p></div>
+                  {canViewPayroll && <Button variant="outline" size="sm" onClick={() => setShowPayrollDetails(current => !current)}><Lock size={14} /> {showPayrollDetails ? 'Hide Details' : 'Reveal Details'}</Button>}
+                </div>
+                {canViewPayroll ? (
+                  <div className="mb-6 rounded-lg border border-[#D6E4E8] bg-[#F8FBFC] p-4">
+                    <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-[#17324D]"><ShieldCheck size={16} className="text-[#0F8B8D]" /> Protected Payroll Details</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm"><div><p className="text-xs text-gray-500">Bank Name</p><p className="font-medium mt-1">{showPayrollDetails ? employee.bankName || 'Not provided' : '••••••••'}</p></div><div><p className="text-xs text-gray-500">Account Number</p><p className="font-medium mt-1">{showPayrollDetails ? employee.bankAccount || 'Not provided' : '••••••••'}</p></div><div><p className="text-xs text-gray-500">Tax ID</p><p className="font-medium mt-1">{showPayrollDetails ? employee.taxId || 'Not provided' : '••••••••'}</p></div></div>
+                  </div>
+                ) : <div className="mb-6 rounded-lg border border-red-100 bg-red-50 p-4 text-sm text-red-700">You do not have permission to view payroll or bank information.</div>}
                 <h3 className="text-base font-semibold text-[#17324D] mb-4">Payslip History</h3>
                 <div className="space-y-3">
                   {mockPayslips.map(slip => (
@@ -171,9 +236,9 @@ export default function EmployeeProfilePage() {
               </div>
             )}
             {activeTab === 'documents' && (
-              <div className="text-center py-12">
-                <p className="text-gray-500">Employee documents will be displayed here.</p>
-                <Button variant="outline" size="sm" className="mt-4">Upload Document</Button>
+              <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4"><div><h3 className="text-base font-semibold text-[#17324D]">Employee Documents</h3><p className="text-sm text-gray-500 mt-1">Contracts, identification, certifications and acknowledgements.</p></div><Button variant="primary" size="sm" onClick={() => setIsUploadOpen(true)}><Upload size={14} /> Upload Document</Button></div>
+                {documents.length === 0 ? <div className="rounded-lg border border-dashed border-[#D6E4E8] p-10 text-center text-sm text-gray-500">No documents uploaded for this employee.</div> : <div className="space-y-3">{documents.map(document => <div key={document.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-[#D6E4E8] p-4"><div className="flex items-center gap-3"><div className="rounded-lg bg-[#EAF2F4] p-2 text-[#0F8B8D]"><FileText size={18} /></div><div><p className="text-sm font-medium text-[#263238]">{document.name}</p><p className="text-xs text-gray-500">{document.type} · Uploaded {document.uploadedDate}</p>{document.expiryDate && <p className="text-xs text-gray-500 mt-1">Expires {document.expiryDate}</p>}</div></div><div className="flex items-center gap-2"><Badge variant={document.status === 'Active' || document.status === 'Acknowledged' ? 'success' : document.status === 'Expiring Soon' ? 'warning' : 'info'} size="sm">{document.status}</Badge>{document.status === 'Pending Acknowledgement' && <button type="button" onClick={() => acknowledgeDocument(document.id)} className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"><CheckCircle2 size={13} /> Acknowledge</button>}{document.expiryDate && <button type="button" onClick={() => toggleReminder(document.id)} className={`inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium ${reminderSetFor.includes(document.id) ? 'bg-green-50 text-green-700' : 'text-gray-500 hover:bg-[#EAF2F4]'}`}><Bell size={13} /> {reminderSetFor.includes(document.id) ? 'Reminder Set' : 'Remind Me'}</button>}<button type="button" className="p-1.5 text-gray-400 hover:text-[#0F8B8D]" title="View document"><Eye size={15} /></button><button type="button" className="p-1.5 text-gray-400 hover:text-[#0F8B8D]" title="Download document"><Download size={15} /></button></div></div>)}</div>}
               </div>
             )}
             {activeTab === 'assets' && (
@@ -197,6 +262,16 @@ export default function EmployeeProfilePage() {
             )}
           </div>
         </Card>
+        <Modal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} title="Upload Employee Document" size="md">
+          <form className="space-y-4" onSubmit={handleDocumentUpload}>
+            <Input name="documentName" label="Document Name" placeholder="e.g. Employment Contract" required />
+            <Select name="documentType" label="Document Type" options={[{ value: 'Contract', label: 'Employment Contract' }, { value: 'Identification', label: 'Identification Document' }, { value: 'Education / Certification', label: 'Education / Certification' }, { value: 'Offer / Joining', label: 'Offer / Joining Document' }, { value: 'Policy Acknowledgement', label: 'Policy Acknowledgement' }, { value: 'Other', label: 'Other Organization File' }]} required />
+            <Input name="expiryDate" label="Expiry Date (optional)" type="date" />
+            <div><label htmlFor="documentFile" className="block text-sm font-medium text-[#263238] mb-1.5">File</label><input id="documentFile" name="documentFile" type="file" className="block w-full rounded-lg border border-[#D6E4E8] px-3 py-2 text-sm" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" /></div>
+            <p className="text-xs text-gray-500">Policy acknowledgement documents are marked for acknowledgement after upload.</p>
+            <div className="flex justify-end gap-2 pt-3 border-t border-[#D6E4E8]"><Button type="button" variant="outline" onClick={() => setIsUploadOpen(false)}>Cancel</Button><Button type="submit"><Upload size={15} /> Upload Document</Button></div>
+          </form>
+        </Modal>
       </div>
     </DashboardLayout>
   );

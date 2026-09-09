@@ -6,7 +6,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import SearchBar from '../../components/ui/SearchBar';
-import { Upload, FileText, File, FolderOpen, Download, Eye, Clock } from 'lucide-react';
+import { Upload, FileText, File, FolderOpen, Download, Eye, Clock, Bell } from 'lucide-react';
 
 const mockDocuments = [
   { id: '1', name: 'Employment Contract', type: 'Contract', employee: 'Michael Chen', uploadedDate: '2022-03-01', expiryDate: null, status: 'Active' },
@@ -15,13 +15,17 @@ const mockDocuments = [
   { id: '4', name: 'Driving License', type: 'ID', employee: 'James Anderson', uploadedDate: '2023-01-10', expiryDate: '2026-01-10', status: 'Active' },
   { id: '5', name: 'Company Policy Handbook', type: 'Policy', employee: 'All Employees', uploadedDate: '2024-01-01', expiryDate: null, status: 'Active' },
   { id: '6', name: 'Work Permit', type: 'ID', employee: 'Priya Sharma', uploadedDate: '2023-02-01', expiryDate: '2024-02-15', status: 'Expiring Soon' },
+  { id: '7', name: 'Computer Science Degree', type: 'Certificate', employee: 'Michael Chen', uploadedDate: '2022-03-02', expiryDate: null, status: 'Active' },
+  { id: '8', name: 'Offer Letter', type: 'Offer / Joining', employee: 'Michael Chen', uploadedDate: '2022-02-20', expiryDate: null, status: 'Active' },
+  { id: '9', name: 'Code of Conduct Acknowledgement', type: 'Policy Acknowledgement', employee: 'Michael Chen', uploadedDate: '2024-01-05', expiryDate: null, status: 'Acknowledged' },
 ];
 
-const categories = ['All', 'Contract', 'ID', 'Legal', 'Policy', 'Certificate'];
+const categories = ['All', 'Contract', 'ID', 'Legal', 'Policy', 'Policy Acknowledgement', 'Certificate', 'Offer / Joining'];
 
 export default function DocumentsPage() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
+  const [reminders, setReminders] = useState<string[]>([]);
 
   const filtered = mockDocuments.filter(doc => {
     const matchSearch = !search || doc.name.toLowerCase().includes(search.toLowerCase()) || doc.employee.toLowerCase().includes(search.toLowerCase());
@@ -60,12 +64,17 @@ export default function DocumentsPage() {
                   <p className="text-xs text-gray-500 mt-0.5">{doc.employee}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{doc.type} · Uploaded {doc.uploadedDate}</p>
                   <div className="flex items-center justify-between mt-3">
-                    <Badge variant={doc.status === 'Active' ? 'success' : 'warning'} size="sm">
+                     <Badge variant={doc.status === 'Active' || doc.status === 'Acknowledged' ? 'success' : 'warning'} size="sm">
                       {doc.status === 'Expiring Soon' && <Clock size={10} className="mr-1" />}
                       {doc.status}
                     </Badge>
-                    <div className="flex gap-1">
-                      <button className="p-1.5 rounded text-gray-400 hover:text-[#0F8B8D] hover:bg-[#EAF2F4]"><Eye size={14} /></button>
+                     <div className="flex gap-1 items-center">
+                       {doc.expiryDate && (
+                         <button type="button" onClick={() => setReminders(current => current.includes(doc.id) ? current.filter(id => id !== doc.id) : [...current, doc.id])} className={`inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium ${reminders.includes(doc.id) ? 'bg-green-50 text-green-700' : 'text-gray-400 hover:bg-[#EAF2F4] hover:text-[#0F8B8D]'}`} title="Set expiry reminder">
+                           <Bell size={13} /> {reminders.includes(doc.id) ? 'Set' : 'Remind'}
+                         </button>
+                       )}
+                       <button className="p-1.5 rounded text-gray-400 hover:text-[#0F8B8D] hover:bg-[#EAF2F4]"><Eye size={14} /></button>
                       <button className="p-1.5 rounded text-gray-400 hover:text-[#0F8B8D] hover:bg-[#EAF2F4]"><Download size={14} /></button>
                     </div>
                   </div>
