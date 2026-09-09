@@ -10,7 +10,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import { Plus, DollarSign, CheckCircle2, XCircle, Send, Trash2, Pencil } from 'lucide-react';
+import { Plus, DollarSign, CheckCircle2, XCircle, Send, Trash2, Pencil, Paperclip, X, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { mockEmployees } from '../../lib/mock-data';
 import { EXPENSE_CATEGORIES } from '../../lib/constants';
 import { useAuth } from '../../contexts/AuthContext';
@@ -29,6 +29,24 @@ export default function ExpensesPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [receiptData, setReceiptData] = useState('');
+  const [receiptName, setReceiptName] = useState('');
+  const [fileKey, setFileKey] = useState(0);
+  const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(0.5);
+
+  const openReceipt = (receipt: string) => {
+    setViewingReceipt(receipt);
+    setZoom(0.5);
+  };
+
+  const closeReceipt = () => {
+    setViewingReceipt(null);
+    setZoom(0.5);
+  };
+
+  const zoomIn = () => setZoom((z) => Math.min(3, Math.round((z + 0.25) * 100) / 100));
+  const zoomOut = () => setZoom((z) => Math.max(0.5, Math.round((z - 0.25) * 100) / 100));
 
   // Resolve the logged-in user to an employee record (same matching as profile page)
   const employee = useMemo(() => {
@@ -64,6 +82,9 @@ export default function ExpensesPage() {
     setAmount('');
     setDate('');
     setDescription('');
+    setReceiptData('');
+    setReceiptName('');
+    setFileKey((k) => k + 1);
     setErrors({});
     setSubmitting(false);
     setEditingId(null);
@@ -74,14 +95,40 @@ export default function ExpensesPage() {
     setShowModal(true);
   };
 
-  const openEdit = (exp: { id: string; category: string; amount: number; date: string; description: string }) => {
+  const openEdit = (exp: { id: string; category: string; amount: number; date: string; description: string; receipt?: string }) => {
     setEditingId(exp.id);
     setCategory(exp.category);
     setAmount(String(exp.amount));
     setDate(exp.date);
     setDescription(exp.description);
+    setReceiptData(exp.receipt ?? '');
+    setReceiptName(exp.receipt ? 'Attached receipt' : '');
     setErrors({});
     setShowModal(true);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setReceiptData('');
+      setReceiptName('');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setErrors((prev) => ({ ...prev, receipt: 'File must be smaller than 2MB.' }));
+      return;
+    }
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.receipt;
+      return next;
+    });
+    const reader = new FileReader();
+    reader.onload = () => {
+      setReceiptData(reader.result as string);
+      setReceiptName(file.name);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -103,6 +150,7 @@ export default function ExpensesPage() {
         amount: Math.round(parsedAmount * 100) / 100,
         date,
         description: description.trim(),
+        receipt: receiptData || undefined,
       });
     } else {
       addExpenseClaim({
@@ -112,6 +160,7 @@ export default function ExpensesPage() {
         amount: Math.round(parsedAmount * 100) / 100,
         date,
         description: description.trim(),
+        receipt: receiptData || undefined,
       });
     }
     setShowModal(false);
@@ -162,10 +211,10 @@ export default function ExpensesPage() {
                 {visibleExpenses.map(exp => (
                   <tr key={exp.id} className="hover:bg-[#EAF2F4]/50">
                     {!isEmployee && (
-                      <td className="px-6 py-4"><div className="flex items-center gap-3"><Avatar name={exp.employeeName} size="sm" /><div><p className="text-sm font-medium">{exp.employeeName}</p><p className="text-xs text-gray-500">{exp.description}</p></div></div></td>
+                      <td className="px-6 py-4"><div className="flex items-center gap-3"><Avatar name={exp.employeeName} size="sm" /><div><p className="text-sm font-medium">{exp.employeeName}</p><p className="text-xs text-gray-500">{exp.description}</p>{exp.receipt && (<button type="button" onClick={() => openReceipt(exp.receipt!)} className="inline-flex items-center gap-1 text-xs text-[#0F8B8D] hover:underline mt-0.5"><Paperclip size={12} /> View receipt</button>)}</div></div></td>
                     )}
                     {isEmployee && (
-                      <td className="px-6 py-4"><div><p className="text-sm font-medium">{exp.category}</p><p className="text-xs text-gray-500">{exp.description}</p></div></td>
+                      <td className="px-6 py-4"><div><p className="text-sm font-medium">{exp.category}</p><p className="text-xs text-gray-500">{exp.description}</p>{exp.receipt && (<button type="button" onClick={() => openReceipt(exp.receipt!)} className="inline-flex items-center gap-1 text-xs text-[#0F8B8D] hover:underline mt-0.5"><Paperclip size={12} /> View receipt</button>)}</div></td>
                     )}
                     {!isEmployee && <td className="px-6 py-4 text-sm">{exp.category}</td>}
                     <td className="px-6 py-4 text-sm font-semibold text-[#17324D]">${exp.amount.toLocaleString()}</td>
@@ -226,6 +275,31 @@ export default function ExpensesPage() {
             />
             {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
           </div>
+          <div>
+            <label className="block text-sm font-medium text-[#263238] mb-1.5">Payslip / Receipt (optional)</label>
+            <input
+              key={fileKey}
+              type="file"
+              accept="image/*,.pdf"
+              onChange={handleFileChange}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#EAF2F4] file:text-[#17324D] hover:file:bg-[#D6E4E8]"
+            />
+            {errors.receipt && <p className="mt-1 text-sm text-red-500">{errors.receipt}</p>}
+            {receiptName && (
+              <div className="mt-2 flex items-center gap-2 text-sm text-[#263238] bg-[#EAF2F4]/60 border border-[#D6E4E8] rounded-lg px-3 py-2">
+                <Paperclip size={14} className="text-[#0F8B8D] flex-shrink-0" />
+                <span className="truncate flex-1">{receiptName}</span>
+                <button
+                  type="button"
+                  title="Remove file"
+                  onClick={() => { setReceiptData(''); setReceiptName(''); setFileKey((k) => k + 1); }}
+                  className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+          </div>
           <p className="text-xs text-gray-500">Your claim will be submitted with <span className="font-medium">Pending</span> status until it is approved or rejected.</p>
           <div className="flex justify-end gap-3 pt-4 border-t border-[#D6E4E8]">
             <Button variant="outline" type="button" onClick={() => { setShowModal(false); resetForm(); }}>Cancel</Button>
@@ -234,6 +308,55 @@ export default function ExpensesPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal isOpen={!!viewingReceipt} onClose={closeReceipt} title="Receipt" size="lg">
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <button
+            type="button"
+            title="Zoom out"
+            onClick={zoomOut}
+            disabled={zoom <= 0.5}
+            className="p-2 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8] disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <ZoomOut size={16} />
+          </button>
+          <span className="text-sm font-medium text-[#263238] w-14 text-center">{Math.round(zoom * 100)}%</span>
+          <button
+            type="button"
+            title="Zoom in"
+            onClick={zoomIn}
+            disabled={zoom >= 3}
+            className="p-2 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8] disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <ZoomIn size={16} />
+          </button>
+          <button
+            type="button"
+            title="Reset zoom"
+            onClick={() => setZoom(0.5)}
+            className="p-2 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8]"
+          >
+            <RotateCcw size={16} />
+          </button>
+        </div>
+        <div className="overflow-auto max-h-[65vh] rounded-lg border border-[#D6E4E8] bg-[#EAF2F4]/40">
+          {viewingReceipt?.startsWith('data:application/pdf') ? (
+            <iframe
+              src={viewingReceipt}
+              title="Receipt"
+              className="w-full h-[65vh] origin-top"
+              style={{ transform: `scale(${zoom})` }}
+            />
+          ) : viewingReceipt ? (
+            <img
+              src={viewingReceipt}
+              alt="Expense receipt"
+              className="block mx-auto max-w-none origin-top"
+              style={{ transform: `scale(${zoom})` }}
+            />
+          ) : null}
+        </div>
       </Modal>
     </DashboardLayout>
   );

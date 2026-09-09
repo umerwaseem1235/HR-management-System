@@ -11,6 +11,7 @@ export interface NewExpenseInput {
   amount: number;
   date: string;
   description: string;
+  receipt?: string;
 }
 
 interface ExpenseContextType {
@@ -18,7 +19,7 @@ interface ExpenseContextType {
   addExpenseClaim: (input: NewExpenseInput) => ExpenseClaim;
   updateExpenseStatus: (id: string, status: 'Approved' | 'Rejected' | 'Reimbursed') => void;
   deleteExpenseClaim: (id: string) => void;
-  updateExpenseClaim: (id: string, input: { category: string; amount: number; date: string; description: string }) => void;
+  updateExpenseClaim: (id: string, input: { category: string; amount: number; date: string; description: string; receipt?: string }) => void;
 }
 
 const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
@@ -68,7 +69,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
   };
 
-  const updateExpenseClaim = (id: string, input: { category: string; amount: number; date: string; description: string }) => {
+  const updateExpenseClaim = (id: string, input: { category: string; amount: number; date: string; description: string; receipt?: string }) => {
     setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, ...input } : e)));
   };
 
