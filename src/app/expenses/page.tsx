@@ -10,7 +10,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import { Plus, DollarSign, CheckCircle2, XCircle, Send } from 'lucide-react';
+import { Plus, DollarSign, CheckCircle2, XCircle, Send, Trash2, Pencil } from 'lucide-react';
 import { mockEmployees } from '../../lib/mock-data';
 import { EXPENSE_CATEGORIES } from '../../lib/constants';
 import { useAuth } from '../../contexts/AuthContext';
@@ -18,7 +18,7 @@ import { useExpense } from '../../contexts/ExpenseContext';
 
 export default function ExpensesPage() {
   const { user } = useAuth();
-  const { expenses, addExpenseClaim, updateExpenseStatus } = useExpense();
+  const { expenses, addExpenseClaim, updateExpenseStatus, deleteExpenseClaim, updateExpenseClaim } = useExpense();
   const isEmployee = user?.role === 'employee';
 
   const [showModal, setShowModal] = useState(false);
@@ -28,6 +28,7 @@ export default function ExpensesPage() {
   const [description, setDescription] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Resolve the logged-in user to an employee record (same matching as profile page)
   const employee = useMemo(() => {
@@ -65,6 +66,22 @@ export default function ExpensesPage() {
     setDescription('');
     setErrors({});
     setSubmitting(false);
+    setEditingId(null);
+  };
+
+  const openNew = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
+  const openEdit = (exp: { id: string; category: string; amount: number; date: string; description: string }) => {
+    setEditingId(exp.id);
+    setCategory(exp.category);
+    setAmount(String(exp.amount));
+    setDate(exp.date);
+    setDescription(exp.description);
+    setErrors({});
+    setShowModal(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -80,14 +97,23 @@ export default function ExpensesPage() {
     if (Object.keys(nextErrors).length > 0) return;
 
     setSubmitting(true);
-    addExpenseClaim({
-      employeeId: employee?.id ?? user.id,
-      employeeName: employee ? `${employee.firstName} ${employee.lastName}` : user.name,
-      category,
-      amount: Math.round(parsedAmount * 100) / 100,
-      date,
-      description: description.trim(),
-    });
+    if (editingId) {
+      updateExpenseClaim(editingId, {
+        category,
+        amount: Math.round(parsedAmount * 100) / 100,
+        date,
+        description: description.trim(),
+      });
+    } else {
+      addExpenseClaim({
+        employeeId: employee?.id ?? user.id,
+        employeeName: employee ? `${employee.firstName} ${employee.lastName}` : user.name,
+        category,
+        amount: Math.round(parsedAmount * 100) / 100,
+        date,
+        description: description.trim(),
+      });
+    }
     setShowModal(false);
     resetForm();
   };
@@ -97,7 +123,7 @@ export default function ExpensesPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-[#17324D]">{isEmployee ? 'My Expenses' : 'Expenses'}</h1>
-          <Button variant="primary" onClick={() => setShowModal(true)}><Plus size={16} /> New Claim</Button>
+          <Button variant="primary" onClick={openNew}><Plus size={16} /> New Claim</Button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -130,7 +156,7 @@ export default function ExpensesPage() {
                 <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Amount</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Date</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Status</th>
-                {!isEmployee && <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Actions</th>}
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Actions</th>
               </tr></thead>
               <tbody className="divide-y divide-[#D6E4E8]">
                 {visibleExpenses.map(exp => (
@@ -146,10 +172,21 @@ export default function ExpensesPage() {
                     <td className="px-6 py-4 text-sm text-gray-500">{exp.date}</td>
                     <td className="px-6 py-4">{statusBadge(exp.status)}</td>
                     {!isEmployee && <td className="px-6 py-4">
-                      {exp.status === 'Pending' && <div className="flex gap-2">
-                        <button title="Approve" onClick={() => updateExpenseStatus(exp.id, 'Approved')} className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-200"><CheckCircle2 size={16} /></button>
-                        <button title="Reject" onClick={() => updateExpenseStatus(exp.id, 'Rejected')} className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200"><XCircle size={16} /></button>
-                      </div>}
+                      <div className="flex gap-2">
+                        {exp.status === 'Pending' && <>
+                          <button title="Approve" onClick={() => updateExpenseStatus(exp.id, 'Approved')} className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-200"><CheckCircle2 size={16} /></button>
+                          <button title="Reject" onClick={() => updateExpenseStatus(exp.id, 'Rejected')} className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200"><XCircle size={16} /></button>
+                        </>}
+                        <button title="Delete" onClick={() => { if (window.confirm('Delete this expense claim?')) deleteExpenseClaim(exp.id); }} className="p-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600"><Trash2 size={16} /></button>
+                      </div>
+                    </td>}
+                    {isEmployee && <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        {exp.status === 'Pending' && (
+                          <button title="Edit" onClick={() => openEdit(exp)} className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"><Pencil size={16} /></button>
+                        )}
+                        <button title="Delete" onClick={() => { if (window.confirm('Delete this expense claim?')) deleteExpenseClaim(exp.id); }} className="p-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600"><Trash2 size={16} /></button>
+                      </div>
                     </td>}
                   </tr>
                 ))}
@@ -165,7 +202,7 @@ export default function ExpensesPage() {
         </Card>
       </div>
 
-      <Modal isOpen={showModal} onClose={() => { setShowModal(false); resetForm(); }} title="New Expense Claim">
+      <Modal isOpen={showModal} onClose={() => { setShowModal(false); resetForm(); }} title={editingId ? 'Edit Expense Claim' : 'New Expense Claim'}>
         <form onSubmit={handleSubmit} className="space-y-5">
           <Select
             label="Category"
@@ -193,7 +230,7 @@ export default function ExpensesPage() {
           <div className="flex justify-end gap-3 pt-4 border-t border-[#D6E4E8]">
             <Button variant="outline" type="button" onClick={() => { setShowModal(false); resetForm(); }}>Cancel</Button>
             <Button variant="primary" type="submit" disabled={submitting}>
-              <Send size={16} /> {submitting ? 'Submitting...' : 'Submit Claim'}
+              <Send size={16} /> {submitting ? (editingId ? 'Saving...' : 'Submitting...') : (editingId ? 'Save Changes' : 'Submit Claim')}
             </Button>
           </div>
         </form>

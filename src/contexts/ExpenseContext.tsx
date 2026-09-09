@@ -17,6 +17,8 @@ interface ExpenseContextType {
   expenses: ExpenseClaim[];
   addExpenseClaim: (input: NewExpenseInput) => ExpenseClaim;
   updateExpenseStatus: (id: string, status: 'Approved' | 'Rejected' | 'Reimbursed') => void;
+  deleteExpenseClaim: (id: string) => void;
+  updateExpenseClaim: (id: string, input: { category: string; amount: number; date: string; description: string }) => void;
 }
 
 const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
@@ -62,8 +64,16 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, status } : e)));
   };
 
+  const deleteExpenseClaim = (id: string) => {
+    setExpenses((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  const updateExpenseClaim = (id: string, input: { category: string; amount: number; date: string; description: string }) => {
+    setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, ...input } : e)));
+  };
+
   return (
-    <ExpenseContext.Provider value={{ expenses, addExpenseClaim, updateExpenseStatus }}>
+    <ExpenseContext.Provider value={{ expenses, addExpenseClaim, updateExpenseStatus, deleteExpenseClaim, updateExpenseClaim }}>
       {children}
     </ExpenseContext.Provider>
   );
