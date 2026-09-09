@@ -40,13 +40,13 @@ export default function Avatar({ name, src, size = 'md', className = '' }: Avata
       <img
         src={src}
         alt={name}
-        className={`${sizes[size]} rounded-full object-cover ${className}`}
+        className={`${sizes[size]} aspect-square shrink-0 rounded-full object-cover object-center block ${className}`}
       />
     );
   }
 
   return (
-    <div className={`${sizes[size]} ${getColorFromName(name)} rounded-full flex items-center justify-center text-white font-semibold ${className}`}>
+    <div className={`${sizes[size]} aspect-square shrink-0 ${getColorFromName(name)} rounded-full flex items-center justify-center text-white font-semibold leading-none ${className}`}>
       {getInitials(name)}
     </div>
   );

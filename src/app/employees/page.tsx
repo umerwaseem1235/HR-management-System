@@ -8,16 +8,20 @@ import Badge from '../../components/ui/Badge';
 import Avatar from '../../components/ui/Avatar';
 import SearchBar from '../../components/ui/SearchBar';
 import Select from '../../components/ui/Select';
-import { UserPlus, MoreVertical, Mail, Phone } from 'lucide-react';
+import AddEmployeeModal from '../../components/employees/AddEmployeeModal';
+import { UserPlus, MoreVertical, Mail, Phone, Pencil } from 'lucide-react';
 import { mockEmployees } from '../../lib/mock-data';
-import { DEPARTMENTS } from '../../lib/constants';
+import { BRANCHES, DEPARTMENTS } from '../../lib/constants';
 
 export default function EmployeesPage() {
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
+  const [employees, setEmployees] = useState(mockEmployees);
+  const [editingEmployee, setEditingEmployee] = useState<typeof mockEmployees[number] | null>(null);
 
-  const filtered = mockEmployees.filter(emp => {
+  const filtered = employees.filter(emp => {
     const matchSearch = !search || `${emp.firstName} ${emp.lastName} ${emp.employeeCode}`.toLowerCase().includes(search.toLowerCase());
     const matchDept = !deptFilter || emp.department === deptFilter;
     const matchStatus = !statusFilter || emp.status === statusFilter;
@@ -38,9 +42,9 @@ export default function EmployeesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-[#17324D]">Employees</h1>
-            <p className="text-sm text-gray-500 mt-1">{mockEmployees.length} total employees</p>
+          <p className="text-sm text-gray-500 mt-1">{employees.length} total employees</p>
           </div>
-          <Button variant="primary">
+          <Button variant="primary" onClick={() => setIsAddEmployeeOpen(true)}>
             <UserPlus size={16} /> Add Employee
           </Button>
         </div>
@@ -89,6 +93,7 @@ export default function EmployeesPage() {
                   <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Joined</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Contact</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#D6E4E8]">
@@ -118,6 +123,16 @@ export default function EmployeesPage() {
                         </button>
                       </div>
                     </td>
+                    <td className="px-6 py-4">
+                      <button
+                        type="button"
+                        onClick={() => setEditingEmployee(emp)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#D6E4E8] px-3 py-1.5 text-sm font-medium text-[#0F8B8D] hover:bg-[#EAF2F4] transition-colors"
+                        aria-label={`Edit ${emp.firstName} ${emp.lastName}`}
+                      >
+                        <Pencil size={14} /> Edit
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -127,6 +142,40 @@ export default function EmployeesPage() {
             <div className="p-12 text-center text-gray-500">No employees found matching your criteria.</div>
           )}
         </Card>
+
+        <AddEmployeeModal isOpen={isAddEmployeeOpen} onClose={() => setIsAddEmployeeOpen(false)} />
+        {editingEmployee && (
+          <AddEmployeeModal
+            key={editingEmployee.id}
+            isOpen
+            employee={editingEmployee}
+            onClose={() => setEditingEmployee(null)}
+            onSave={(values) => {
+              setEmployees(current => current.map(employee => employee.id === editingEmployee.id ? {
+                ...employee,
+                employeeCode: values.employeeCode || employee.employeeCode,
+                firstName: values.firstName || employee.firstName,
+                lastName: values.lastName || employee.lastName,
+                email: values.email || employee.email,
+                phone: values.phone || employee.phone,
+                dateOfBirth: values.dateOfBirth || employee.dateOfBirth,
+                address: values.address || employee.address,
+                department: values.department || employee.department,
+                designation: values.designation || employee.designation,
+                branch: BRANCHES.find(branch => branch.id === values.branch)?.name || employee.branch,
+                reportingManager: values.reportingManager || employee.reportingManager,
+                employmentType: (values.employmentType || employee.employmentType) as typeof employee.employmentType,
+                joiningDate: values.joiningDate || employee.joiningDate,
+                probationEndDate: values.probationEndDate || employee.probationEndDate,
+                shift: values.shift || employee.shift,
+                bankName: values.bankName || employee.bankName,
+                bankAccount: values.bankAccount || employee.bankAccount,
+                taxId: values.taxId || employee.taxId,
+                salary: values.salary ? Number(values.salary) : employee.salary,
+              } : employee));
+            }}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
