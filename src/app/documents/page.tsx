@@ -6,7 +6,12 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import SearchBar from '../../components/ui/SearchBar';
+<<<<<<< HEAD
+import { Upload, FileText, File, FolderOpen, Download, Eye, Clock } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+=======
 import { Upload, FileText, File, FolderOpen, Download, Eye, Clock, Bell } from 'lucide-react';
+>>>>>>> 7e22ebda4a9685027159f98fb02fe9939cf26e93
 
 const mockDocuments = [
   { id: '1', name: 'Employment Contract', type: 'Contract', employee: 'Michael Chen', uploadedDate: '2022-03-01', expiryDate: null, status: 'Active' },
@@ -23,6 +28,8 @@ const mockDocuments = [
 const categories = ['All', 'Contract', 'ID', 'Legal', 'Policy', 'Policy Acknowledgement', 'Certificate', 'Offer / Joining'];
 
 export default function DocumentsPage() {
+  const { user } = useAuth();
+  const isEmployee = user?.role === 'employee';
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [reminders, setReminders] = useState<string[]>([]);
@@ -38,7 +45,7 @@ export default function DocumentsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-[#17324D]">Documents</h1>
-          <Button variant="primary"><Upload size={16} /> Upload</Button>
+          {!isEmployee && <Button variant="primary"><Upload size={16} /> Upload</Button>}
         </div>
 
         <Card padding="sm">
