@@ -6,8 +6,10 @@ import Card from '../ui/Card';
 import StatCard from '../ui/StatCard';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
-import { mockLeaveBalances, mockPayslips, mockGoals, mockNotifications } from '../../lib/mock-data';
+import { mockLeaveBalances, mockPayslips, mockGoals } from '../../lib/mock-data';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
+import Link from 'next/link';
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
@@ -25,7 +27,9 @@ export default function EmployeeDashboard() {
     setCheckInTime(null);
   };
 
-  const employeeNotifs = mockNotifications.filter(n => !n.read).slice(0, 3);
+  const { notifications } = useNotifications();
+
+  const employeeNotifs = notifications.filter(n => !n.read).slice(0, 3);
 
   return (
     <div className="space-y-6">
@@ -125,7 +129,10 @@ export default function EmployeeDashboard() {
 
         {/* Notifications */}
         <Card>
-          <h3 className="text-base font-semibold text-[#17324D] mb-4">Notifications</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-[#17324D]">Notifications</h3>
+            <Link href="/notifications" className="text-sm text-[#0F8B8D] hover:underline font-medium">View All</Link>
+          </div>
           <div className="space-y-3">
             {employeeNotifs.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-4">No new notifications</p>

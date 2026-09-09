@@ -44,7 +44,6 @@ export default function LeavePage() {
   const tabs = [
     { id: 'requests', label: isEmployee ? 'My Requests' : 'Leave Requests', count: visibleRequests.filter(l => l.status === 'Pending').length },
     { id: 'balances', label: 'Leave Balances' },
-    { id: 'calendar', label: 'Calendar' },
   ];
 
   const statusBadge = (status: string) => {
@@ -132,12 +131,6 @@ export default function LeavePage() {
                     </div>
                   </div>
                 ))}
-              </div>
-            )}
-            {activeTab === 'calendar' && (
-              <div className="text-center py-12 text-gray-500">
-                <p className="text-lg font-medium text-[#17324D] mb-2">Leave Calendar</p>
-                <p className="text-sm">Calendar view coming soon. View leave schedules and team availability.</p>
               </div>
             )}
           </div>

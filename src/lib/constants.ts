@@ -87,7 +87,7 @@ export const LEAVE_TYPES = [
 ];
 
 export const EXPENSE_CATEGORIES = [
-  'Travel', 'Meals', 'Office Supplies', 'Software', 'Training', 'Equipment', 'Communication', 'Other'
+  'Travel', 'Meals', 'Office Supplies', 'Software', 'Equipment', 'Other'
 ];
 
 export const MOCK_USERS: Array<{ email: string; password: string; name: string; role: UserRole; avatar: string }> = [

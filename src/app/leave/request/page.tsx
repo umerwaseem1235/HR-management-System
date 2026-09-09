@@ -87,7 +87,7 @@ export default function LeaveRequestPage() {
               error={errors.leaveType}
               options={[
                 { value: '', label: 'Select Leave Type' },
-                ...LEAVE_TYPES.map((lt) => ({ value: lt.name, label: `${lt.name} (${lt.daysAllowed} days)` })),
+                ...LEAVE_TYPES.map((lt) => ({ value: lt.name, label: lt.name })),
               ]}
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

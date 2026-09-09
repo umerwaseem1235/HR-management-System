@@ -19,6 +19,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/reports': 'Reports',
   '/settings': 'Settings',
   '/profile': 'My Profile',
+  '/notifications': 'Notifications',
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

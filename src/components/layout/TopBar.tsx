@@ -4,8 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Menu, Search, Bell, ChevronDown, User, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { ROLE_LABELS } from '../../lib/constants';
-import { mockNotifications } from '../../lib/mock-data';
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -14,6 +14,7 @@ interface TopBarProps {
 
 export default function TopBar({ onMenuClick, title }: TopBarProps) {
   const { user, logout } = useAuth();
+  const { notifications, markAsRead } = useNotifications();
   const router = useRouter();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -21,7 +22,7 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
   const notifRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
 
-  const unreadCount = mockNotifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -93,8 +94,12 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
                 <p className="text-xs text-gray-500">{unreadCount} unread</p>
               </div>
               <div className="max-h-80 overflow-y-auto">
-                {mockNotifications.slice(0, 5).map(notif => (
-                  <div key={notif.id} className={`p-4 border-b border-[#D6E4E8] last:border-0 hover:bg-[#EAF2F4]/50 cursor-pointer ${!notif.read ? 'bg-[#EAF2F4]/30' : ''}`}>
+                {notifications.slice(0, 5).map(notif => (
+                  <div
+                    key={notif.id}
+                    onClick={() => { markAsRead(notif.id); setShowNotifications(false); if (notif.link) router.push(notif.link); }}
+                    className={`p-4 border-b border-[#D6E4E8] last:border-0 hover:bg-[#EAF2F4]/50 cursor-pointer ${!notif.read ? 'bg-[#EAF2F4]/30' : ''}`}
+                  >
                     <div className="flex gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getNotificationIcon(notif.type)}`}>
                         <Bell size={14} />
@@ -109,7 +114,12 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
                 ))}
               </div>
               <div className="p-3 border-t border-[#D6E4E8] text-center">
-                <button className="text-sm text-[#0F8B8D] hover:underline font-medium">View All</button>
+                <button
+                  onClick={() => { setShowNotifications(false); router.push('/notifications'); }}
+                  className="text-sm text-[#0F8B8D] hover:underline font-medium"
+                >
+                  View All
+                </button>
               </div>
             </div>
           )}
