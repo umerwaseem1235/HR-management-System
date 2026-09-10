@@ -9,18 +9,17 @@ import Avatar from '../../components/ui/Avatar';
 import SearchBar from '../../components/ui/SearchBar';
 import Select from '../../components/ui/Select';
 import AddEmployeeModal from '../../components/employees/AddEmployeeModal';
-import { UserPlus, Mail, Phone, Pencil } from 'lucide-react';
+import { UserPlus, MoreVertical, Mail, Phone, Pencil } from 'lucide-react';
 import { mockEmployees } from '../../lib/mock-data';
-import { BRANCHES, DEPARTMENTS, SHIFTS } from '../../lib/constants';
-import { Employee } from '../../lib/types';
+import { BRANCHES, DEPARTMENTS } from '../../lib/constants';
 
 export default function EmployeesPage() {
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
-  const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
-  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [employees, setEmployees] = useState(mockEmployees);
+  const [editingEmployee, setEditingEmployee] = useState<typeof mockEmployees[number] | null>(null);
 
   const filtered = employees.filter(emp => {
     const matchSearch = !search || `${emp.firstName} ${emp.lastName} ${emp.employeeCode}`.toLowerCase().includes(search.toLowerCase());
@@ -36,84 +35,21 @@ export default function EmployeesPage() {
     return <Badge variant={map[status] || 'neutral'}>{status}</Badge>;
   };
 
-  const handleAddEmployee = (values: Record<string, string>, photo: string | null) => {
-    const newEmployee: Employee = {
-      id: `emp-${Date.now()}`,
-      employeeCode: values.employeeCode || `EMP${employees.length + 1}`,
-      firstName: values.firstName,
-      lastName: values.lastName,
-      email: values.email,
-      phone: values.phone || '',
-      dateOfBirth: values.dateOfBirth || '',
-      gender: 'Male',
-      address: values.address || '',
-      city: values.city || '',
-      country: '',
-      emergencyContactName: '',
-      emergencyContactPhone: '',
-      department: values.department,
-      designation: values.designation,
-      branch: BRANCHES.find(branch => branch.id === values.branch)?.name || values.branch,
-      reportingManager: values.reportingManager || '',
-      employmentType: (values.employmentType || 'Full-time') as Employee['employmentType'],
-      joiningDate: values.joiningDate,
-      probationEndDate: values.probationEndDate || undefined,
-      confirmationDate: values.confirmationDate || undefined,
-      status: 'Active',
-      shift: SHIFTS.find(shift => shift.id === values.shift)?.name || values.shift,
-      bankName: values.bankName || undefined,
-      bankAccount: values.bankAccount || undefined,
-      taxId: values.taxId || undefined,
-      salary: values.salary ? Number(values.salary) : undefined,
-      avatar: photo || undefined,
-    };
-    setEmployees(current => [newEmployee, ...current]);
-    setIsAddEmployeeOpen(false);
-  };
-
-  const handleEditEmployee = (values: Record<string, string>, photo: string | null) => {
-    if (!editingEmployee) return;
-    setEmployees(current => current.map(emp => emp.id === editingEmployee.id ? {
-      ...emp,
-      employeeCode: values.employeeCode || emp.employeeCode,
-      firstName: values.firstName || emp.firstName,
-      lastName: values.lastName || emp.lastName,
-      email: values.email || emp.email,
-      phone: values.phone || emp.phone,
-      dateOfBirth: values.dateOfBirth || emp.dateOfBirth,
-      address: values.address || emp.address,
-      city: values.city || emp.city,
-      department: values.department || emp.department,
-      designation: values.designation || emp.designation,
-      branch: BRANCHES.find(branch => branch.id === values.branch)?.name || emp.branch,
-      reportingManager: values.reportingManager || emp.reportingManager,
-      employmentType: (values.employmentType || emp.employmentType) as Employee['employmentType'],
-      joiningDate: values.joiningDate || emp.joiningDate,
-      probationEndDate: values.probationEndDate || emp.probationEndDate,
-      confirmationDate: values.confirmationDate || emp.confirmationDate,
-      shift: SHIFTS.find(shift => shift.id === values.shift)?.name || emp.shift,
-      bankName: values.bankName || emp.bankName,
-      bankAccount: values.bankAccount || emp.bankAccount,
-      taxId: values.taxId || emp.taxId,
-      salary: values.salary ? Number(values.salary) : emp.salary,
-      avatar: photo || emp.avatar,
-    } : emp));
-    setEditingEmployee(null);
-  };
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-[#17324D]">Employees</h1>
-            <p className="text-sm text-gray-500 mt-1">{employees.length} total employees</p>
+          <p className="text-sm text-gray-500 mt-1">{employees.length} total employees</p>
           </div>
           <Button variant="primary" onClick={() => setIsAddEmployeeOpen(true)}>
             <UserPlus size={16} /> Add Employee
           </Button>
         </div>
 
+        {/* Filters */}
         <Card padding="sm">
           <div className="flex flex-col sm:flex-row gap-3">
             <SearchBar
@@ -144,6 +80,7 @@ export default function EmployeesPage() {
           </div>
         </Card>
 
+        {/* Employee List */}
         <Card padding="none">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -161,10 +98,10 @@ export default function EmployeesPage() {
               </thead>
               <tbody className="divide-y divide-[#D6E4E8]">
                 {filtered.map(emp => (
-                  <tr key={emp.id} className="hover:bg-[#EAF2F4]/50 transition-colors">
+                  <tr key={emp.id} className="hover:bg-[#EAF2F4]/50 cursor-pointer transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <Avatar name={`${emp.firstName} ${emp.lastName}`} src={emp.avatar} size="sm" />
+                        <Avatar name={`${emp.firstName} ${emp.lastName}`} size="sm" />
                         <div>
                           <p className="text-sm font-medium text-[#263238]">{emp.firstName} {emp.lastName}</p>
                           <p className="text-xs text-gray-500">{emp.employeeCode}</p>
@@ -206,14 +143,37 @@ export default function EmployeesPage() {
           )}
         </Card>
 
-        <AddEmployeeModal isOpen={isAddEmployeeOpen} onClose={() => setIsAddEmployeeOpen(false)} onSave={handleAddEmployee} />
+        <AddEmployeeModal isOpen={isAddEmployeeOpen} onClose={() => setIsAddEmployeeOpen(false)} />
         {editingEmployee && (
           <AddEmployeeModal
             key={editingEmployee.id}
             isOpen
             employee={editingEmployee}
             onClose={() => setEditingEmployee(null)}
-            onSave={handleEditEmployee}
+            onSave={(values) => {
+              setEmployees(current => current.map(employee => employee.id === editingEmployee.id ? {
+                ...employee,
+                employeeCode: values.employeeCode || employee.employeeCode,
+                firstName: values.firstName || employee.firstName,
+                lastName: values.lastName || employee.lastName,
+                email: values.email || employee.email,
+                phone: values.phone || employee.phone,
+                dateOfBirth: values.dateOfBirth || employee.dateOfBirth,
+                address: values.address || employee.address,
+                department: values.department || employee.department,
+                designation: values.designation || employee.designation,
+                branch: BRANCHES.find(branch => branch.id === values.branch)?.name || employee.branch,
+                reportingManager: values.reportingManager || employee.reportingManager,
+                employmentType: (values.employmentType || employee.employmentType) as typeof employee.employmentType,
+                joiningDate: values.joiningDate || employee.joiningDate,
+                probationEndDate: values.probationEndDate || employee.probationEndDate,
+                shift: values.shift || employee.shift,
+                bankName: values.bankName || employee.bankName,
+                bankAccount: values.bankAccount || employee.bankAccount,
+                taxId: values.taxId || employee.taxId,
+                salary: values.salary ? Number(values.salary) : employee.salary,
+              } : employee));
+            }}
           />
         )}
       </div>
