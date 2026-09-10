@@ -21,19 +21,15 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
   const [photoError, setPhotoError] = useState('');
 
   useEffect(() => {
-    if (isOpen && employee?.avatar) {
+    // Only preload the preview when the stored avatar is a real image.
+    // Mock records keep initials (e.g. "MC") in the avatar field.
+    if (isOpen && employee?.avatar && /^(https?:\/\/|blob:|data:image\/|\/)/.test(employee.avatar)) {
       setPhotoPreview(employee.avatar);
     } else if (isOpen && !employee) {
       setPhotoPreview(null);
     }
     setPhotoError('');
   }, [isOpen, employee?.avatar]);
-
-  useEffect(() => {
-    return () => {
-      if (photoPreview && photoPreview.startsWith('blob:')) URL.revokeObjectURL(photoPreview);
-    };
-  }, [photoPreview]);
 
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -50,8 +46,12 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
     }
 
     setPhotoError('');
-    if (photoPreview && photoPreview.startsWith('blob:')) URL.revokeObjectURL(photoPreview);
-    setPhotoPreview(URL.createObjectURL(file));
+    // Read as a data URL so the photo survives in state after the modal
+    // closes (object URLs are revoked with the file input lifetime).
+    const reader = new FileReader();
+    reader.onload = () => setPhotoPreview(String(reader.result));
+    reader.onerror = () => setPhotoError('Could not read the selected image.');
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -94,7 +94,6 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
                       <button
                         type="button"
                         onClick={() => {
-                          if (photoPreview && photoPreview.startsWith('blob:')) URL.revokeObjectURL(photoPreview);
                           setPhotoPreview(null);
                           setPhotoError('');
                         }}

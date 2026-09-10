@@ -272,6 +272,29 @@ export default function AttendancePage() {
     return { monthLabel, monthlyRecords, presentDays, absentDays, lateDays, leavesTaken: attendanceLeaveDates.size + approvedLeaveDays };
   }, [user, isEmployee, employee, leaveRequests]);
 
+  // ---- Hoisted above all early returns (Rules of Hooks): every hook must
+  // ---- run unconditionally on every render, regardless of role/login state.
+  const dayRecords = attendRecords.filter(r => r.date === viewDate);
+
+  const summaryCounts = useMemo(() => {
+    if (summaryMode === 'daily') {
+      return dayRecords;
+    }
+    if (summaryMode === 'weekly') {
+      const anchor = new Date(viewDate);
+      const day = anchor.getDay();
+      const diff = anchor.getDate() - day + (day === 0 ? -6 : 1);
+      const mon = new Date(anchor.setDate(diff));
+      const sun = new Date(mon);
+      sun.setDate(mon.getDate() + 6);
+      const from = toDateStr(mon);
+      const to = toDateStr(sun);
+      return attendRecords.filter(r => r.date >= from && r.date <= to);
+    }
+    const prefix = viewDate.slice(0, 7);
+    return attendRecords.filter(r => r.date.startsWith(prefix));
+  }, [summaryMode, viewDate, dayRecords, attendRecords]);
+
   if (!user) return null;
 
   const statusBadge = (status: string) => {
@@ -362,27 +385,6 @@ export default function AttendancePage() {
     { id: 'corrections', label: 'Corrections', count: pendingCorrections.length },
     { id: 'config', label: 'Shifts & Holidays' },
   ];
-
-  const dayRecords = attendRecords.filter(r => r.date === viewDate);
-
-  const summaryCounts = useMemo(() => {
-    if (summaryMode === 'daily') {
-      return dayRecords;
-    }
-    if (summaryMode === 'weekly') {
-      const anchor = new Date(viewDate);
-      const day = anchor.getDay();
-      const diff = anchor.getDate() - day + (day === 0 ? -6 : 1);
-      const mon = new Date(anchor.setDate(diff));
-      const sun = new Date(mon);
-      sun.setDate(mon.getDate() + 6);
-      const from = toDateStr(mon);
-      const to = toDateStr(sun);
-      return attendRecords.filter(r => r.date >= from && r.date <= to);
-    }
-    const prefix = viewDate.slice(0, 7);
-    return attendRecords.filter(r => r.date.startsWith(prefix));
-  }, [summaryMode, viewDate, dayRecords, attendRecords]);
 
   const aggregate = (records: AttendanceRecord[]) => {
     const present = records.filter(r => r.status === 'Present').length;

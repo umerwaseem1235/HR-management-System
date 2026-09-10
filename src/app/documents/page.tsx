@@ -6,12 +6,8 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import SearchBar from '../../components/ui/SearchBar';
-<<<<<<< HEAD
-import { Upload, FileText, File, FolderOpen, Download, Eye, Clock } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-=======
 import { Upload, FileText, File, FolderOpen, Download, Eye, Clock, Bell } from 'lucide-react';
->>>>>>> 7e22ebda4a9685027159f98fb02fe9939cf26e93
+import { useAuth } from '../../contexts/AuthContext';
 
 const mockDocuments = [
   { id: '1', name: 'Employment Contract', type: 'Contract', employee: 'Michael Chen', uploadedDate: '2022-03-01', expiryDate: null, status: 'Active' },
