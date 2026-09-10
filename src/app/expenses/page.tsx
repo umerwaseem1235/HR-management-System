@@ -46,8 +46,8 @@ export default function ExpensesPage() {
     setZoom(0.5);
   };
 
-  const zoomIn = () => setZoom((z) => Math.min(3, Math.round((z + 0.25) * 100) / 100));
-  const zoomOut = () => setZoom((z) => Math.max(0.5, Math.round((z - 0.25) * 100) / 100));
+  const zoomIn = () => setZoom((z) => Math.min(3, Math.round((z + 0.1) * 100) / 100));
+  const zoomOut = () => setZoom((z) => Math.max(0.1, Math.round((z - 0.25) * 100) / 100));
 
   // Resolve the logged-in user to an employee record (same matching as profile page)
   const employee = useMemo(() => {
@@ -321,7 +321,7 @@ export default function ExpensesPage() {
             type="button"
             title="Zoom out"
             onClick={zoomOut}
-            disabled={zoom <= 0.5}
+            disabled={zoom <= 0.1}
             className="p-2 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <ZoomOut size={16} />

@@ -4,6 +4,7 @@ import { AuthProvider } from '../contexts/AuthContext';
 import { LeaveProvider } from '../contexts/LeaveContext';
 import { ExpenseProvider } from '../contexts/ExpenseContext';
 import { NotificationProvider } from '../contexts/NotificationContext';
+import { WorkProvider } from '../contexts/WorkContext';
 
 export const metadata: Metadata = {
   title: 'CodeQor HRMS',
@@ -22,7 +23,9 @@ export default function RootLayout({
           <LeaveProvider>
             <ExpenseProvider>
               <NotificationProvider>
-                {children}
+                <WorkProvider>
+                  {children}
+                </WorkProvider>
               </NotificationProvider>
             </ExpenseProvider>
           </LeaveProvider>

@@ -255,3 +255,19 @@ export interface DashboardStats {
   upcomingExits: number;
   payrollStatus: string;
 }
+
+export type DailyWorkStatus = 'Submitted' | 'Approved' | 'Needs Revision';
+
+export interface DailyWork {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  title: string;
+  description: string;
+  date: string;
+  fileData?: string;
+  fileName?: string;
+  link?: string;
+  status: DailyWorkStatus;
+  submittedOn: string;
+}
