@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '../../../components/layout/DashboardLayout';
 import Card from '../../../components/ui/Card';
+import PageHeader from '../../../components/ui/PageHeader';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Button from '../../../components/ui/Button';
@@ -74,10 +75,11 @@ export default function LeaveRequestPage() {
         <Link href="/leave" className="inline-flex items-center gap-2 text-sm text-[#0F8B8D] hover:underline">
           <ArrowLeft size={16} /> Back to Leave
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-[#17324D]">Request Leave</h1>
-          <p className="text-sm text-gray-500 mt-1">Requesting as {employee ? `${employee.firstName} ${employee.lastName}` : user.name}</p>
-        </div>
+        <PageHeader
+          eyebrow="Time Off"
+          title="Request Leave"
+          subtitle={`Requesting as ${employee ? `${employee.firstName} ${employee.lastName}` : user.name}`}
+        />
         <Card>
           <form onSubmit={handleSubmit} className="space-y-5">
             <Select

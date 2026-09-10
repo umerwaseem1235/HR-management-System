@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -26,6 +26,24 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const navRef = useRef<HTMLElement>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-hide scroller: show only while the user is actively scrolling
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const onScroll = () => {
+      nav.classList.add('is-scrolling');
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+      hideTimer.current = setTimeout(() => nav.classList.remove('is-scrolling'), 900);
+    };
+    nav.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      nav.removeEventListener('scroll', onScroll);
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    };
+  }, []);
 
   if (!user) return null;
 
@@ -40,22 +58,26 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
       <div className="h-1 w-full flex-shrink-0 bg-gradient-to-r from-[#0F8B8D] via-[#2dd4bf] to-[#0F8B8D]" />
 
       {/* Logo */}
-      <div className="flex h-16 flex-shrink-0 items-center px-4">
+      <div className="flex h-[72px] flex-shrink-0 items-center border-b border-white/10 px-4">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0F8B8D] to-[#14b8a6] shadow-lg shadow-[#0F8B8D]/40 ring-1 ring-white/25">
-            <Building2 size={20} className="text-white" />
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#14b8a6] via-[#0F8B8D] to-[#0b5e5f] shadow-lg shadow-[#0F8B8D]/50 ring-1 ring-white/30">
+            <Building2 size={20} className="text-white drop-shadow-sm" />
           </div>
           {!collapsed && (
-            <div className="min-w-0">
-              <h1 className="truncate text-base font-extrabold tracking-tight">CodeQor</h1>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5eead4]/80">HRMS</p>
+            <div className="min-w-0 leading-none">
+              <h1 className="truncate bg-gradient-to-r from-white via-white to-[#99f6e4] bg-clip-text text-[18px] font-extrabold tracking-tight text-transparent">
+                CodeQor
+              </h1>
+              <span className="mt-1.5 inline-flex items-center rounded-md bg-[#0F8B8D]/30 px-2 py-[3px] text-[9px] font-bold uppercase tracking-[0.24em] text-[#5eead4] ring-1 ring-inset ring-[#5eead4]/40">
+                HRMS
+              </span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+      {/* Navigation — scrollbar sits on the left edge, shows only while scrolling */}
+      <nav ref={navRef} className="sidebar-scroll flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {!collapsed && (
           <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Main Menu</p>
         )}

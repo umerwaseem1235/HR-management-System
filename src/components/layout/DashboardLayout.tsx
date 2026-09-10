@@ -63,8 +63,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           onMenuClick={() => setMobileOpen(true)}
           title={pageTitle}
         />
-        <main className="flex-1 p-4 lg:p-6 overflow-auto">
-          {children}
+        <main className="relative flex-1 p-4 lg:p-6 overflow-auto">
+          {/* Subtle premium background wash */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-[#0F8B8D]/[0.06] via-[#0F8B8D]/[0.02] to-transparent" />
+          <div className="relative">{children}</div>
         </main>
       </div>
     </div>

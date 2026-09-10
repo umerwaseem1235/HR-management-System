@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
+import PageHeader from '../../components/ui/PageHeader';
 import Tabs from '../../components/ui/Tabs';
 import Badge from '../../components/ui/Badge';
 import Avatar from '../../components/ui/Avatar';
@@ -22,7 +23,11 @@ export default function PerformancePage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-[#17324D]">Performance Management</h1>
+        <PageHeader
+          eyebrow="Growth"
+          title="Performance Management"
+          subtitle="Reviews, goals and appraisal cycles"
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card padding="sm" hover>

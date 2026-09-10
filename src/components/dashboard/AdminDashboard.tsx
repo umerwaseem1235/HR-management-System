@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Users, UserCheck, UserX, CalendarOff, ClipboardCheck, TrendingUp, Briefcase, DollarSign, UserPlus, Clock, CheckCircle2, XCircle, ArrowUpRight, Gift, Building2 } from 'lucide-react';
+import { CalendarOff, CalendarDays, ClipboardCheck, Gift, Clock, CheckCircle2, XCircle, ArrowUpRight, Briefcase, UserPlus, DollarSign, TrendingUp } from 'lucide-react';
 import Card from '../ui/Card';
 import StatCard from '../ui/StatCard';
 import Badge from '../ui/Badge';
@@ -45,13 +45,24 @@ export default function AdminDashboard() {
     { type: 'probation', name: 'Emma Garcia', date: 'Apr 08', icon: Clock },
   ];
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+  const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
   return (
     <div className="space-y-6">
       {/* Welcome header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#17324D]">Good Morning! 👋</h1>
-          <p className="text-sm text-gray-500 mt-1">Here&apos;s what&apos;s happening in your organization today.</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#0F8B8D]">Admin Overview</p>
+          <h1 className="mt-1.5 text-[30px] font-extrabold leading-tight tracking-tight text-[#17324D]">
+            {greeting}! <span className="animate-wave">👋</span>
+          </h1>
+          <p className="text-sm text-gray-500 mt-1.5">Here&apos;s what&apos;s happening in your organization today.</p>
+        </div>
+        <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#D6E4E8]/70 bg-white px-4 py-2 shadow-[0_1px_2px_rgba(23,50,77,0.05),0_10px_30px_-14px_rgba(23,50,77,0.18)]">
+          <CalendarDays size={15} className="text-[#0F8B8D]" />
+          <span className="text-[13px] font-semibold text-[#17324D]">{todayLabel}</span>
         </div>
       </div>
 
@@ -60,38 +71,31 @@ export default function AdminDashboard() {
         <StatCard
           title="Total Employees"
           value={stats.totalEmployees}
-          icon={<Users size={22} className="text-[#17324D]" />}
-          change="+1 this month"
-          changeType="positive"
+          iconName="totalEmployees"
         />
         <StatCard
           title="Present Today"
           value={stats.presentToday}
-          icon={<UserCheck size={22} className="text-green-600" />}
-          iconBg="bg-green-50"
-          change={`${Math.round((stats.presentToday / stats.totalEmployees) * 100)}% attendance`}
-          changeType="positive"
+          iconName="presentToday"
+          iconBg="bg-gradient-to-br from-green-50 to-emerald-50"
         />
         <StatCard
           title="Absent Today"
           value={stats.absentToday}
-          icon={<UserX size={22} className="text-red-600" />}
-          iconBg="bg-red-50"
-          change={`${Math.round((stats.absentToday / stats.totalEmployees) * 100)}% absent`}
-          changeType="negative"
+          iconName="absentToday"
+          iconBg="bg-gradient-to-br from-red-50 to-rose-50"
         />
         <StatCard
           title="On Leave Today"
           value={stats.onLeaveToday}
-          icon={<CalendarOff size={22} className="text-orange-500" />}
-          iconBg="bg-orange-50"
+          iconName="onLeaveToday"
+          iconBg="bg-gradient-to-br from-orange-50 to-amber-50"
         />
         <StatCard
           title="Pending Approvals"
           value={stats.pendingLeaveApprovals + stats.pendingExpenseApprovals}
-          icon={<ClipboardCheck size={22} className="text-[#0F8B8D]" />}
-          iconBg="bg-[#EAF2F4]"
-          change={`${stats.pendingLeaveApprovals} leave, ${stats.pendingExpenseApprovals} expense`}
+          iconName="activity"
+          iconBg="bg-gradient-to-br from-[#EAF2F4] to-[#D6E4E8]"
         />
       </div>
 

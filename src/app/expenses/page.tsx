@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
+import PageHeader from '../../components/ui/PageHeader';
 import Badge from '../../components/ui/Badge';
 import Avatar from '../../components/ui/Avatar';
 import Button from '../../components/ui/Button';
@@ -170,10 +171,14 @@ export default function ExpensesPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-[#17324D]">{isEmployee ? 'My Expenses' : 'Expenses'}</h1>
-          <Button variant="primary" onClick={openNew}><Plus size={16} /> New Claim</Button>
-        </div>
+        <PageHeader
+          eyebrow="Finance"
+          title={isEmployee ? 'My Expenses' : 'Expenses'}
+          subtitle="Submit claims and track reimbursements"
+          actions={
+            <Button variant="primary" onClick={openNew}><Plus size={16} /> New Claim</Button>
+          }
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card padding="sm">

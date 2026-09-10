@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
+import PageHeader from '../../components/ui/PageHeader';
 import Tabs from '../../components/ui/Tabs';
 import Badge from '../../components/ui/Badge';
 import Avatar from '../../components/ui/Avatar';
@@ -56,12 +57,16 @@ export default function LeavePage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-[#17324D]">{isEmployee ? 'My Leave' : 'Leave Management'}</h1>
-          <Button variant="primary" onClick={() => router.push('/leave/request')}>
-            <Plus size={16} /> Request Leave
-          </Button>
-        </div>
+        <PageHeader
+          eyebrow="Time Off"
+          title={isEmployee ? 'My Leave' : 'Leave Management'}
+          subtitle={isEmployee ? 'Request time off and track your leave balances' : 'Review leave requests and balances across the organization'}
+          actions={
+            <Button variant="primary" onClick={() => router.push('/leave/request')}>
+              <Plus size={16} /> Request Leave
+            </Button>
+          }
+        />
 
         <Card padding="none">
           <div className="px-6 pt-4">

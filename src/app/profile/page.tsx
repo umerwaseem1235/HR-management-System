@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
+import PageHeader from '../../components/ui/PageHeader';
 import Tabs from '../../components/ui/Tabs';
 import Badge from '../../components/ui/Badge';
 import Avatar from '../../components/ui/Avatar';
@@ -51,7 +52,7 @@ export default function ProfilePage() {
     return (
       <DashboardLayout>
         <div className="space-y-6">
-          <h1 className="text-2xl font-bold text-[#17324D]">My Profile</h1>
+          <PageHeader eyebrow="Account" title="My Profile" />
           <Card>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               <Avatar name={user.name} size="xl" />
@@ -78,7 +79,7 @@ export default function ProfilePage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-[#17324D]">My Profile</h1>
+        <PageHeader eyebrow="Account" title="My Profile" />
 
         {/* Profile Header */}
         <Card>

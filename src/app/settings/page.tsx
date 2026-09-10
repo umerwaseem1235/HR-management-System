@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
+import PageHeader from '../../components/ui/PageHeader';
 import Tabs from '../../components/ui/Tabs';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
@@ -24,7 +25,11 @@ export default function SettingsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-[#17324D]">Settings</h1>
+        <PageHeader
+          eyebrow="Configuration"
+          title="Settings"
+          subtitle="Company, departments, branches, shifts and leave policies"
+        />
 
         <Card padding="none">
           <div className="px-6 pt-4"><Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} /></div>

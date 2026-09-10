@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Clock, CalendarDays, DollarSign, TrendingUp, FileText, Send, CheckCircle2, LogIn, LogOut, AlertCircle } from 'lucide-react';
+import { Send, CheckCircle2, LogIn, LogOut, AlertCircle, FileText } from 'lucide-react';
 import Card from '../ui/Card';
 import StatCard from '../ui/StatCard';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
+import PageHeader from '../ui/PageHeader';
 import { mockLeaveBalances, mockPayslips, mockGoals } from '../../lib/mock-data';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
@@ -34,58 +35,53 @@ export default function EmployeeDashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome + Check In/Out */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#17324D]">Welcome, {user?.name?.split(' ')[0]}! 👋</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {checkInTime && (
-            <span className="text-sm text-gray-500">Checked in at {checkInTime}</span>
-          )}
-          {!checkedIn ? (
-            <Button variant="primary" onClick={handleCheckIn}>
-              <LogIn size={16} /> Check In
-            </Button>
-          ) : (
-            <Button variant="danger" onClick={handleCheckOut}>
-              <LogOut size={16} /> Check Out
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="My Workspace"
+        title={`Welcome, ${user?.name?.split(' ')[0]}! 👋`}
+        subtitle={new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        actions={
+          <>
+            {checkInTime && (
+              <span className="text-sm text-gray-500">Checked in at {checkInTime}</span>
+            )}
+            {!checkedIn ? (
+              <Button variant="primary" onClick={handleCheckIn}>
+                <LogIn size={16} /> Check In
+              </Button>
+            ) : (
+              <Button variant="danger" onClick={handleCheckOut}>
+                <LogOut size={16} /> Check Out
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Working Days"
           value="22/23"
-          icon={<Clock size={22} className="text-[#0F8B8D]" />}
-          iconBg="bg-[#EAF2F4]"
-          change="This month"
+          iconName="time"
+          iconBg="bg-gradient-to-br from-[#EAF2F4] to-[#D6E4E8]"
         />
         <StatCard
           title="Leave Balance"
           value={`${mockLeaveBalances.reduce((sum, lb) => sum + lb.remaining, 0)} days`}
-          icon={<CalendarDays size={22} className="text-orange-500" />}
-          iconBg="bg-orange-50"
-          change="Across all types"
+          iconName="onLeaveToday"
+          iconBg="bg-gradient-to-br from-orange-50 to-amber-50"
         />
         <StatCard
           title="Last Payslip"
           value={`$${mockPayslips[0]?.netSalary.toLocaleString() || '0'}`}
-          icon={<DollarSign size={22} className="text-green-600" />}
-          iconBg="bg-green-50"
-          change={mockPayslips[0] ? `${mockPayslips[0].month} ${mockPayslips[0].year}` : ''}
+          iconName="payroll"
+          iconBg="bg-gradient-to-br from-green-50 to-emerald-50"
         />
         <StatCard
           title="Goals Progress"
           value={`${mockGoals.filter(g => g.status === 'Completed').length}/${mockGoals.length}`}
-          icon={<TrendingUp size={22} className="text-purple-600" />}
-          iconBg="bg-purple-50"
-          change="Completed"
+          iconName="goals"
+          iconBg="bg-gradient-to-br from-purple-50 to-violet-50"
         />
       </div>
 

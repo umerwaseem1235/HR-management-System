@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
+import PageHeader from '../../components/ui/PageHeader';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import SearchBar from '../../components/ui/SearchBar';
@@ -35,10 +36,12 @@ export default function DocumentsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-[#17324D]">Documents</h1>
-          {!isEmployee && <Button variant="primary"><Upload size={16} /> Upload</Button>}
-        </div>
+        <PageHeader
+          eyebrow="Records"
+          title="Documents"
+          subtitle="Company and employee documents in one place"
+          actions={!isEmployee && <Button variant="primary"><Upload size={16} /> Upload</Button>}
+        />
 
         <Card padding="sm">
           <div className="flex flex-col sm:flex-row gap-3">

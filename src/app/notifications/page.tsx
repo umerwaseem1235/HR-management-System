@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
+import PageHeader from '../../components/ui/PageHeader';
 import Tabs from '../../components/ui/Tabs';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
@@ -44,17 +45,16 @@ export default function NotificationsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-[#17324D]">Notifications</h1>
-            <p className="text-sm text-gray-500 mt-1">{unreadCount} unread</p>
-          </div>
-          {unreadCount > 0 && (
+        <PageHeader
+          eyebrow="Inbox"
+          title="Notifications"
+          subtitle={`${unreadCount} unread`}
+          actions={unreadCount > 0 && (
             <Button variant="outline" size="sm" onClick={markAllAsRead}>
               <CheckCheck size={16} /> Mark all as read
             </Button>
           )}
-        </div>
+        />
 
         <Card padding="none">
           <div className="px-6 pt-4">

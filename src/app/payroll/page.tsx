@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
+import PageHeader from '../../components/ui/PageHeader';
 import StatCard from '../../components/ui/StatCard';
 import Tabs from '../../components/ui/Tabs';
 import Badge from '../../components/ui/Badge';
@@ -27,10 +28,12 @@ export default function PayrollPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-[#17324D]">Payroll</h1>
-          {isAdmin && <Button variant="primary"><Calculator size={16} /> Process Payroll</Button>}
-        </div>
+        <PageHeader
+          eyebrow="Compensation"
+          title="Payroll"
+          subtitle="Payslips, payroll runs and salary structures"
+          actions={isAdmin && <Button variant="primary"><Calculator size={16} /> Process Payroll</Button>}
+        />
 
         {isAdmin && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

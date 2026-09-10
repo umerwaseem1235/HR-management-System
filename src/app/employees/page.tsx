@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
+import PageHeader from '../../components/ui/PageHeader';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Avatar from '../../components/ui/Avatar';
@@ -104,15 +105,16 @@ export default function EmployeesPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-[#17324D]">Employees</h1>
-            <p className="text-sm text-gray-500 mt-1">{employees.length} total employees</p>
-          </div>
-          <Button variant="primary" onClick={() => setIsAddEmployeeOpen(true)}>
-            <UserPlus size={16} /> Add Employee
-          </Button>
-        </div>
+        <PageHeader
+          eyebrow="Workforce"
+          title="Employees"
+          subtitle={`${employees.length} total employees`}
+          actions={
+            <Button variant="primary" onClick={() => setIsAddEmployeeOpen(true)}>
+              <UserPlus size={16} /> Add Employee
+            </Button>
+          }
+        />
 
         <Card padding="sm">
           <div className="flex flex-col sm:flex-row gap-3">

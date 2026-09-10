@@ -3,6 +3,7 @@
 import React from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
+import PageHeader from '../../components/ui/PageHeader';
 import Button from '../../components/ui/Button';
 import { Download, FileText, Users, Clock, CalendarDays, DollarSign, Briefcase, TrendingUp, Receipt, Shield } from 'lucide-react';
 
@@ -24,7 +25,11 @@ export default function ReportsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-[#17324D]">Reports</h1>
+        <PageHeader
+          eyebrow="Insights"
+          title="Reports"
+          subtitle="Export HR analytics across every module"
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {reports.map((report, i) => (

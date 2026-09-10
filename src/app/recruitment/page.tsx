@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
+import PageHeader from '../../components/ui/PageHeader';
 import StatCard from '../../components/ui/StatCard';
 import Tabs from '../../components/ui/Tabs';
 import Badge from '../../components/ui/Badge';
@@ -64,10 +65,14 @@ export default function RecruitmentPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-[#17324D]">Recruitment</h1>
-          <Button variant="primary" onClick={() => setIsAddCandidateOpen(true)}><UserPlus size={16} /> Add Candidate</Button>
-        </div>
+        <PageHeader
+          eyebrow="Talent Acquisition"
+          title="Recruitment"
+          subtitle="Track job openings and candidates through the hiring pipeline"
+          actions={
+            <Button variant="primary" onClick={() => setIsAddCandidateOpen(true)}><UserPlus size={16} /> Add Candidate</Button>
+          }
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard title="Open Positions" value={mockJobs.filter(j => j.status === 'Open').length} icon={<Briefcase size={22} className="text-[#0F8B8D]" />} iconBg="bg-[#EAF2F4]" />

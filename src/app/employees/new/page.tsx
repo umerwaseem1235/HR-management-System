@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '../../../components/layout/DashboardLayout';
 import Card from '../../../components/ui/Card';
+import PageHeader from '../../../components/ui/PageHeader';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Button from '../../../components/ui/Button';
@@ -26,7 +27,11 @@ export default function AddEmployeePage() {
           <ArrowLeft size={16} /> Back to Employees
         </Link>
 
-        <h1 className="text-2xl font-bold text-[#17324D]">Add New Employee</h1>
+        <PageHeader
+          eyebrow="Workforce"
+          title="Add New Employee"
+          subtitle="Complete the steps below to onboard a new team member"
+        />
 
         {/* Stepper */}
         <div className="flex items-center justify-between">

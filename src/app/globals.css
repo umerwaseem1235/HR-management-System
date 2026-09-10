@@ -42,6 +42,38 @@ body {
   transition-timing-function: ease;
 }
 
+/* Sidebar nav scroll — thin scrollbar on the LEFT edge, visible ONLY while scrolling
+   (direction:rtl moves the scrollbar; children are reset to ltr) */
+.sidebar-scroll {
+  direction: rtl;
+  scrollbar-width: none; /* Firefox: hidden by default */
+  -ms-overflow-style: none; /* IE/Edge legacy */
+}
+.sidebar-scroll > * {
+  direction: ltr;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  width: 0; /* Chrome/Safari/Edge: hidden by default */
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(94, 234, 212, 0.28);
+  border-radius: 999px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(94, 234, 212, 0.5);
+}
+/* Shown while the user is actively scrolling (toggled via JS) */
+.sidebar-scroll.is-scrolling {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(94, 234, 212, 0.28) transparent;
+}
+.sidebar-scroll.is-scrolling::-webkit-scrollbar {
+  width: 5px; /* Chrome/Safari/Edge */
+}
+
 /* Dropdown entrance animation */
 @keyframes dropdown-in {
   from {
@@ -71,4 +103,28 @@ body {
 }
 .animate-ping-soft {
   animation: ping-soft 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Friendly wave for greeting emoji */
+@keyframes wave {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(18deg);
+  }
+  40% {
+    transform: rotate(-10deg);
+  }
+  60% {
+    transform: rotate(14deg);
+  }
+  80% {
+    transform: rotate(-6deg);
+  }
+}
+.animate-wave {
+  animation: wave 2.4s ease-in-out infinite;
+  transform-origin: 70% 70%;
+  display: inline-block;
 }

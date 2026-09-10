@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
+import PageHeader from '../../components/ui/PageHeader';
 import StatCard from '../../components/ui/StatCard';
 import Badge from '../../components/ui/Badge';
 import Avatar from '../../components/ui/Avatar';
@@ -276,10 +277,11 @@ export default function AttendancePage() {
     return (
       <DashboardLayout>
         <div className="space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-[#17324D]">My Attendance</h1>
-            <p className="text-sm text-gray-500 mt-1">{monthLabel}</p>
-          </div>
+          <PageHeader
+            eyebrow="Time Tracking"
+            title="My Attendance"
+            subtitle={monthLabel}
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard title="Present Days" value={presentDays} change={monthLabel} icon={<UserCheck size={22} className="text-green-600" />} iconBg="bg-green-50" />
@@ -439,18 +441,19 @@ export default function AttendancePage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-[#17324D]">Attendance</h1>
-            <p className="text-sm text-gray-500 mt-1">Monitor attendance across the organization</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Badge variant="success">{stats.presentToday} Present</Badge>
-            <Badge variant="danger">{stats.absentToday} Absent</Badge>
-            <Badge variant="warning">{stats.lateToday} Late</Badge>
-            <Badge variant="info">{stats.onLeaveToday} On Leave</Badge>
-          </div>
-        </div>
+        <PageHeader
+          eyebrow="Time Tracking"
+          title="Attendance"
+          subtitle="Monitor attendance across the organization"
+          actions={
+            <>
+              <Badge variant="success">{stats.presentToday} Present</Badge>
+              <Badge variant="danger">{stats.absentToday} Absent</Badge>
+              <Badge variant="warning">{stats.lateToday} Late</Badge>
+              <Badge variant="info">{stats.onLeaveToday} On Leave</Badge>
+            </>
+          }
+        />
 
         {/* Today snapshot */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
