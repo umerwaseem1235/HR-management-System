@@ -18,6 +18,8 @@ interface LeaveContextType {
   leaveRequests: LeaveRequest[];
   addLeaveRequest: (input: NewLeaveInput) => LeaveRequest;
   updateLeaveStatus: (id: string, status: 'Approved' | 'Rejected', approvedBy?: string, comments?: string) => void;
+  updateLeaveRequest: (id: string, input: { leaveType: string; startDate: string; endDate: string; days: number; reason: string }) => void;
+  deleteLeaveRequest: (id: string) => void;
 }
 
 const LeaveContext = createContext<LeaveContextType | undefined>(undefined);
@@ -65,8 +67,16 @@ export function LeaveProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const updateLeaveRequest = (id: string, input: { leaveType: string; startDate: string; endDate: string; days: number; reason: string }) => {
+    setLeaveRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...input } : r)));
+  };
+
+  const deleteLeaveRequest = (id: string) => {
+    setLeaveRequests((prev) => prev.filter((r) => r.id !== id));
+  };
+
   return (
-    <LeaveContext.Provider value={{ leaveRequests, addLeaveRequest, updateLeaveStatus }}>
+    <LeaveContext.Provider value={{ leaveRequests, addLeaveRequest, updateLeaveStatus, updateLeaveRequest, deleteLeaveRequest }}>
       {children}
     </LeaveContext.Provider>
   );

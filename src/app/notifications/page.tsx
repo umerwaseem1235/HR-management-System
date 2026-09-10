@@ -8,7 +8,7 @@ import Tabs from '../../components/ui/Tabs';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import EmptyState from '../../components/ui/EmptyState';
-import { Bell, CheckCheck } from 'lucide-react';
+import { Bell, CheckCheck, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 
@@ -44,6 +44,12 @@ export default function NotificationsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="inline-flex items-center gap-2 text-sm text-[#0F8B8D] hover:underline font-medium"
+        >
+          <ArrowLeft size={16} /> Back to Dashboard
+        </button>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-[#17324D]">Notifications</h1>
