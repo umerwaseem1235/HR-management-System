@@ -57,13 +57,8 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
       {/* Top accent line */}
       <div className="h-1 w-full flex-shrink-0 bg-gradient-to-r from-[#0F8B8D] via-[#2dd4bf] to-[#0F8B8D]" />
 
-<<<<<<< HEAD
-      {/* Logo */}
-      <div className="flex h-[72px] flex-shrink-0 items-center border-b border-white/10 px-4">
-=======
       {/* Logo + sidebar toggle */}
       <div className={`flex h-16 flex-shrink-0 items-center px-4 ${collapsed ? 'justify-center' : 'justify-between'}`}>
->>>>>>> 6ff1bc73192253d7a7a3e072d3fdec900b0db3e5
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#14b8a6] via-[#0F8B8D] to-[#0b5e5f] shadow-lg shadow-[#0F8B8D]/50 ring-1 ring-white/30">
             <Building2 size={20} className="text-white drop-shadow-sm" />

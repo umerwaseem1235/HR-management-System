@@ -45,26 +45,17 @@ export default function NotificationsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-<<<<<<< HEAD
-        <PageHeader
-          eyebrow="Inbox"
-          title="Notifications"
-          subtitle={`${unreadCount} unread`}
-          actions={unreadCount > 0 && (
-=======
         <button
           onClick={() => router.push('/dashboard')}
           className="inline-flex items-center gap-2 text-sm text-[#0F8B8D] hover:underline font-medium"
         >
           <ArrowLeft size={16} /> Back to Dashboard
         </button>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-[#17324D]">Notifications</h1>
-            <p className="text-sm text-gray-500 mt-1">{unreadCount} unread</p>
-          </div>
-          {unreadCount > 0 && (
->>>>>>> 6ff1bc73192253d7a7a3e072d3fdec900b0db3e5
+        <PageHeader
+          eyebrow="Inbox"
+          title="Notifications"
+          subtitle={`${unreadCount} unread`}
+          actions={unreadCount > 0 && (
             <Button variant="outline" size="sm" onClick={markAllAsRead}>
               <CheckCheck size={16} /> Mark all as read
             </Button>
