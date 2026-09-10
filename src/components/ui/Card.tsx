@@ -18,7 +18,13 @@ export default function Card({ children, className = '', padding = 'md', hover =
   };
 
   return (
-    <div className={`bg-white rounded-xl border border-[#D6E4E8] shadow-sm ${paddings[padding]} ${hover ? 'hover:shadow-md hover:border-[#0F8B8D]/30 cursor-pointer' : ''} ${className}`}>
+    <div
+      className={`rounded-2xl border border-[#D6E4E8]/70 bg-white shadow-[0_1px_2px_rgba(23,50,77,0.05),0_10px_30px_-14px_rgba(23,50,77,0.18)] transition-all duration-300 ${paddings[padding]} ${
+        hover
+          ? 'cursor-pointer hover:-translate-y-1 hover:border-[#0F8B8D]/40 hover:shadow-[0_2px_4px_rgba(23,50,77,0.06),0_18px_40px_-14px_rgba(15,139,141,0.35)]'
+          : ''
+      } ${className}`}
+    >
       {children}
     </div>
   );

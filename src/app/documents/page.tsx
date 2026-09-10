@@ -6,11 +6,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import SearchBar from '../../components/ui/SearchBar';
-<<<<<<< HEAD
-import { Upload, FileText, File, FolderOpen, Download, Eye, Clock, Bell } from 'lucide-react';
-=======
 import { Upload, FileText, File, FolderOpen, Download, Eye, Clock } from 'lucide-react';
->>>>>>> 608fb7a8a2709d83f651815158f43797793c6c17
 import { useAuth } from '../../contexts/AuthContext';
 
 const mockDocuments = [

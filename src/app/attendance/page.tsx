@@ -15,11 +15,10 @@ import Tabs from '../../components/ui/Tabs';
 import EmptyState from '../../components/ui/EmptyState';
 import {
   UserCheck, UserX, Clock, CalendarDays, UserPlus, Plus, Check, X,
-  Settings, Sun, Moon, Trash2, Timer, FileWarning, History, BadgeCheck,
+  Sun, Trash2, FileWarning, History, BadgeCheck,
 } from 'lucide-react';
 import { mockAttendance, mockDashboardStats, mockEmployees } from '../../lib/mock-data';
 import { AttendanceRecord } from '../../lib/types';
-import { SHIFTS } from '../../lib/constants';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLeave } from '../../contexts/LeaveContext';
 
@@ -41,24 +40,6 @@ const ADMIN_STATUS_OPTIONS = [
   { value: 'Holiday', label: 'Holiday' },
   { value: 'Weekend', label: 'Weekend' },
 ];
-
-interface ShiftConfig {
-  id: string;
-  name: string;
-  startTime: string;
-  endTime: string;
-  graceMinutes: number;
-}
-
-interface OvertimeRequest {
-  id: string;
-  employeeId: string;
-  employeeName: string;
-  date: string;
-  hours: number;
-  reason: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-}
 
 interface CorrectionRequest {
   id: string;
@@ -99,14 +80,6 @@ function minutesToHrs(min: number): string {
 function todayStr() {
   return toDateStr(new Date());
 }
-
-const INITIAL_SHIFTS: ShiftConfig[] = SHIFTS.map(s => ({ ...s, graceMinutes: 15 }));
-
-const INITIAL_OVERTIME: OvertimeRequest[] = [
-  { id: 'ov1', employeeId: '1', employeeName: 'Michael Chen', date: todayStr(), hours: 1.5, reason: 'Production incident support', status: 'Pending' },
-  { id: 'ov2', employeeId: '8', employeeName: 'Jessica Lee', date: todayStr(), hours: 2, reason: 'Product launch testing', status: 'Pending' },
-  { id: 'ov3', employeeId: '5', employeeName: 'James Anderson', date: todayStr(), hours: 1, reason: 'Client proposal deadline', status: 'Pending' },
-];
 
 const INITIAL_CORRECTIONS: CorrectionRequest[] = [
   { id: 'c1', employeeId: '9', employeeName: 'Ahmed Hassan', date: todayStr(), currentStatus: 'Absent', requestedStatus: 'Present', requestedCheckIn: '09:05', requestedCheckOut: '18:00', reason: 'Biometric device not working, forgot to mark attendance', status: 'Pending' },
@@ -177,11 +150,7 @@ export default function AttendancePage() {
   const [manualOpen, setManualOpen] = useState(false);
   const [viewDate, setViewDate] = useState(todayStr());
   const [summaryMode, setSummaryMode] = useState<'daily' | 'weekly' | 'monthly'>('daily');
-  const [shifts, setShifts] = useState<ShiftConfig[]>(INITIAL_SHIFTS);
-  const [weekendDays, setWeekendDays] = useState<number[]>([0, 6]);
   const [holidays, setHolidays] = useState<Holiday[]>(INITIAL_HOLIDAYS);
-  const [shiftAssignments, setShiftAssignments] = useState<Record<string, string>>({});
-  const [overtimeReqs, setOvertimeReqs] = useState<OvertimeRequest[]>(INITIAL_OVERTIME);
   const [corrections, setCorrections] = useState<CorrectionRequest[]>(INITIAL_CORRECTIONS);
   const [attendRecords, setAttendRecords] = useState<AttendanceRecord[]>(() => {
     const now = new Date();
@@ -192,25 +161,21 @@ export default function AttendancePage() {
   });
 
   // ---- Admin derived state ----
-  const holidaysInMonth = useMemo(() => {
-    const set = new Set<string>();
-    holidays.forEach(h => { if (h.date.startsWith(viewDate.slice(0, 7))) set.add(h.date); });
-    return set;
-  }, [holidays, viewDate]);
-
-  const defaultShift = shifts[0];
+  // Standard company schedule used for late arrival / early departure
+  // tracking now that per-shift configuration has been removed.
+  const STANDARD_START = '09:00';
+  const STANDARD_END = '18:00';
+  const STANDARD_GRACE_MINUTES = 15;
 
   const lateBy = (rec: AttendanceRecord): number => {
     if (!rec.checkIn) return 0;
-    const shift = shifts.find(s => shiftAssignments[rec.employeeId] === s.id) || defaultShift;
-    const diff = timeToMinutes(rec.checkIn) - (timeToMinutes(shift.startTime) + shift.graceMinutes);
+    const diff = timeToMinutes(rec.checkIn) - (timeToMinutes(STANDARD_START) + STANDARD_GRACE_MINUTES);
     return diff > 0 ? diff : 0;
   };
 
   const earlyLeave = (rec: AttendanceRecord): number => {
     if (!rec.checkIn || !rec.checkOut) return 0;
-    const shift = shifts.find(s => shiftAssignments[rec.employeeId] === s.id) || defaultShift;
-    const diff = timeToMinutes(shift.endTime) - timeToMinutes(rec.checkOut);
+    const diff = timeToMinutes(STANDARD_END) - timeToMinutes(rec.checkOut);
     return diff > 0 ? diff : 0;
   };
 
@@ -342,7 +307,6 @@ export default function AttendancePage() {
                   <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Check Out</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Work Hours</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Overtime</th>
                 </tr></thead>
                 <tbody className="divide-y divide-[#D6E4E8]">
                   {filteredMine
@@ -354,7 +318,6 @@ export default function AttendancePage() {
                         <td className="px-6 py-4 text-sm text-[#263238]">{att.checkOut || '—'}</td>
                         <td className="px-6 py-4">{statusBadge(att.status)}</td>
                         <td className="px-6 py-4 text-sm text-[#263238]">{att.workHours}h</td>
-                        <td className="px-6 py-4 text-sm text-[#263238]">{att.overtime > 0 ? `${att.overtime}h` : '—'}</td>
                       </tr>
                     ))}
                 </tbody>
@@ -375,15 +338,13 @@ export default function AttendancePage() {
   //              SUPER ADMIN / HR VIEW (professional)
   // ============================================================
 
-  const pendingOvertime = overtimeReqs.filter(o => o.status === 'Pending');
   const pendingCorrections = corrections.filter(c => c.status === 'Pending');
 
   const adminTabs = [
     { id: 'daily', label: 'Daily Log' },
     { id: 'summaries', label: 'Summaries' },
-    { id: 'overtime', label: 'Overtime', count: pendingOvertime.length },
     { id: 'corrections', label: 'Corrections', count: pendingCorrections.length },
-    { id: 'config', label: 'Shifts & Holidays' },
+    { id: 'config', label: 'Holidays' },
   ];
 
   const aggregate = (records: AttendanceRecord[]) => {
@@ -393,8 +354,7 @@ export default function AttendancePage() {
     const halfDay = records.filter(r => r.status === 'Half Day').length;
     const leave = records.filter(r => r.status === 'Leave').length;
     const totalHours = records.reduce((s, r) => s + (r.workHours || 0), 0);
-    const totalOT = records.reduce((s, r) => s + (r.overtime || 0), 0);
-    return { present, absent, late, halfDay, leave, totalHours, totalOT };
+    return { present, absent, late, halfDay, leave, totalHours };
   };
 
   const agg = aggregate(summaryCounts);
@@ -411,7 +371,6 @@ export default function AttendancePage() {
     if (!emp) return;
     const inMin = values.checkIn ? timeToMinutes(values.checkIn) : 0;
     const outMin = values.checkOut ? timeToMinutes(values.checkOut) : 0;
-    const shift = shifts.find(s => shiftAssignments[emp.id] === s.id) || defaultShift;
     let workHours = 0;
     if (inMin && outMin && outMin > inMin) workHours = Math.round((((outMin - inMin) / 60)) * 10) / 10;
     else if (values.status === 'Present' || values.status === 'Late') workHours = 8;
@@ -434,22 +393,6 @@ export default function AttendancePage() {
       return [record, ...without];
     });
     setViewDate(values.date);
-  };
-
-  const handleApproveOvertime = (id: string) => {
-    setOvertimeReqs(current => current.map(o => {
-      if (o.id !== id) return o;
-      if (o.status === 'Approved') {
-        setAttendRecords(recs => recs.map(r =>
-          r.employeeId === o.employeeId && r.date === o.date ? { ...r, overtime: r.overtime + o.hours } : r
-        ));
-      }
-      return { ...o, status: 'Approved' };
-    }));
-  };
-
-  const handleRejectOvertime = (id: string) => {
-    setOvertimeReqs(current => current.map(o => o.id === id ? { ...o, status: 'Rejected' } : o));
   };
 
   const handleApproveCorrection = (id: string) => {
@@ -491,20 +434,6 @@ export default function AttendancePage() {
     if (!name || !date) return;
     setHolidays(current => [...current, { id: `h-${Date.now()}`, name, date, type: type as Holiday['type'] }]);
     e.currentTarget.reset();
-  };
-
-  const toggleWeekend = (day: number) => {
-    setWeekendDays(current =>
-      current.includes(day) ? current.filter(d => d !== day) : [...current, day]
-    );
-  };
-
-  const handleGraceChange = (shiftId: string, value: number) => {
-    setShifts(current => current.map(s => s.id === shiftId ? { ...s, graceMinutes: Math.max(0, value) } : s));
-  };
-
-  const assignShift = (employeeId: string, shiftId: string) => {
-    setShiftAssignments(current => ({ ...current, [employeeId]: shiftId }));
   };
 
   return (
@@ -578,23 +507,18 @@ export default function AttendancePage() {
                       <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Work Hours</th>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Late By</th>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Early Leave</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Overtime</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#D6E4E8]">
                     {dayRecords.map(att => {
                       const lb = lateBy(att);
                       const el = earlyLeave(att);
-                      const shift = shifts.find(s => shiftAssignments[att.employeeId] === s.id) || defaultShift;
                       return (
                         <tr key={att.id} className="hover:bg-[#EAF2F4]/50">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <Avatar name={att.employeeName} size="sm" />
-                              <div>
-                                <p className="text-sm font-medium text-[#263238]">{att.employeeName}</p>
-                                <p className="text-xs text-gray-500">{shift.name}</p>
-                              </div>
+                              <p className="text-sm font-medium text-[#263238]">{att.employeeName}</p>
                             </div>
                           </td>
                           <td className="px-6 py-4 text-sm text-[#263238]">{att.checkIn || '—'}</td>
@@ -607,7 +531,6 @@ export default function AttendancePage() {
                           <td className="px-6 py-4">
                             {el > 0 ? <Badge variant="warning">{minutesToHrs(el)}</Badge> : <span className="text-sm text-gray-400">—</span>}
                           </td>
-                          <td className="px-6 py-4 text-sm text-[#263238]">{att.overtime > 0 ? <Badge variant="info">{att.overtime}h</Badge> : '—'}</td>
                         </tr>
                       );
                     })}
@@ -675,7 +598,6 @@ export default function AttendancePage() {
                 <h3 className="text-base font-semibold text-[#17324D]">{summaryLabel}</h3>
                 <div className="flex gap-2">
                   <Badge variant="default">{agg.totalHours.toFixed(1)}h Work Hours</Badge>
-                  <Badge variant="info">+{agg.totalOT.toFixed(1)}h Overtime</Badge>
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
@@ -731,125 +653,6 @@ export default function AttendancePage() {
                     <EmptyState title="No records in this period" description="Try a different period or date range." />
                   </div>
                 )}
-              </div>
-            </Card>
-          </>
-        )}
-
-        {/* ---------------- OVERTIME ---------------- */}
-        {activeTab === 'overtime' && (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Pending requests */}
-              <Card>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Timer size={18} className="text-[#0F8B8D]" />
-                    <h3 className="text-base font-semibold text-[#17324D]">Overtime Requests</h3>
-                  </div>
-                  <Badge variant="warning">{pendingOvertime.length} Pending</Badge>
-                </div>
-                <div className="space-y-3">
-                  {pendingOvertime.length === 0 ? (
-                    <p className="text-gray-500 text-sm text-center py-10">No pending overtime requests</p>
-                  ) : (
-                    pendingOvertime.map(req => (
-                      <div key={req.id} className="rounded-lg border border-[#D6E4E8] bg-[#F8FBFC] p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <Avatar name={req.employeeName} size="sm" />
-                            <div>
-                              <p className="text-sm font-medium text-[#263238]">{req.employeeName}</p>
-                              <p className="text-xs text-gray-500">{req.date}</p>
-                            </div>
-                          </div>
-                          <Badge variant="info">{req.hours}h Overtime</Badge>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-3">{req.reason}</p>
-                        <div className="flex items-center justify-end gap-2 mt-3">
-                          <button
-                            onClick={() => handleRejectOvertime(req.id)}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#D6E4E8] px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
-                          >
-                            <X size={14} /> Reject
-                          </button>
-                          <button
-                            onClick={() => handleApproveOvertime(req.id)}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700 transition-colors"
-                          >
-                            <Check size={14} /> Approve
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </Card>
-
-              {/* History */}
-              <Card>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <History size={18} className="text-[#17324D]" />
-                    <h3 className="text-base font-semibold text-[#17324D]">Request History</h3>
-                  </div>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Employee</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Hours</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#D6E4E8]">
-                      {overtimeReqs.map(req => (
-                        <tr key={req.id} className="hover:bg-[#EAF2F4]/50">
-                          <td className="px-4 py-3 text-sm font-medium text-[#263238]">{req.employeeName}</td>
-                          <td className="px-4 py-3 text-sm text-gray-500">{req.date}</td>
-                          <td className="px-4 py-3 text-sm text-[#263238]">{req.hours}h</td>
-                          <td className="px-4 py-3">
-                            <Badge variant={req.status === 'Approved' ? 'success' : req.status === 'Rejected' ? 'danger' : 'warning'}>{req.status}</Badge>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            </div>
-
-            <Card>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Clock size={18} className="text-[#0F8B8D]" />
-                  <h3 className="text-base font-semibold text-[#17324D]">Approved Overtime Entries</h3>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Employee</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Overtime</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#D6E4E8]">
-                    {attendRecords
-                      .filter(r => r.overtime > 0)
-                      .slice(0, 20)
-                      .map(r => (
-                        <tr key={`${r.id}-ot`} className="hover:bg-[#EAF2F4]/50">
-                          <td className="px-6 py-3 text-sm font-medium text-[#263238]">{r.employeeName}</td>
-                          <td className="px-6 py-3 text-sm text-gray-500">{r.date}</td>
-                          <td className="px-6 py-3"><Badge variant="info">{r.overtime}h</Badge></td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
               </div>
             </Card>
           </>
@@ -952,101 +755,6 @@ export default function AttendancePage() {
         {/* ---------------- CONFIG ---------------- */}
         {activeTab === 'config' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Shift configuration */}
-            <Card>
-              <div className="flex items-center gap-2 mb-4">
-                <Settings size={18} className="text-[#0F8B8D]" />
-                <h3 className="text-base font-semibold text-[#17324D]">Shift Configuration & Grace Periods</h3>
-              </div>
-              <div className="space-y-3">
-                {shifts.map(shift => (
-                  <div key={shift.id} className="rounded-lg border border-[#D6E4E8] bg-[#F8FBFC] p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-medium text-[#263238]">{shift.name}</p>
-                        <p className="text-xs text-gray-500">{shift.startTime} — {shift.endTime}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs text-gray-500">Grace</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="120"
-                          value={shift.graceMinutes}
-                          onChange={(e) => handleGraceChange(shift.id, Number(e.target.value))}
-                          className="w-20 rounded-lg border border-[#D6E4E8] px-2 py-1.5 text-sm text-[#263238] focus:border-[#0F8B8D] focus:ring-2 focus:ring-[#0F8B8D]/20 focus:outline-none"
-                        />
-                        <span className="text-xs text-gray-500">min</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-gray-500 mt-4">Grace period = how many minutes after shift start a check-in is still considered on time.</p>
-            </Card>
-
-            {/* Shift assignment */}
-            <Card>
-              <div className="flex items-center gap-2 mb-4">
-                <UserPlus size={18} className="text-[#0F8B8D]" />
-                <h3 className="text-base font-semibold text-[#17324D]">Shift Assignment</h3>
-              </div>
-              <div className="mb-4 rounded-lg bg-[#F8FBFC] border border-[#D6E4E8] p-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Select
-                    label="Assign a shift to"
-                    options={[{ value: '', label: 'Select employee...' }, ...mockEmployees.map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName}` }))]}
-                    onChange={(e) => {
-                      const empId = e.target.value;
-                      const selected = shiftAssignments[empId] || defaultShift.id;
-                      if (empId && selected) assignShift(empId, selected);
-                    }}
-                  />
-                  <Select
-                    label="Shift"
-                    options={shifts.map(s => ({ value: s.id, label: s.name }))}
-                    onChange={(e) => {
-                      const lastAssigned = Object.keys(shiftAssignments)[0];
-                      if (lastAssigned && e.target.value) assignShift(lastAssigned, e.target.value);
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="overflow-x-auto max-h-80 overflow-y-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Employee</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Assigned Shift</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#D6E4E8]">
-                    {mockEmployees.map(emp => {
-                      const assigned = shifts.find(s => shiftAssignments[emp.id] === s.id) || defaultShift;
-                      return (
-                        <tr key={emp.id} className="hover:bg-[#EAF2F4]/50">
-                          <td className="px-4 py-2.5">
-                            <div className="flex items-center gap-3">
-                              <Avatar name={`${emp.firstName} ${emp.lastName}`} size="sm" />
-                              <p className="text-sm font-medium text-[#263238]">{emp.firstName} {emp.lastName}</p>
-                            </div>
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <Select
-                              value={assigned.id}
-                              onChange={(e) => assignShift(emp.id, e.target.value)}
-                              options={shifts.map(s => ({ value: s.id, label: s.name }))}
-                              className="min-w-[150px]"
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-
             {/* Holiday configuration */}
             <Card>
               <div className="flex items-center justify-between mb-4">
@@ -1109,46 +817,6 @@ export default function AttendancePage() {
                 </table>
               </div>
             </Card>
-
-            {/* Weekend configuration */}
-            <Card>
-              <div className="flex items-center gap-2 mb-4">
-                <Sun size={18} className="text-yellow-500" />
-                <h3 className="text-base font-semibold text-[#17324D]">Weekend Configuration</h3>
-              </div>
-              <p className="text-sm text-gray-500 mb-4">Select which days are treated as weekends. Employees marked present on weekends will be flagged as overtime.</p>
-              <div className="grid grid-cols-7 gap-2">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, i) => {
-                  const isWeekend = weekendDays.includes(i);
-                  return (
-                    <button
-                      key={day}
-                      onClick={() => toggleWeekend(i)}
-                      className={`flex flex-col items-center gap-1 rounded-lg border p-3 transition-colors ${
-                        isWeekend
-                          ? 'border-[#0F8B8D] bg-[#EAF2F4] text-[#0F8B8D]'
-                          : 'border-[#D6E4E8] bg-white text-gray-600 hover:bg-[#F8FBFC]'
-                      }`}
-                    >
-                      <span className="text-xs font-semibold">{day}</span>
-                      {isWeekend && <Moon size={14} />}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="mt-4 rounded-lg bg-[#F8FBFC] border border-[#D6E4E8] p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-[#263238]">Holidays in {viewDate.slice(0, 7)}</p>
-                  <Badge variant="default">{holidaysInMonth.size} day{holidaysInMonth.size > 1 ? 's' : ''}</Badge>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {holidays.filter(h => h.date.startsWith(viewDate.slice(0, 7))).map(h => (
-                    <Badge key={h.id} variant="info">{h.name} · {h.date}</Badge>
-                  ))}
-                  {holidaysInMonth.size === 0 && <p className="text-xs text-gray-500">No holidays configured for this month.</p>}
-                </div>
-              </div>
-            </Card>
           </div>
         )}
 
@@ -1156,8 +824,6 @@ export default function AttendancePage() {
         <ManualEntryModal
           open={manualOpen}
           onClose={() => setManualOpen(false)}
-          shifts={shifts}
-          shiftAssignments={shiftAssignments}
           onSave={handleAddManual}
         />
       </div>
@@ -1168,14 +834,10 @@ export default function AttendancePage() {
 function ManualEntryModal({
   open,
   onClose,
-  shifts,
-  shiftAssignments,
   onSave,
 }: {
   open: boolean;
   onClose: () => void;
-  shifts: ShiftConfig[];
-  shiftAssignments: Record<string, string>;
   onSave: (values: { employeeId: string; date: string; checkIn: string; checkOut: string; status: string; notes: string }) => void;
 }) {
   const [selectedEmp, setSelectedEmp] = useState('');
@@ -1223,13 +885,6 @@ function ManualEntryModal({
             <Input label="Notes" placeholder="Reason for manual entry (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
         </div>
-        {selectedEmp && (
-          <p className="text-xs text-gray-500">
-            Assigned shift:{' '}
-            {(shifts.find(s => shiftAssignments[selectedEmp] === s.id) || shifts[0])?.name}
-            {selectedEmp && (shiftAssignments[selectedEmp] ? '' : ' (default)' )}
-          </p>
-        )}
         <div className="flex justify-end gap-3 pt-2 border-t border-[#D6E4E8]">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           <Button type="submit"><UserPlus size={16} /> Save Entry</Button>

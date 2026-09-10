@@ -13,7 +13,7 @@ interface AddEmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
   employee?: Employee;
-  onSave?: (values: Record<string, string>) => void;
+  onSave?: (values: Record<string, string>, photo: string | null) => void;
 }
 
 export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: AddEmployeeModalProps) {
@@ -21,7 +21,6 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
   const [photoError, setPhotoError] = useState('');
 
   useEffect(() => {
-<<<<<<< HEAD
     // Only preload the preview when the stored avatar is a real image.
     // Mock records keep initials (e.g. "MC") in the avatar field.
     if (isOpen && employee?.avatar && /^(https?:\/\/|blob:|data:image\/|\/)/.test(employee.avatar)) {
@@ -31,12 +30,6 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
     }
     setPhotoError('');
   }, [isOpen, employee?.avatar]);
-=======
-    return () => {
-      if (photoPreview) URL.revokeObjectURL(photoPreview);
-    };
-  }, [photoPreview]);
->>>>>>> 608fb7a8a2709d83f651815158f43797793c6c17
 
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -53,23 +46,20 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
     }
 
     setPhotoError('');
-<<<<<<< HEAD
     // Read as a data URL so the photo survives in state after the modal
     // closes (object URLs are revoked with the file input lifetime).
     const reader = new FileReader();
     reader.onload = () => setPhotoPreview(String(reader.result));
     reader.onerror = () => setPhotoError('Could not read the selected image.');
     reader.readAsDataURL(file);
-=======
-    setPhotoPreview(URL.createObjectURL(file));
->>>>>>> 608fb7a8a2709d83f651815158f43797793c6c17
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (employee && onSave) {
-      const values = Object.fromEntries(new FormData(event.currentTarget).entries());
-      onSave(Object.fromEntries(Object.entries(values).map(([key, value]) => [key, String(value)])));
+    const values = Object.fromEntries(new FormData(event.currentTarget).entries());
+    const stringValues = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, String(value)])) as Record<string, string>;
+    if (onSave) {
+      onSave(stringValues, photoPreview);
     }
     onClose();
   };
