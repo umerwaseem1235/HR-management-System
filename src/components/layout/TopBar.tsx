@@ -78,11 +78,8 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search employees, documents..."
-              className="w-full rounded-xl border border-transparent bg-[#EAF2F4]/70 py-2.5 pl-10 pr-14 text-sm text-[#263238] placeholder-gray-400 shadow-inner outline-none transition-all focus:border-[#0F8B8D]/40 focus:bg-white focus:shadow-[0_0_0_4px_rgba(15,139,141,0.12)]"
+              className="w-full rounded-xl border border-transparent bg-[#EAF2F4]/70 py-2.5 pl-10 pr-4 text-sm text-[#263238] placeholder-gray-400 shadow-inner outline-none transition-all focus:border-[#0F8B8D]/40 focus:bg-white focus:shadow-[0_0_0_4px_rgba(15,139,141,0.12)]"
             />
-            <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-[#D6E4E8] bg-white px-1.5 py-0.5 text-[10px] font-semibold text-gray-400 lg:block">
-              ⌘K
-            </kbd>
           </div>
         </div>
 

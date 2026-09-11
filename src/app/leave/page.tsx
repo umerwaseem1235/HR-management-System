@@ -14,7 +14,7 @@ import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { Plus, CheckCircle2, XCircle, Pencil, Trash2, Send } from 'lucide-react';
-import { mockLeaveBalances, mockEmployees } from '../../lib/mock-data';
+import { mockEmployees } from '../../lib/mock-data';
 import { LEAVE_TYPES } from '../../lib/constants';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLeave } from '../../contexts/LeaveContext';
@@ -30,10 +30,11 @@ function diffInDaysInclusive(start: string, end: string): number | null {
 
 export default function LeavePage() {
   const { user } = useAuth();
-  const { leaveRequests, updateLeaveStatus, updateLeaveRequest, deleteLeaveRequest } = useLeave();
+  const { leaveRequests, leaveBalances, updateLeaveStatus, updateLeaveRequest, deleteLeaveRequest, updateLeaveBalance } = useLeave();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('requests');
   const isEmployee = user?.role === 'employee';
+  const isSuperAdmin = user?.role === 'super_admin';
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -42,6 +43,12 @@ export default function LeavePage() {
   const [editEnd, setEditEnd] = useState('');
   const [editReason, setEditReason] = useState('');
   const [editErrors, setEditErrors] = useState<Record<string, string>>({});
+
+  const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const [balanceType, setBalanceType] = useState('');
+  const [balanceTotal, setBalanceTotal] = useState('');
+  const [balanceUsed, setBalanceUsed] = useState('');
+  const [balanceErrors, setBalanceErrors] = useState<Record<string, string>>({});
 
   // Resolve the logged-in user to an employee record (same matching as profile page)
   const employee = useMemo(() => {
@@ -119,6 +126,31 @@ export default function LeavePage() {
     closeEdit();
   };
 
+  const closeBalanceModal = () => {
+    setShowBalanceModal(false);
+    setBalanceType('');
+    setBalanceTotal('');
+    setBalanceUsed('');
+    setBalanceErrors({});
+  };
+
+  const handleBalanceSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const nextErrors: Record<string, string> = {};
+    const total = parseInt(balanceTotal, 10);
+    const used = parseInt(balanceUsed, 10);
+    if (!balanceTotal) nextErrors.balanceTotal = 'Total days is required.';
+    else if (isNaN(total) || total < 0) nextErrors.balanceTotal = 'Enter a valid number of days (0 or more).';
+    if (!balanceUsed && balanceUsed !== '0') nextErrors.balanceUsed = 'Used days is required.';
+    else if (isNaN(used) || used < 0) nextErrors.balanceUsed = 'Enter a valid number of days (0 or more).';
+    else if (!isNaN(total) && used > total) nextErrors.balanceUsed = 'Used days cannot exceed total days.';
+    setBalanceErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0 || !balanceType) return;
+
+    updateLeaveBalance(balanceType, total, used);
+    closeBalanceModal();
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -127,9 +159,11 @@ export default function LeavePage() {
           title={isEmployee ? 'My Leave' : 'Leave Management'}
           subtitle={isEmployee ? 'Request time off and track your leave balances' : 'Review leave requests and balances across the organization'}
           actions={
-            <Button variant="primary" onClick={() => router.push('/leave/request')}>
-              <Plus size={16} /> Request Leave
-            </Button>
+            user.role !== 'super_admin' ? (
+              <Button variant="primary" onClick={() => router.push('/leave/request')}>
+                <Plus size={16} /> Request Leave
+              </Button>
+            ) : undefined
           }
         />
 
@@ -203,9 +237,26 @@ export default function LeavePage() {
             )}
             {activeTab === 'balances' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {mockLeaveBalances.map(bal => (
+                {leaveBalances.map(bal => (
                   <div key={bal.leaveType} className="p-4 rounded-lg border border-[#D6E4E8]">
-                    <h4 className="text-sm font-semibold text-[#17324D] mb-3">{bal.leaveType}</h4>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-[#17324D]">{bal.leaveType}</h4>
+                      {isSuperAdmin && (
+                        <button
+                          title="Edit balance"
+                          onClick={() => {
+                            setBalanceType(bal.leaveType);
+                            setBalanceTotal(String(bal.total));
+                            setBalanceUsed(String(bal.used));
+                            setBalanceErrors({});
+                            setShowBalanceModal(true);
+                          }}
+                          className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      )}
+                    </div>
                     <div className="flex items-end gap-2 mb-3">
                       <span className="text-3xl font-bold text-[#0F8B8D]">{bal.remaining}</span>
                       <span className="text-sm text-gray-500 mb-1">/ {bal.total} days</span>
@@ -215,7 +266,7 @@ export default function LeavePage() {
                     </div>
                     <div className="flex justify-between text-xs text-gray-500">
                       <span>Used: {bal.used}</span>
-                      {bal.pending > 0 && <span className="text-orange-500">Pending: {bal.pending}</span>}
+                      <span>Remaining: {bal.remaining}</span>
                     </div>
                   </div>
                 ))}
@@ -255,6 +306,25 @@ export default function LeavePage() {
           <p className="text-xs text-gray-500">Your request will remain <span className="font-medium">Pending</span> until it is approved or rejected.</p>
           <div className="flex justify-end gap-3 pt-4 border-t border-[#D6E4E8]">
             <Button variant="outline" type="button" onClick={closeEdit}>Cancel</Button>
+            <Button variant="primary" type="submit">
+              <Send size={16} /> Save Changes
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={showBalanceModal} onClose={closeBalanceModal} title={`Edit Balance — ${balanceType}`}>
+        <form
+          onSubmit={handleBalanceSubmit}
+          className="space-y-5"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input label="Total Days" type="number" min="0" step="1" value={balanceTotal} onChange={(e) => setBalanceTotal(e.target.value)} error={balanceErrors.balanceTotal} />
+            <Input label="Used Days" type="number" min="0" step="1" value={balanceUsed} onChange={(e) => setBalanceUsed(e.target.value)} error={balanceErrors.balanceUsed} />
+          </div>
+          <p className="text-xs text-gray-500">Remaining days are recalculated automatically (total − used).</p>
+          <div className="flex justify-end gap-3 pt-4 border-t border-[#D6E4E8]">
+            <Button variant="outline" type="button" onClick={closeBalanceModal}>Cancel</Button>
             <Button variant="primary" type="submit">
               <Send size={16} /> Save Changes
             </Button>

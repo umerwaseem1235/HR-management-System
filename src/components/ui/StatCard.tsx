@@ -19,12 +19,8 @@ interface StatCardProps {
   iconColor?: string;
 }
 
-// Floating hover motion: 6px lift, 900ms symmetric ease-in-out (slow start + slow stop,
-// no initial jump like ease-out curves), GPU-only props (transform, opacity)
-const FLOAT_EASE = 'ease-[cubic-bezier(0.45,0,0.15,1)]';
-const LIFT = `transition-[transform,border-color] duration-[900ms] ${FLOAT_EASE}`;
-const FADE = `transition-opacity duration-[900ms] ${FLOAT_EASE}`;
-const FLOAT = `transition-[transform,opacity] duration-[900ms] ${FLOAT_EASE}`;
+// Shared card hover language lives in globals.css (.card-hover, 300ms ease-in-out).
+// StatCard keeps its decorative glow, retimed to the same curve.
 
 const premiumIcons = {
   totalEmployees: Users,
@@ -126,12 +122,9 @@ export default function StatCard({
   const displayIcon = icon ?? (iconName ? <PremiumIcon name={iconName} size={22} color={iconColor} /> : <Users size={22} className="text-[#0F8B8D]" />);
 
   return (
-    <div className={`group relative overflow-hidden rounded-2xl border border-[#D6E4E8]/70 bg-white p-5 shadow-[0_1px_2px_rgba(23,50,77,0.05),0_10px_30px_-14px_rgba(23,50,77,0.18)] hover:-translate-y-1.5 hover:border-[#0F8B8D]/40 hover:will-change-transform ${LIFT}`}>
-      {/* Hover shadow layer — faded via opacity (GPU cheap) instead of animating box-shadow */}
-      <div className={`pointer-events-none absolute inset-0 rounded-2xl opacity-0 shadow-[0_6px_14px_rgba(23,50,77,0.07),0_20px_45px_-20px_rgba(15,139,141,0.35)] group-hover:opacity-100 ${FADE}`} />
-
+    <div className="group relative overflow-hidden rounded-2xl border border-[#D6E4E8]/70 bg-white p-5 shadow-[0_1px_2px_rgba(23,50,77,0.05),0_10px_30px_-14px_rgba(23,50,77,0.18)] card-hover">
       {/* Decorative ambient glow */}
-      <div className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#0F8B8D]/14 via-transparent to-transparent opacity-60 group-hover:scale-130 group-hover:opacity-100 ${FLOAT}`} />
+      <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#0F8B8D]/14 via-transparent to-transparent opacity-60 group-hover:scale-130 group-hover:opacity-100 transition-all duration-300 ease-in-out" />
 
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -144,8 +137,8 @@ export default function StatCard({
             </span>
           )}
         </div>
-        <div className={`${bgClass} relative rounded-2xl p-3.5 shadow-md ring-1 ring-black/5 group-hover:scale-105 group-hover:-rotate-2 transition-transform duration-[900ms] ${FLOAT_EASE}`}>
-          <div className={`pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 ${FADE}`} />
+        <div className={`${bgClass} relative rounded-2xl p-3.5 shadow-md ring-1 ring-black/5 group-hover:scale-105 group-hover:-rotate-2 transition-transform duration-300 ease-in-out`}>
+          <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 card-hover-fade" />
           <div className="relative">{displayIcon}</div>
         </div>
       </div>

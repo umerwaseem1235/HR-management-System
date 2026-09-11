@@ -7,7 +7,8 @@ import PageHeader from '../../components/ui/PageHeader';
 import Tabs from '../../components/ui/Tabs';
 import Badge from '../../components/ui/Badge';
 import Avatar from '../../components/ui/Avatar';
-import { Mail, Phone, MapPin, Calendar } from 'lucide-react';
+import { Mail, Phone, MapPin, Calendar, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import { useAuth } from '../../contexts/AuthContext';
 import { ROLE_LABELS } from '../../lib/constants';
 import { mockEmployees } from '../../lib/mock-data';
@@ -52,7 +53,10 @@ export default function ProfilePage() {
     return (
       <DashboardLayout>
         <div className="space-y-6">
-          <PageHeader eyebrow="Account" title="My Profile" />
+          <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-[#0F8B8D] hover:underline">
+            <ArrowLeft size={16} /> Back to Dashboard
+          </Link>
+          <h1 className="text-2xl font-bold text-[#17324D]">My Profile</h1>
           <Card>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               <Avatar name={user.name} size="xl" />
@@ -79,7 +83,10 @@ export default function ProfilePage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <PageHeader eyebrow="Account" title="My Profile" />
+        <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-[#0F8B8D] hover:underline">
+          <ArrowLeft size={16} /> Back to Dashboard
+        </Link>
+        <h1 className="text-2xl font-bold text-[#17324D]">My Profile</h1>
 
         {/* Profile Header */}
         <Card>

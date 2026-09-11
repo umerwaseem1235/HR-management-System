@@ -35,11 +35,33 @@ body {
   background: #0F8B8D;
 }
 
-/* Smooth transitions */
-* {
-  transition-property: background-color, border-color, color, opacity;
-  transition-duration: 150ms;
-  transition-timing-function: ease;
+/* Sidebar hover expand/collapse — single explicit transition so the width
+   animation runs a smooth 300ms ease-in-out with no interference */
+.sidebar-panel {
+  transition: width 300ms ease-in-out;
+}
+.sidebar-fade {
+  transition: opacity 300ms ease-in-out;
+}
+
+/* Shared card hover language — subtle lift + soft shadow, smooth 300ms
+   ease-in-out both on hover-in and hover-out */
+.card-hover {
+  transition: transform 300ms ease-in-out, box-shadow 300ms ease-in-out, border-color 300ms ease-in-out;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(15, 139, 141, 0.35);
+  box-shadow: 0 2px 4px rgba(23, 50, 77, 0.06), 0 18px 44px -14px rgba(23, 50, 77, 0.22);
+}
+/* Slightly stronger lift for interactive (clickable) cards */
+.card-hover-strong:hover {
+  transform: translateY(-4px);
+  border-color: rgba(15, 139, 141, 0.45);
+  box-shadow: 0 8px 20px rgba(23, 50, 77, 0.1), 0 24px 60px -16px rgba(15, 139, 141, 0.3);
+}
+.card-hover-fade {
+  transition: opacity 300ms ease-in-out;
 }
 
 /* Sidebar nav scroll — thin scrollbar on the LEFT edge, visible ONLY while scrolling

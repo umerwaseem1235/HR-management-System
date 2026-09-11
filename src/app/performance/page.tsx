@@ -372,49 +372,59 @@ export default function PerformancePage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="max-w-6xl mx-auto space-y-5">
         <PageHeader
           eyebrow="Growth"
           title="Performance Management"
-          subtitle="Reviews, goals and appraisal cycles"
+          subtitle="Reviews, goals and appraisal cycles at a glance"
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card padding="sm" hover>
-            <div className="flex items-center gap-3">
-              <div className="bg-purple-50 p-2.5 rounded-lg"><Target size={20} className="text-purple-600" /></div>
-              <div><p className="text-lg font-bold text-[#17324D]">{mockPerformanceReviews.length}</p><p className="text-xs text-gray-500">Total Reviews</p></div>
+        {/* Compact metric cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <Card padding="none" hover>
+            <div className="flex items-center gap-3 px-4 py-3">
+              <div className="bg-purple-50 p-2 rounded-xl shrink-0"><Target size={18} className="text-purple-600" /></div>
+              <div className="min-w-0 leading-tight">
+                <p className="text-xl font-extrabold tracking-tight text-[#17324D]">{mockPerformanceReviews.length}</p>
+                <p className="text-xs text-gray-500 truncate">Total Reviews</p>
+              </div>
             </div>
           </Card>
-          <Card padding="sm" hover>
-            <div className="flex items-center gap-3">
-              <div className="bg-yellow-50 p-2.5 rounded-lg"><Star size={20} className="text-yellow-600" /></div>
-              <div><p className="text-lg font-bold text-[#17324D]">{mockPerformanceReviews.filter(r => r.status !== 'Completed').length}</p><p className="text-xs text-gray-500">Pending Reviews</p></div>
+          <Card padding="none" hover>
+            <div className="flex items-center gap-3 px-4 py-3">
+              <div className="bg-yellow-50 p-2 rounded-xl shrink-0"><Star size={18} className="text-yellow-600" /></div>
+              <div className="min-w-0 leading-tight">
+                <p className="text-xl font-extrabold tracking-tight text-[#17324D]">{mockPerformanceReviews.filter(r => r.status !== 'Completed').length}</p>
+                <p className="text-xs text-gray-500 truncate">Pending Reviews</p>
+              </div>
             </div>
           </Card>
-          <Card padding="sm" hover>
-            <div className="flex items-center gap-3">
-              <div className="bg-green-50 p-2.5 rounded-lg"><TrendingUp size={20} className="text-green-600" /></div>
-              <div><p className="text-lg font-bold text-[#17324D]">{mockGoals.length}</p><p className="text-xs text-gray-500">Active Goals</p></div>
+          <Card padding="none" hover>
+            <div className="flex items-center gap-3 px-4 py-3">
+              <div className="bg-green-50 p-2 rounded-xl shrink-0"><TrendingUp size={18} className="text-green-600" /></div>
+              <div className="min-w-0 leading-tight">
+                <p className="text-xl font-extrabold tracking-tight text-[#17324D]">{mockGoals.length}</p>
+                <p className="text-xs text-gray-500 truncate">Active Goals</p>
+              </div>
             </div>
           </Card>
         </div>
 
-        <Card padding="none">
-          <div className="px-6 pt-4"><Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} /></div>
-          <div className="p-6">
+        <Card padding="none" className="overflow-hidden">
+          <div className="px-4 sm:px-5 pt-3 bg-[#F8FBFC]/60 border-b border-[#D6E4E8]/70"><Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} /></div>
+          <div className="p-4 sm:p-5">
             {activeTab === 'reviews' && (
-              <div className="space-y-3">
+              <div className="divide-y divide-[#D6E4E8]/70 overflow-hidden rounded-xl border border-[#D6E4E8]/70">
                 {mockPerformanceReviews.map(review => (
-                  <div key={review.id} className="flex items-center justify-between p-4 rounded-lg border border-[#D6E4E8]">
-                    <div className="flex items-center gap-3">
+                  <div key={review.id} className="flex items-center justify-between gap-3 bg-white px-4 py-3 transition-colors hover:bg-[#EAF2F4]/40">
+                    <div className="flex min-w-0 items-center gap-3">
                       <Avatar name={review.employeeName} size="sm" />
-                      <div>
-                        <p className="text-sm font-medium text-[#263238]">{review.employeeName}</p>
-                        <p className="text-xs text-gray-500">{review.cycleName}</p>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[#263238]">{review.employeeName}</p>
+                        <p className="truncate text-xs text-gray-500">{review.cycleName}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                       {review.managerRating && <div className="flex items-center gap-1 text-yellow-500"><Star size={14} fill="currentColor" /><span className="text-sm font-medium">{review.managerRating}/5</span></div>}
                       <Badge variant={review.status === 'Completed' ? 'success' : 'warning'}>{review.status}</Badge>
                     </div>
@@ -423,18 +433,18 @@ export default function PerformancePage() {
               </div>
             )}
             {activeTab === 'goals' && (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {mockGoals.map(goal => (
-                  <div key={goal.id} className="p-4 rounded-lg border border-[#D6E4E8]">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-medium text-[#263238]">{goal.title}</h4>
-                      <Badge variant={goal.status === 'Completed' ? 'success' : goal.status === 'In Progress' ? 'info' : 'neutral'}>{goal.status}</Badge>
+                  <div key={goal.id} className="rounded-xl border border-[#D6E4E8]/70 bg-white p-4 transition-shadow hover:shadow-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-sm font-semibold text-[#263238]">{goal.title}</h4>
+                      <span className="shrink-0"><Badge variant={goal.status === 'Completed' ? 'success' : goal.status === 'In Progress' ? 'info' : 'neutral'}>{goal.status}</Badge></span>
                     </div>
-                    <p className="text-xs text-gray-500 mb-3">{goal.description}</p>
-                    <div className="w-full bg-[#D6E4E8] rounded-full h-2">
-                      <div className="bg-[#0F8B8D] h-2 rounded-full" style={{ width: `${goal.progress}%` }} />
+                    <p className="mt-1 text-xs text-gray-500 line-clamp-2">{goal.description}</p>
+                    <div className="mt-3 h-1.5 w-full rounded-full bg-[#D6E4E8]/60">
+                      <div className="h-1.5 rounded-full bg-[#0F8B8D]" style={{ width: `${goal.progress}%` }} />
                     </div>
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <div className="mt-1.5 flex justify-between text-[11px] text-gray-500">
                       <span>{goal.progress}%</span><span>Due: {goal.dueDate}</span>
                     </div>
                   </div>
@@ -456,10 +466,10 @@ export default function PerformancePage() {
               </div>
             )}
             {activeTab === 'cycles' && (
-              <div className="text-center py-12 text-gray-500">
-                <p className="text-lg font-medium text-[#17324D] mb-2">Performance Cycles</p>
+              <div className="text-center py-10 text-gray-500">
+                <p className="text-base font-semibold text-[#17324D] mb-1.5">Performance Cycles</p>
                 <p className="text-sm">Manage review cycles and timelines.</p>
-                <Button variant="primary" className="mt-4"><Target size={16} /> Create Cycle</Button>
+                <Button variant="primary" size="sm" className="mt-4"><Target size={16} /> Create Cycle</Button>
               </div>
             )}
           </div>
