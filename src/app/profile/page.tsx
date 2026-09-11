@@ -1,21 +1,46 @@
 'use client';
 
-import React, { useState } from 'react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import Card from '../../components/ui/Card';
-import PageHeader from '../../components/ui/PageHeader';
-import Tabs from '../../components/ui/Tabs';
-import Badge from '../../components/ui/Badge';
-import Avatar from '../../components/ui/Avatar';
-import { Mail, Phone, MapPin, Calendar, ArrowLeft } from 'lucide-react';
+import React from 'react';
 import Link from 'next/link';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import Badge from '../../components/ui/Badge';
+import {
+  ArrowLeft, User, Mail, Phone, CalendarDays, MapPin, ShieldCheck,
+  type LucideIcon,
+} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ROLE_LABELS } from '../../lib/constants';
 import { mockEmployees } from '../../lib/mock-data';
 
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+function FieldRow({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 px-4 py-3">
+      <div className="flex min-w-0 shrink-0 items-center gap-3">
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0F8B8D]/10 text-[#0F8B8D]">
+          <Icon size={17} />
+        </span>
+        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-400 whitespace-nowrap">
+          {label}
+        </span>
+      </div>
+      <span className="min-w-0 text-right text-sm font-semibold text-[#17324D] break-words">
+        {value || '—'}
+      </span>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('personal');
 
   if (!user) return null;
 
@@ -25,11 +50,6 @@ export default function ProfilePage() {
     mockEmployees.find(
       (e) => `${e.firstName} ${e.lastName}`.toLowerCase() === user.name.toLowerCase()
     );
-
-  const tabs = [
-    { id: 'personal', label: 'Personal Info' },
-    { id: 'employment', label: 'Employment' },
-  ];
 
   const statusBadge = (status: string) => {
     const map: Record<string, 'success' | 'danger' | 'warning' | 'info'> = {
@@ -41,112 +61,122 @@ export default function ProfilePage() {
     return <Badge variant={map[status] || 'neutral'} size="md">{status}</Badge>;
   };
 
-  const InfoRow = ({ label, value }: { label: string; value: string }) => (
-    <div className="flex flex-col sm:flex-row sm:items-center py-3 border-b border-[#D6E4E8] last:border-0">
-      <span className="text-sm text-gray-500 sm:w-48 mb-1 sm:mb-0">{label}</span>
-      <span className="text-sm font-medium text-[#263238]">{value || '—'}</span>
+  const renderHeader = (
+    displayName: string,
+    subtitle: React.ReactNode,
+    badges: React.ReactNode,
+    isActive: boolean
+  ) => (
+    <>
+      {/* Slim gradient banner */}
+      <div className="relative h-20 sm:h-24 bg-gradient-to-r from-[#17324D] via-[#0F8B8D] to-[#14b8a6]">
+        <div className="pointer-events-none absolute -top-8 right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+        <div className="pointer-events-none absolute bottom-0 left-1/3 h-20 w-20 rounded-full bg-white/10 blur-2xl" />
+      </div>
+      <div className="px-5 sm:px-6 pt-0 pb-5">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4">
+          <div className="relative -mt-10 sm:-mt-12 shrink-0 self-start">
+            <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-[#17324D] text-xl sm:text-2xl font-bold text-white ring-4 ring-white shadow-xl">
+              {getInitials(displayName)}
+            </div>
+            <span
+              className={`absolute bottom-0.5 right-0.5 h-4 w-4 rounded-full ring-4 ring-white ${
+                isActive ? 'bg-green-500' : 'bg-amber-400'
+              }`}
+            />
+          </div>
+          <div className="min-w-0 sm:pb-0.5">
+            <h1 className="truncate text-xl sm:text-2xl font-extrabold tracking-tight text-[#17324D]">
+              {displayName}
+            </h1>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">{badges}</div>
+            {subtitle}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  const renderSection = (icon: LucideIcon, title: string, rows: React.ReactNode) => (
+    <div className="px-5 sm:px-6 pb-5 sm:pb-6">
+      <div className="rounded-xl border border-[#D6E4E8]/70 bg-[#F8FBFC]/70 px-1 py-1">
+        <div className="flex items-center gap-2 px-3 pt-2.5 pb-1">
+          {React.createElement(icon, { size: 16, className: 'text-[#0F8B8D]' })}
+          <h2 className="text-sm font-bold text-[#17324D]">{title}</h2>
+        </div>
+        <div className="divide-y divide-[#D6E4E8]/60">{rows}</div>
+      </div>
     </div>
   );
 
-  // Fallback when no matching employee record exists: show basic account profile
+  // Fallback when no matching employee record exists: same layout, account data
   if (!employee) {
     return (
       <DashboardLayout>
-        <div className="space-y-6">
+        <div className="max-w-4xl mx-auto space-y-4">
           <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-[#0F8B8D] hover:underline">
             <ArrowLeft size={16} /> Back to Dashboard
           </Link>
-          <h1 className="text-2xl font-bold text-[#17324D]">My Profile</h1>
-          <Card>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-              <Avatar name={user.name} size="xl" />
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-[#17324D]">{user.name}</h2>
-                <p className="text-gray-500 mt-1">{ROLE_LABELS[user.role]}</p>
-                <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-500">
-                  <span className="flex items-center gap-1"><Mail size={14} /> {user.email}</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-          <Card>
-            <h3 className="text-base font-semibold text-[#17324D] mb-4">Account Information</h3>
-            <InfoRow label="Full Name" value={user.name} />
-            <InfoRow label="Email" value={user.email} />
-            <InfoRow label="Role" value={ROLE_LABELS[user.role]} />
-          </Card>
+
+          <div className="overflow-hidden rounded-2xl border border-[#D6E4E8]/70 bg-white shadow-[0_1px_2px_rgba(23,50,77,0.05),0_16px_44px_-20px_rgba(23,50,77,0.25)]">
+            {renderHeader(
+              user.name,
+              null,
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0F8B8D]/10 px-3 py-1 text-xs font-bold text-[#0F8B8D]">
+                <ShieldCheck size={14} /> {ROLE_LABELS[user.role]}
+              </span>,
+              true
+            )}
+            {renderSection(
+              User,
+              'Account Information',
+              <>
+                <FieldRow icon={User} label="Full Name" value={user.name} />
+                <FieldRow icon={Mail} label="Email" value={user.email} />
+                <FieldRow icon={ShieldCheck} label="Role" value={ROLE_LABELS[user.role]} />
+              </>
+            )}
+          </div>
         </div>
       </DashboardLayout>
     );
   }
 
+  const fullName = `${employee.firstName} ${employee.lastName}`;
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto space-y-4">
         <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-[#0F8B8D] hover:underline">
           <ArrowLeft size={16} /> Back to Dashboard
         </Link>
-        <h1 className="text-2xl font-bold text-[#17324D]">My Profile</h1>
 
-        {/* Profile Header */}
-        <Card>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-            <Avatar name={`${employee.firstName} ${employee.lastName}`} size="xl" />
-            <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-3 mb-1">
-                <h2 className="text-2xl font-bold text-[#17324D]">
-                  {employee.firstName} {employee.lastName}
-                </h2>
-                {statusBadge(employee.status)}
-                <Badge variant="info" size="md">{ROLE_LABELS[user.role]}</Badge>
-              </div>
-              <p className="text-gray-500">{employee.designation} · {employee.department}</p>
-              <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-500">
-                <span className="flex items-center gap-1"><Mail size={14} /> {employee.email}</span>
-                <span className="flex items-center gap-1"><Phone size={14} /> {employee.phone}</span>
-                <span className="flex items-center gap-1"><MapPin size={14} /> {employee.branch}</span>
-                <span className="flex items-center gap-1"><Calendar size={14} /> Joined {employee.joiningDate}</span>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Tabs */}
-        <Card padding="none">
-          <div className="px-6 pt-4">
-            <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-          </div>
-          <div className="p-6">
-            {activeTab === 'personal' && (
-              <div>
-                <h3 className="text-base font-semibold text-[#17324D] mb-4">Personal Information</h3>
-                <InfoRow label="Full Name" value={`${employee.firstName} ${employee.lastName}`} />
-                <InfoRow label="Employee Code" value={employee.employeeCode} />
-                <InfoRow label="Email" value={employee.email} />
-                <InfoRow label="Phone" value={employee.phone} />
-                <InfoRow label="Date of Birth" value={employee.dateOfBirth} />
-                <InfoRow label="Gender" value={employee.gender} />
-                <InfoRow label="Address" value={`${employee.address}, ${employee.city}, ${employee.country}`} />
-                <h3 className="text-base font-semibold text-[#17324D] mt-6 mb-4">Emergency Contact</h3>
-                <InfoRow label="Name" value={employee.emergencyContactName} />
-                <InfoRow label="Phone" value={employee.emergencyContactPhone} />
-              </div>
-            )}
-            {activeTab === 'employment' && (
-              <div>
-                <h3 className="text-base font-semibold text-[#17324D] mb-4">Employment Details</h3>
-                <InfoRow label="Department" value={employee.department} />
-                <InfoRow label="Designation" value={employee.designation} />
-                <InfoRow label="Branch" value={employee.branch} />
-                <InfoRow label="Reporting Manager" value={employee.reportingManager} />
-                <InfoRow label="Employment Type" value={employee.employmentType} />
-                <InfoRow label="Joining Date" value={employee.joiningDate} />
-                <InfoRow label="Shift" value={employee.shift} />
-                <InfoRow label="Status" value={employee.status} />
-              </div>
-            )}
-          </div>
-        </Card>
+        <div className="overflow-hidden rounded-2xl border border-[#D6E4E8]/70 bg-white shadow-[0_1px_2px_rgba(23,50,77,0.05),0_16px_44px_-20px_rgba(23,50,77,0.25)]">
+          {renderHeader(
+            fullName,
+            <p className="mt-1 text-[13px] text-gray-500 truncate">
+              {employee.designation} · {employee.department}
+            </p>,
+            <>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0F8B8D]/10 px-3 py-1 text-xs font-bold text-[#0F8B8D]">
+                <ShieldCheck size={14} /> {ROLE_LABELS[user.role]}
+              </span>
+              {statusBadge(employee.status)}
+            </>,
+            employee.status === 'Active'
+          )}
+          {renderSection(
+            User,
+            'Personal Information',
+            <>
+              <FieldRow icon={User} label="Full Name" value={fullName} />
+              <FieldRow icon={Mail} label="Email" value={employee.email} />
+              <FieldRow icon={Phone} label="Phone" value={employee.phone} />
+              <FieldRow icon={CalendarDays} label="Date of Birth" value={employee.dateOfBirth} />
+              <FieldRow icon={MapPin} label="Address" value={`${employee.address}, ${employee.city}, ${employee.country}`} />
+            </>
+          )}
+        </div>
       </div>
     </DashboardLayout>
   );
