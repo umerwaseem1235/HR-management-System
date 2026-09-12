@@ -48,7 +48,7 @@ export default function DocumentsPage() {
             <SearchBar value={search} onChange={setSearch} placeholder="Search documents..." className="flex-1" />
             <div className="flex gap-2 flex-wrap">
               {categories.map(cat => (
-                <button key={cat} onClick={() => setCategory(cat)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${category === cat ? 'bg-[#0F8B8D] text-white' : 'bg-[#EAF2F4] text-[#263238] hover:bg-[#D6E4E8]'}`}>
+                <button key={cat} onClick={() => setCategory(cat)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${category === cat ? 'bg-[#024fa7] text-white' : 'bg-[#EAF2F4] text-[#263238] hover:bg-[#D6E4E8]'}`}>
                   {cat}
                 </button>
               ))}
@@ -60,7 +60,7 @@ export default function DocumentsPage() {
           {filtered.map(doc => (
             <Card key={doc.id} hover>
               <div className="flex items-start gap-3">
-                <div className="bg-[#EAF2F4] p-3 rounded-lg"><FileText size={24} className="text-[#0F8B8D]" /></div>
+                <div className="bg-[#EAF2F4] p-3 rounded-lg"><FileText size={24} className="text-[#024fa7]" /></div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-semibold text-[#17324D] truncate">{doc.name}</h4>
                   <p className="text-xs text-gray-500 mt-0.5">{doc.employee}</p>
@@ -71,8 +71,8 @@ export default function DocumentsPage() {
                       {doc.status}
                     </Badge>
                     <div className="flex gap-1">
-                      <button className="p-1.5 rounded text-gray-400 hover:text-[#0F8B8D] hover:bg-[#EAF2F4]"><Eye size={14} /></button>
-                      <button className="p-1.5 rounded text-gray-400 hover:text-[#0F8B8D] hover:bg-[#EAF2F4]"><Download size={14} /></button>
+                      <button className="p-1.5 rounded text-gray-400 hover:text-[#024fa7] hover:bg-[#EAF2F4]"><Eye size={14} /></button>
+                      <button className="p-1.5 rounded text-gray-400 hover:text-[#024fa7] hover:bg-[#EAF2F4]"><Download size={14} /></button>
                     </div>
                   </div>
                 </div>

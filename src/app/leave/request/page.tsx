@@ -72,7 +72,7 @@ export default function LeaveRequestPage() {
   return (
     <DashboardLayout>
       <div className="max-w-2xl mx-auto space-y-6">
-        <Link href="/leave" className="inline-flex items-center gap-2 text-sm text-[#0F8B8D] hover:underline">
+        <Link href="/leave" className="inline-flex items-center gap-2 text-sm text-[#024fa7] hover:underline">
           <ArrowLeft size={16} /> Back to Leave
         </Link>
         <PageHeader
@@ -108,7 +108,7 @@ export default function LeaveRequestPage() {
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Enter reason for leave..."
-                className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-[#263238] placeholder-gray-400 focus:ring-2 focus:outline-none ${errors.reason ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-[#D6E4E8] focus:border-[#0F8B8D] focus:ring-[#0F8B8D]/20'}`}
+                className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-[#263238] placeholder-gray-400 focus:ring-2 focus:outline-none ${errors.reason ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-[#D6E4E8] focus:border-[#024fa7] focus:ring-[#024fa7]/20'}`}
               />
               {errors.reason && <p className="mt-1 text-sm text-red-500">{errors.reason}</p>}
             </div>

@@ -47,7 +47,7 @@ export default function NotificationsPage() {
       <div className="space-y-6">
         <button
           onClick={() => router.push('/dashboard')}
-          className="inline-flex items-center gap-2 text-sm text-[#0F8B8D] hover:underline font-medium"
+          className="inline-flex items-center gap-2 text-sm text-[#024fa7] hover:underline font-medium"
         >
           <ArrowLeft size={16} /> Back to Dashboard
         </button>

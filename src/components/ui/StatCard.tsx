@@ -59,9 +59,9 @@ const iconThemes: Record<keyof typeof premiumIcons, { color: string; bg: string 
   absentToday: { color: '#DC2626', bg: 'bg-gradient-to-br from-[#FDECEC] to-[#F7CBCB]' },
   lateToday: { color: '#F97316', bg: 'bg-gradient-to-br from-[#FFF0E7] to-[#FFD7B8]' },
   onLeaveToday: { color: '#EA580C', bg: 'bg-gradient-to-br from-[#FFF1E8] to-[#FFD7B9]' },
-  newJoiners: { color: '#0F8B8D', bg: 'bg-gradient-to-br from-[#E2F4F5] to-[#BCE4E5]' },
+  newJoiners: { color: '#024fa7', bg: 'bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]' },
   openVacancies: { color: '#D97706', bg: 'bg-gradient-to-br from-[#FDF1E2] to-[#F7DDBB]' },
-  payrollStatus: { color: '#0D9488', bg: 'bg-gradient-to-br from-[#E0F2F1] to-[#BDE2DE]' },
+  payrollStatus: { color: '#024fa7', bg: 'bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]' },
   performance: { color: '#7C3AED', bg: 'bg-gradient-to-br from-[#F0EAFD] to-[#D9CDF8]' },
   goals: { color: '#8B5CF6', bg: 'bg-gradient-to-br from-[#F1EAFE] to-[#DCD1FA]' },
   awards: { color: '#D97706', bg: 'bg-gradient-to-br from-[#FDF1E2] to-[#F7DDBB]' },
@@ -78,14 +78,14 @@ const iconThemes: Record<keyof typeof premiumIcons, { color: string; bg: string 
   rating: { color: '#EAB308', bg: 'bg-gradient-to-br from-[#FEFAE4] to-[#F8ECC0]' },
   satisfaction: { color: '#EC4899', bg: 'bg-gradient-to-br from-[#FCECF4] to-[#F9D3E3]' },
   energy: { color: '#F97316', bg: 'bg-gradient-to-br from-[#FFF0E7] to-[#FFD7B8]' },
-  global: { color: '#0D9488', bg: 'bg-gradient-to-br from-[#E0F2F1] to-[#BDE2DE]' },
+  global: { color: '#024fa7', bg: 'bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]' },
   certified: { color: '#84CC16', bg: 'bg-gradient-to-br from-[#F2FADE] to-[#E0F5BA]' },
   branches: { color: '#16A34A', bg: 'bg-gradient-to-br from-[#E7F6EC] to-[#C0E7CC]' },
 };
 
-function PremiumIcon({ name, size = 22, color }: { name: keyof typeof premiumIcons; size?: number; color?: string }) {
+function PremiumIcon({ name, size = 18, color }: { name: keyof typeof premiumIcons; size?: number; color?: string }) {
   const Icon = premiumIcons[name] || Users;
-  const accent = color ?? iconThemes[name]?.color ?? '#0F8B8D';
+  const accent = color ?? iconThemes[name]?.color ?? '#024fa7';
   return (
     <Icon
       size={size}
@@ -119,17 +119,17 @@ export default function StatCard({
 
   const theme = iconName ? iconThemes[iconName] : undefined;
   const bgClass = iconBg ?? theme?.bg ?? 'bg-gradient-to-br from-[#EAF2F4] to-[#D6E4E8]';
-  const displayIcon = icon ?? (iconName ? <PremiumIcon name={iconName} size={22} color={iconColor} /> : <Users size={22} className="text-[#0F8B8D]" />);
+  const displayIcon = icon ?? (iconName ? <PremiumIcon name={iconName} size={18} color={iconColor} /> : <Users size={18} className="text-[#024fa7]" />);
 
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-[#D6E4E8]/70 bg-white p-5 shadow-[0_1px_2px_rgba(23,50,77,0.05),0_10px_30px_-14px_rgba(23,50,77,0.18)] card-hover">
       {/* Decorative ambient glow */}
-      <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#0F8B8D]/14 via-transparent to-transparent opacity-60 group-hover:scale-130 group-hover:opacity-100 transition-all duration-300 ease-in-out" />
+      <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#024fa7]/14 via-transparent to-transparent opacity-60 group-hover:scale-130 group-hover:opacity-100 transition-all duration-300 ease-in-out" />
 
       <div className="relative flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[13px] font-medium text-gray-500 tracking-wide uppercase">{title}</p>
-          <p className="mt-1.5 text-[30px] font-extrabold leading-none tracking-tight text-[#17324D]">{value}</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-gray-500 tracking-wide uppercase truncate whitespace-nowrap" title={title}>{title}</p>
+          <p className="mt-1.5 text-2xl font-bold leading-none tracking-tight text-[#17324D]">{value}</p>
           {change && (
             <span className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold ring-1 ring-inset ${changeStyles[changeType]}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${dotStyles[changeType]}`} />
@@ -137,7 +137,7 @@ export default function StatCard({
             </span>
           )}
         </div>
-        <div className={`${bgClass} relative rounded-2xl p-3.5 shadow-md ring-1 ring-black/5 group-hover:scale-105 group-hover:-rotate-2 transition-transform duration-300 ease-in-out`}>
+        <div className={`${bgClass} relative rounded-2xl p-2.5 shadow-md ring-1 ring-black/5 group-hover:scale-105 group-hover:-rotate-2 transition-transform duration-300 ease-in-out`}>
           <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 card-hover-fade" />
           <div className="relative">{displayIcon}</div>
         </div>

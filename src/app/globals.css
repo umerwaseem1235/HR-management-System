@@ -3,9 +3,9 @@
 @theme inline {
   --color-primary: #17324D;
   --color-primary-light: #1e3f5f;
-  --color-teal: #0F8B8D;
-  --color-teal-light: #12a5a7;
-  --color-teal-dark: #0c7072;
+  --color-teal: #024fa7;
+  --color-teal-light: #0265cc;
+  --color-teal-dark: #013a7c;
   --color-blue-gray: #EAF2F4;
   --color-medium-gray: #D6E4E8;
   --color-dark-text: #263238;
@@ -32,7 +32,7 @@ body {
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #0F8B8D;
+  background: #024fa7;
 }
 
 /* Sidebar hover expand/collapse — single explicit transition so the width
@@ -51,14 +51,14 @@ body {
 }
 .card-hover:hover {
   transform: translateY(-2px);
-  border-color: rgba(15, 139, 141, 0.35);
+  border-color: rgba(2, 79, 167, 0.35);
   box-shadow: 0 2px 4px rgba(23, 50, 77, 0.06), 0 18px 44px -14px rgba(23, 50, 77, 0.22);
 }
 /* Slightly stronger lift for interactive (clickable) cards */
 .card-hover-strong:hover {
   transform: translateY(-4px);
-  border-color: rgba(15, 139, 141, 0.45);
-  box-shadow: 0 8px 20px rgba(23, 50, 77, 0.1), 0 24px 60px -16px rgba(15, 139, 141, 0.3);
+  border-color: rgba(2, 79, 167, 0.45);
+  box-shadow: 0 8px 20px rgba(23, 50, 77, 0.1), 0 24px 60px -16px rgba(2, 79, 167, 0.3);
 }
 .card-hover-fade {
   transition: opacity 300ms ease-in-out;
@@ -81,16 +81,16 @@ body {
   background: transparent;
 }
 .sidebar-scroll::-webkit-scrollbar-thumb {
-  background: rgba(94, 234, 212, 0.28);
+  background: rgba(147, 197, 253, 0.3);
   border-radius: 999px;
 }
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(94, 234, 212, 0.5);
+  background: rgba(147, 197, 253, 0.55);
 }
 /* Shown while the user is actively scrolling (toggled via JS) */
 .sidebar-scroll.is-scrolling {
   scrollbar-width: thin; /* Firefox */
-  scrollbar-color: rgba(94, 234, 212, 0.28) transparent;
+  scrollbar-color: rgba(147, 197, 253, 0.3) transparent;
 }
 .sidebar-scroll.is-scrolling::-webkit-scrollbar {
   width: 5px; /* Chrome/Safari/Edge */

@@ -20,7 +20,7 @@ function getInitials(name: string): string {
 
 function getColorFromName(name: string): string {
   const colors = [
-    'bg-[#17324D]', 'bg-[#0F8B8D]', 'bg-blue-600', 'bg-indigo-600',
+    'bg-[#17324D]', 'bg-[#024fa7]', 'bg-blue-600', 'bg-indigo-600',
     'bg-purple-600', 'bg-pink-600', 'bg-orange-500', 'bg-emerald-600',
   ];
   const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;

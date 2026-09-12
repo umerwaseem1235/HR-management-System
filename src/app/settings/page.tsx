@@ -59,7 +59,7 @@ export default function SettingsPage() {
                   {DEPARTMENTS.map((dept, i) => (
                     <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-[#D6E4E8] hover:bg-[#EAF2F4]/50">
                       <div className="flex items-center gap-3">
-                        <Building2 size={16} className="text-[#0F8B8D]" />
+                        <Building2 size={16} className="text-[#024fa7]" />
                         <span className="text-sm font-medium text-[#263238]">{dept}</span>
                       </div>
                       <button className="p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50"><Trash2 size={14} /></button>
@@ -78,7 +78,7 @@ export default function SettingsPage() {
                   {BRANCHES.map(branch => (
                     <div key={branch.id} className="flex items-center justify-between p-3 rounded-lg border border-[#D6E4E8]">
                       <div className="flex items-center gap-3">
-                        <MapPin size={16} className="text-[#0F8B8D]" />
+                        <MapPin size={16} className="text-[#024fa7]" />
                         <div><p className="text-sm font-medium text-[#263238]">{branch.name}</p><p className="text-xs text-gray-500">{branch.city}</p></div>
                       </div>
                       <button className="p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50"><Trash2 size={14} /></button>
@@ -97,7 +97,7 @@ export default function SettingsPage() {
                   {SHIFTS.map(shift => (
                     <div key={shift.id} className="flex items-center justify-between p-3 rounded-lg border border-[#D6E4E8]">
                       <div className="flex items-center gap-3">
-                        <Clock size={16} className="text-[#0F8B8D]" />
+                        <Clock size={16} className="text-[#024fa7]" />
                         <div><p className="text-sm font-medium text-[#263238]">{shift.name}</p><p className="text-xs text-gray-500">{shift.startTime} — {shift.endTime}</p></div>
                       </div>
                       <button className="p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50"><Trash2 size={14} /></button>

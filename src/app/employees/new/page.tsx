@@ -23,7 +23,7 @@ export default function AddEmployeePage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-4xl mx-auto">
-        <Link href="/employees" className="inline-flex items-center gap-2 text-sm text-[#0F8B8D] hover:underline">
+        <Link href="/employees" className="inline-flex items-center gap-2 text-sm text-[#024fa7] hover:underline">
           <ArrowLeft size={16} /> Back to Employees
         </Link>
 
@@ -39,7 +39,7 @@ export default function AddEmployeePage() {
             <React.Fragment key={step.id}>
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
-                  currentStep >= step.id ? 'bg-[#0F8B8D] text-white' : 'bg-[#D6E4E8] text-gray-500'
+                  currentStep >= step.id ? 'bg-[#024fa7] text-white' : 'bg-[#D6E4E8] text-gray-500'
                 }`}>
                   {step.id}
                 </div>
@@ -47,7 +47,7 @@ export default function AddEmployeePage() {
                   {step.label}
                 </span>
               </div>
-              {i < steps.length - 1 && <div className={`flex-1 h-0.5 mx-4 ${currentStep > step.id ? 'bg-[#0F8B8D]' : 'bg-[#D6E4E8]'}`} />}
+              {i < steps.length - 1 && <div className={`flex-1 h-0.5 mx-4 ${currentStep > step.id ? 'bg-[#024fa7]' : 'bg-[#D6E4E8]'}`} />}
             </React.Fragment>
           ))}
         </div>

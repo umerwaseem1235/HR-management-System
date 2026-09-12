@@ -75,7 +75,7 @@ export default function RecruitmentPage() {
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard title="Open Positions" value={mockJobs.filter(j => j.status === 'Open').length} icon={<Briefcase size={22} className="text-[#0F8B8D]" />} iconBg="bg-[#EAF2F4]" />
+          <StatCard title="Open Positions" value={mockJobs.filter(j => j.status === 'Open').length} icon={<Briefcase size={22} className="text-[#024fa7]" />} iconBg="bg-[#EAF2F4]" />
            <StatCard title="Total Candidates" value={candidates.length} icon={<Users size={22} className="text-blue-600" />} iconBg="bg-blue-50" />
            <StatCard title="Hired This Month" value={candidates.filter(c => c.stage === 'Hired').length} icon={<UserCheck size={22} className="text-green-600" />} iconBg="bg-green-50" />
         </div>
@@ -86,7 +86,7 @@ export default function RecruitmentPage() {
             {activeTab === 'jobs' && (
               <div className="space-y-3">
                 {mockJobs.map(job => (
-                  <div key={job.id} className="p-4 rounded-lg border border-[#D6E4E8] hover:border-[#0F8B8D]/30 hover:shadow-sm transition-all cursor-pointer">
+                  <div key={job.id} className="p-4 rounded-lg border border-[#D6E4E8] hover:border-[#024fa7]/30 hover:shadow-sm transition-all cursor-pointer">
                     <div className="flex items-start justify-between">
                       <div>
                         <h4 className="text-sm font-semibold text-[#17324D]">{job.title}</h4>
@@ -174,8 +174,8 @@ export default function RecruitmentPage() {
                 />
                 <div className="sm:col-span-2">
                   <label htmlFor="candidate-cv" className="block text-sm font-medium text-[#263238] mb-1.5">Candidate CV</label>
-                  <label htmlFor="candidate-cv" className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-[#B9D0D6] bg-[#F8FBFC] px-4 py-3 hover:border-[#0F8B8D] hover:bg-[#EAF2F4]/50 transition-colors">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EAF2F4] text-[#0F8B8D]"><Upload size={17} /></span>
+                  <label htmlFor="candidate-cv" className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-[#B9D0D6] bg-[#F8FBFC] px-4 py-3 hover:border-[#024fa7] hover:bg-[#EAF2F4]/50 transition-colors">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EAF2F4] text-[#024fa7]"><Upload size={17} /></span>
                     <span>
                       <span className="block text-sm font-medium text-[#263238]">Upload CV</span>
                       <span className="block text-xs text-gray-500 mt-0.5">PDF, DOC or DOCX up to 10 MB</span>
@@ -185,7 +185,7 @@ export default function RecruitmentPage() {
                 </div>
                 <div className="sm:col-span-2">
                   <label htmlFor="candidate-notes" className="block text-sm font-medium text-[#263238] mb-1.5">Notes</label>
-                  <textarea id="candidate-notes" name="notes" rows={4} placeholder="Add interview notes or additional context" className="w-full rounded-lg border border-[#D6E4E8] bg-white px-4 py-2.5 text-sm text-[#263238] placeholder-gray-400 focus:border-[#0F8B8D] focus:ring-2 focus:ring-[#0F8B8D]/20 focus:outline-none transition-colors" />
+                  <textarea id="candidate-notes" name="notes" rows={4} placeholder="Add interview notes or additional context" className="w-full rounded-lg border border-[#D6E4E8] bg-white px-4 py-2.5 text-sm text-[#263238] placeholder-gray-400 focus:border-[#024fa7] focus:ring-2 focus:ring-[#024fa7]/20 focus:outline-none transition-colors" />
                 </div>
               </div>
             </div>

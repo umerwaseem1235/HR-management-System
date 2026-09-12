@@ -78,7 +78,7 @@ export const SHIFTS = [
 ];
 
 export const LEAVE_TYPES = [
-  { id: '1', name: 'Annual Leave', daysAllowed: 20, carryForward: true, color: '#0F8B8D' },
+  { id: '1', name: 'Annual Leave', daysAllowed: 20, carryForward: true, color: '#024fa7' },
   { id: '2', name: 'Sick Leave', daysAllowed: 12, carryForward: false, color: '#ef4444' },
   { id: '3', name: 'Personal Leave', daysAllowed: 5, carryForward: false, color: '#f59e0b' },
   { id: '4', name: 'Maternity Leave', daysAllowed: 90, carryForward: false, color: '#ec4899' },

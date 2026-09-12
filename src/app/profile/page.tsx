@@ -25,7 +25,7 @@ function FieldRow({ icon: Icon, label, value }: { icon: LucideIcon; label: strin
   return (
     <div className="flex items-center justify-between gap-4 px-4 py-3">
       <div className="flex min-w-0 shrink-0 items-center gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0F8B8D]/10 text-[#0F8B8D]">
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#024fa7]/10 text-[#024fa7]">
           <Icon size={17} />
         </span>
         <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-400 whitespace-nowrap">
@@ -69,7 +69,7 @@ export default function ProfilePage() {
   ) => (
     <>
       {/* Slim gradient banner */}
-      <div className="relative h-20 sm:h-24 bg-gradient-to-r from-[#17324D] via-[#0F8B8D] to-[#14b8a6]">
+      <div className="relative h-20 sm:h-24 bg-gradient-to-r from-[#17324D] via-[#024fa7] to-[#0265cc]">
         <div className="pointer-events-none absolute -top-8 right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute bottom-0 left-1/3 h-20 w-20 rounded-full bg-white/10 blur-2xl" />
       </div>
@@ -101,7 +101,7 @@ export default function ProfilePage() {
     <div className="px-5 sm:px-6 pb-5 sm:pb-6">
       <div className="rounded-xl border border-[#D6E4E8]/70 bg-[#F8FBFC]/70 px-1 py-1">
         <div className="flex items-center gap-2 px-3 pt-2.5 pb-1">
-          {React.createElement(icon, { size: 16, className: 'text-[#0F8B8D]' })}
+          {React.createElement(icon, { size: 16, className: 'text-[#024fa7]' })}
           <h2 className="text-sm font-bold text-[#17324D]">{title}</h2>
         </div>
         <div className="divide-y divide-[#D6E4E8]/60">{rows}</div>
@@ -114,7 +114,7 @@ export default function ProfilePage() {
     return (
       <DashboardLayout>
         <div className="max-w-4xl mx-auto space-y-4">
-          <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-[#0F8B8D] hover:underline">
+          <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-[#024fa7] hover:underline">
             <ArrowLeft size={16} /> Back to Dashboard
           </Link>
 
@@ -122,7 +122,7 @@ export default function ProfilePage() {
             {renderHeader(
               user.name,
               null,
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0F8B8D]/10 px-3 py-1 text-xs font-bold text-[#0F8B8D]">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#024fa7]/10 px-3 py-1 text-xs font-bold text-[#024fa7]">
                 <ShieldCheck size={14} /> {ROLE_LABELS[user.role]}
               </span>,
               true
@@ -147,7 +147,7 @@ export default function ProfilePage() {
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-4">
-        <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-[#0F8B8D] hover:underline">
+        <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-[#024fa7] hover:underline">
           <ArrowLeft size={16} /> Back to Dashboard
         </Link>
 
@@ -158,7 +158,7 @@ export default function ProfilePage() {
               {employee.designation} · {employee.department}
             </p>,
             <>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0F8B8D]/10 px-3 py-1 text-xs font-bold text-[#0F8B8D]">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#024fa7]/10 px-3 py-1 text-xs font-bold text-[#024fa7]">
                 <ShieldCheck size={14} /> {ROLE_LABELS[user.role]}
               </span>
               {statusBadge(employee.status)}

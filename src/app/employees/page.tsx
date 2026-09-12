@@ -180,10 +180,10 @@ export default function EmployeesPage() {
                     <td className="px-6 py-4 text-sm text-gray-500">{emp.joiningDate}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <button className="p-1 rounded text-gray-400 hover:text-[#0F8B8D] hover:bg-[#EAF2F4]" title={emp.email}>
+                        <button className="p-1 rounded text-gray-400 hover:text-[#024fa7] hover:bg-[#EAF2F4]" title={emp.email}>
                           <Mail size={14} />
                         </button>
-                        <button className="p-1 rounded text-gray-400 hover:text-[#0F8B8D] hover:bg-[#EAF2F4]" title={emp.phone}>
+                        <button className="p-1 rounded text-gray-400 hover:text-[#024fa7] hover:bg-[#EAF2F4]" title={emp.phone}>
                           <Phone size={14} />
                         </button>
                       </div>
@@ -192,7 +192,7 @@ export default function EmployeesPage() {
                       <button
                         type="button"
                         onClick={() => setEditingEmployee(emp)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#D6E4E8] px-3 py-1.5 text-sm font-medium text-[#0F8B8D] hover:bg-[#EAF2F4] transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#D6E4E8] px-3 py-1.5 text-sm font-medium text-[#024fa7] hover:bg-[#EAF2F4] transition-colors"
                         aria-label={`Edit ${emp.firstName} ${emp.lastName}`}
                       >
                         <Pencil size={14} /> Edit

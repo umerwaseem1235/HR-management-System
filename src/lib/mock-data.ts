@@ -244,6 +244,7 @@ export const mockDashboardStats: DashboardStats = {
   newJoinersThisMonth: 1,
   upcomingExits: 0,
   payrollStatus: 'Processed',
+  attendanceRate: 93,
 };
 
 export const mockAuditLogs: AuditLog[] = [

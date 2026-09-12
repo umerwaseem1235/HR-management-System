@@ -62,11 +62,11 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#17324D] via-[#1e3f5f] to-[#0F8B8D] relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#17324D] via-[#1e3f5f] to-[#024fa7] relative overflow-hidden">
         {/* Decorative circles */}
         <div className="absolute top-20 -left-20 w-72 h-72 bg-white/5 rounded-full" />
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-white/5 rounded-full" />
-        <div className="absolute top-1/2 left-1/3 w-48 h-48 bg-[#0F8B8D]/30 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/3 w-48 h-48 bg-[#024fa7]/30 rounded-full blur-3xl" />
 
         <div className="relative z-10 flex flex-col justify-center px-16">
           <div className="flex items-center gap-4 mb-8">
@@ -141,7 +141,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
                   required
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#D6E4E8] text-sm text-[#263238] placeholder-gray-400 focus:border-[#0F8B8D] focus:ring-2 focus:ring-[#0F8B8D]/20 focus:outline-none"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#D6E4E8] text-sm text-[#263238] placeholder-gray-400 focus:border-[#024fa7] focus:ring-2 focus:ring-[#024fa7]/20 focus:outline-none"
                 />
               </div>
             </div>
@@ -156,7 +156,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
-                  className="w-full pl-10 pr-12 py-3 rounded-lg border border-[#D6E4E8] text-sm text-[#263238] placeholder-gray-400 focus:border-[#0F8B8D] focus:ring-2 focus:ring-[#0F8B8D]/20 focus:outline-none"
+                  className="w-full pl-10 pr-12 py-3 rounded-lg border border-[#D6E4E8] text-sm text-[#263238] placeholder-gray-400 focus:border-[#024fa7] focus:ring-2 focus:ring-[#024fa7]/20 focus:outline-none"
                 />
                 <button
                   type="button"
@@ -174,11 +174,11 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-[#D6E4E8] text-[#0F8B8D] focus:ring-[#0F8B8D]"
+                  className="w-4 h-4 rounded border-[#D6E4E8] text-[#024fa7] focus:ring-[#024fa7]"
                 />
                 <span className="text-sm text-gray-600">Remember me</span>
               </label>
-              <button type="button" className="text-sm text-[#0F8B8D] hover:underline font-medium">
+              <button type="button" className="text-sm text-[#024fa7] hover:underline font-medium">
                 Forgot password?
               </button>
             </div>
@@ -186,7 +186,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[#0F8B8D] hover:bg-[#0c7072] text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[#024fa7] hover:bg-[#013a7c] text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
