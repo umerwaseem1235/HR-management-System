@@ -38,7 +38,7 @@ export default function EmployeeDashboard() {
       <PageHeader
         eyebrow="My Workspace"
         title={`Welcome, ${user?.name?.split(' ')[0]}! 👋`}
-        subtitle={new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        subtitle={new Date().toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
         actions={
           <>
             {checkInTime && (
@@ -100,7 +100,7 @@ export default function EmployeeDashboard() {
                 </div>
                 <div className="w-full bg-[#D6E4E8] rounded-full h-2 mb-2">
                   <div
-                    className="bg-[#0F8B8D] h-2 rounded-full transition-all"
+                    className="bg-[#024fa7] h-2 rounded-full transition-all"
                     style={{ width: `${(balance.used / balance.total) * 100}%` }}
                   />
                 </div>
@@ -127,7 +127,7 @@ export default function EmployeeDashboard() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-[#17324D]">Notifications</h3>
-            <Link href="/notifications" className="text-sm text-[#0F8B8D] hover:underline font-medium">View All</Link>
+            <Link href="/notifications" className="text-sm text-[#024fa7] hover:underline font-medium">View All</Link>
           </div>
           <div className="space-y-3">
             {employeeNotifs.length === 0 ? (
@@ -164,7 +164,7 @@ export default function EmployeeDashboard() {
                 <div className="w-full bg-[#D6E4E8] rounded-full h-2">
                   <div
                     className={`h-2 rounded-full transition-all ${
-                      goal.progress >= 75 ? 'bg-green-500' : goal.progress >= 50 ? 'bg-[#0F8B8D]' : 'bg-orange-400'
+                      goal.progress >= 75 ? 'bg-green-500' : goal.progress >= 50 ? 'bg-[#024fa7]' : 'bg-orange-400'
                     }`}
                     style={{ width: `${goal.progress}%` }}
                   />

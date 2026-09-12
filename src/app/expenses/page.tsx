@@ -216,10 +216,10 @@ export default function ExpensesPage() {
                 {visibleExpenses.map(exp => (
                   <tr key={exp.id} className="hover:bg-[#EAF2F4]/50">
                     {!isEmployee && (
-                      <td className="px-6 py-4"><div className="flex items-center gap-3"><Avatar name={exp.employeeName} size="sm" /><div><p className="text-sm font-medium">{exp.employeeName}</p><p className="text-xs text-gray-500">{exp.description}</p>{exp.receipt && (<button type="button" onClick={() => openReceipt(exp.receipt!)} className="inline-flex items-center gap-1 text-xs text-[#0F8B8D] hover:underline mt-0.5"><Paperclip size={12} /> View receipt</button>)}</div></div></td>
+                      <td className="px-6 py-4"><div className="flex items-center gap-3"><Avatar name={exp.employeeName} size="sm" /><div><p className="text-sm font-medium">{exp.employeeName}</p><p className="text-xs text-gray-500">{exp.description}</p>{exp.receipt && (<button type="button" onClick={() => openReceipt(exp.receipt!)} className="inline-flex items-center gap-1 text-xs text-[#024fa7] hover:underline mt-0.5"><Paperclip size={12} /> View receipt</button>)}</div></div></td>
                     )}
                     {isEmployee && (
-                      <td className="px-6 py-4"><div><p className="text-sm font-medium">{exp.category}</p><p className="text-xs text-gray-500">{exp.description}</p>{exp.receipt && (<button type="button" onClick={() => openReceipt(exp.receipt!)} className="inline-flex items-center gap-1 text-xs text-[#0F8B8D] hover:underline mt-0.5"><Paperclip size={12} /> View receipt</button>)}</div></td>
+                      <td className="px-6 py-4"><div><p className="text-sm font-medium">{exp.category}</p><p className="text-xs text-gray-500">{exp.description}</p>{exp.receipt && (<button type="button" onClick={() => openReceipt(exp.receipt!)} className="inline-flex items-center gap-1 text-xs text-[#024fa7] hover:underline mt-0.5"><Paperclip size={12} /> View receipt</button>)}</div></td>
                     )}
                     {!isEmployee && <td className="px-6 py-4 text-sm">{exp.category}</td>}
                     <td className="px-6 py-4 text-sm font-semibold text-[#17324D]">${exp.amount.toLocaleString()}</td>
@@ -276,7 +276,7 @@ export default function ExpensesPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What was this expense for?"
-              className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-[#263238] placeholder-gray-400 focus:ring-2 focus:outline-none ${errors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-[#D6E4E8] focus:border-[#0F8B8D] focus:ring-[#0F8B8D]/20'}`}
+              className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-[#263238] placeholder-gray-400 focus:ring-2 focus:outline-none ${errors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-[#D6E4E8] focus:border-[#024fa7] focus:ring-[#024fa7]/20'}`}
             />
             {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
           </div>
@@ -292,7 +292,7 @@ export default function ExpensesPage() {
             {errors.receipt && <p className="mt-1 text-sm text-red-500">{errors.receipt}</p>}
             {receiptName && (
               <div className="mt-2 flex items-center gap-2 text-sm text-[#263238] bg-[#EAF2F4]/60 border border-[#D6E4E8] rounded-lg px-3 py-2">
-                <Paperclip size={14} className="text-[#0F8B8D] flex-shrink-0" />
+                <Paperclip size={14} className="text-[#024fa7] flex-shrink-0" />
                 <span className="truncate flex-1">{receiptName}</span>
                 <button
                   type="button"

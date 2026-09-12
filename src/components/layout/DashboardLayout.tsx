@@ -27,6 +27,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarLocked, setSidebarLocked] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -38,7 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#EAF2F4]">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#0F8B8D] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-4 border-[#024fa7] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-[#17324D] font-medium">Loading...</p>
         </div>
       </div>
@@ -54,15 +55,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
+        hoverLock={sidebarLocked}
       />
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar
           onMenuClick={() => setMobileOpen(true)}
           title={pageTitle}
+          sidebarLocked={sidebarLocked}
+          onToggleSidebarLock={() => setSidebarLocked((v) => !v)}
         />
         <main className="relative flex-1 p-4 lg:p-6 overflow-auto">
           {/* Subtle premium background wash */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-[#0F8B8D]/[0.06] via-[#0F8B8D]/[0.02] to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-[#024fa7]/[0.06] via-[#024fa7]/[0.02] to-transparent" />
           <div className="relative">{children}</div>
         </main>
       </div>

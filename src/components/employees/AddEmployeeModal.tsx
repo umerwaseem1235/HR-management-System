@@ -77,7 +77,7 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
                   {photoPreview ? (
                     <img src={photoPreview} alt="Profile preview" className="h-full w-full object-cover" />
                   ) : (
-                    <ImagePlus size={24} className="text-[#0F8B8D]" />
+                    <ImagePlus size={24} className="text-[#024fa7]" />
                   )}
                 </div>
                 <div className="flex-1">

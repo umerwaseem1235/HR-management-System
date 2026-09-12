@@ -35,7 +35,7 @@ export default function ReportsPage() {
           {reports.map((report, i) => (
             <Card key={i} hover>
               <div className="flex items-start gap-3">
-                <div className="bg-[#EAF2F4] p-3 rounded-lg"><report.icon size={22} className="text-[#0F8B8D]" /></div>
+                <div className="bg-[#EAF2F4] p-3 rounded-lg"><report.icon size={22} className="text-[#024fa7]" /></div>
                 <div className="flex-1">
                   <h4 className="text-sm font-semibold text-[#17324D]">{report.name}</h4>
                   <p className="text-xs text-gray-500 mt-1">{report.description}</p>

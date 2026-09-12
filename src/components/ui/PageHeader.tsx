@@ -19,7 +19,7 @@ export default function PageHeader({ eyebrow, title, subtitle, actions }: PageHe
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         {eyebrow && (
-          <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#0F8B8D]">{eyebrow}</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#024fa7]">{eyebrow}</p>
         )}
         <h1 className="mt-1.5 text-[26px] font-extrabold leading-tight tracking-tight text-[#17324D]">
           {title}

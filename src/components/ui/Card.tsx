@@ -38,7 +38,7 @@ export default function Card({
       } ${className}`}
     >
       {hover && (
-        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#0F8B8D]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 card-hover-fade" />
+        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#024fa7]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 card-hover-fade" />
       )}
       {children}
     </div>

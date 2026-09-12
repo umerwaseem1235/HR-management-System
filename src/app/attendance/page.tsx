@@ -762,7 +762,7 @@ export default function AttendancePage() {
             <Card>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <CalendarDays size={18} className="text-[#0F8B8D]" />
+                  <CalendarDays size={18} className="text-[#024fa7]" />
                   <h3 className="text-base font-semibold text-[#17324D]">Holiday Configuration</h3>
                 </div>
                 <Badge variant="default">{holidays.length} Holidays</Badge>

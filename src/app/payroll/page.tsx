@@ -38,7 +38,7 @@ export default function PayrollPage() {
         {isAdmin && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard title="Monthly Payroll" value={`$${Math.round(totalPayroll / 12).toLocaleString()}`} icon={<DollarSign size={22} className="text-green-600" />} iconBg="bg-green-50" />
-            <StatCard title="Total Employees" value={mockEmployees.length} icon={<FileText size={22} className="text-[#0F8B8D]" />} iconBg="bg-[#EAF2F4]" />
+            <StatCard title="Total Employees" value={mockEmployees.length} icon={<FileText size={22} className="text-[#024fa7]" />} iconBg="bg-[#EAF2F4]" />
             <StatCard title="Payroll Status" value="Processed" icon={<Calculator size={22} className="text-purple-600" />} iconBg="bg-purple-50" />
           </div>
         )}
@@ -56,8 +56,8 @@ export default function PayrollPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge variant={slip.status === 'Finalized' ? 'success' : slip.status === 'Processed' ? 'info' : 'neutral'}>{slip.status}</Badge>
-                      <button className="p-2 rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4]"><Eye size={16} /></button>
-                      <button className="p-2 rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4]"><Download size={16} /></button>
+                      <button className="p-2 rounded-lg text-[#024fa7] hover:bg-[#EAF2F4]"><Eye size={16} /></button>
+                      <button className="p-2 rounded-lg text-[#024fa7] hover:bg-[#EAF2F4]"><Download size={16} /></button>
                     </div>
                   </div>
                 ))}

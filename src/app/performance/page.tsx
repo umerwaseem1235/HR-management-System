@@ -178,7 +178,7 @@ export default function PerformancePage() {
             <button
               type="button"
               onClick={() => setViewingFile({ data: item.fileData!, name: item.fileName! })}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#0F8B8D] bg-[#EAF2F4] hover:bg-[#D6E4E8] rounded-lg px-3 py-1.5"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#024fa7] bg-[#EAF2F4] hover:bg-[#D6E4E8] rounded-lg px-3 py-1.5"
             >
               <Paperclip size={12} /> {item.fileName}
             </button>
@@ -188,7 +188,7 @@ export default function PerformancePage() {
               href={item.link}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#0F8B8D] bg-[#EAF2F4] hover:bg-[#D6E4E8] rounded-lg px-3 py-1.5"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#024fa7] bg-[#EAF2F4] hover:bg-[#D6E4E8] rounded-lg px-3 py-1.5"
             >
               <ExternalLink size={12} /> View link
             </a>
@@ -256,7 +256,7 @@ export default function PerformancePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card padding="sm">
               <div className="flex items-center gap-3">
-                <div className="bg-[#EAF2F4] p-2.5 rounded-lg"><ClipboardList size={20} className="text-[#0F8B8D]" /></div>
+                <div className="bg-[#EAF2F4] p-2.5 rounded-lg"><ClipboardList size={20} className="text-[#024fa7]" /></div>
                 <div><p className="text-lg font-bold text-[#17324D]">{myWork.length}</p><p className="text-xs text-gray-500">Total Entries</p></div>
               </div>
             </Card>
@@ -309,7 +309,7 @@ export default function PerformancePage() {
                 value={workDescription}
                 onChange={(e) => setWorkDescription(e.target.value)}
                 placeholder="Describe what you worked on today..."
-                className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-[#263238] placeholder-gray-400 focus:ring-2 focus:outline-none ${workErrors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-[#D6E4E8] focus:border-[#0F8B8D] focus:ring-[#0F8B8D]/20'}`}
+                className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-[#263238] placeholder-gray-400 focus:ring-2 focus:outline-none ${workErrors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-[#D6E4E8] focus:border-[#024fa7] focus:ring-[#024fa7]/20'}`}
               />
               {workErrors.description && <p className="mt-1 text-sm text-red-500">{workErrors.description}</p>}
             </div>
@@ -329,7 +329,7 @@ export default function PerformancePage() {
               {workErrors.file && <p className="mt-1 text-sm text-red-500">{workErrors.file}</p>}
               {workFileName && (
                 <div className="mt-2 flex items-center gap-2 text-sm text-[#263238] bg-[#EAF2F4]/60 border border-[#D6E4E8] rounded-lg px-3 py-2">
-                  <Paperclip size={14} className="text-[#0F8B8D] flex-shrink-0" />
+                  <Paperclip size={14} className="text-[#024fa7] flex-shrink-0" />
                   <span className="truncate flex-1">{workFileName}</span>
                   <button
                     type="button"
@@ -442,7 +442,7 @@ export default function PerformancePage() {
                     </div>
                     <p className="mt-1 text-xs text-gray-500 line-clamp-2">{goal.description}</p>
                     <div className="mt-3 h-1.5 w-full rounded-full bg-[#D6E4E8]/60">
-                      <div className="h-1.5 rounded-full bg-[#0F8B8D]" style={{ width: `${goal.progress}%` }} />
+                      <div className="h-1.5 rounded-full bg-[#024fa7]" style={{ width: `${goal.progress}%` }} />
                     </div>
                     <div className="mt-1.5 flex justify-between text-[11px] text-gray-500">
                       <span>{goal.progress}%</span><span>Due: {goal.dueDate}</span>

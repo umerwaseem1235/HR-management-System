@@ -254,6 +254,7 @@ export interface DashboardStats {
   newJoinersThisMonth: number;
   upcomingExits: number;
   payrollStatus: string;
+  attendanceRate: number;
 }
 
 export type DailyWorkStatus = 'Submitted' | 'Approved' | 'Needs Revision';

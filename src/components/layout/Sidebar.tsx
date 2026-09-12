@@ -38,15 +38,16 @@ const iconMap: Record<string, React.ElementType> = {
 interface SidebarProps {
   mobileOpen: boolean;
   onMobileClose: () => void;
+  hoverLock: boolean;
 }
 
-export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
+export default function Sidebar({ mobileOpen, onMobileClose, hoverLock }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const navRef = useRef<HTMLElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Temporary hover expansion (desktop only): the sidebar stays compact
-  // and smoothly expands to full width while hovered.
+  // and smoothly expands to full width while hovered (frozen while locked).
   const [hovered, setHovered] = useState(false);
 
   // Persist sidebar scroll position across page navigations (the sidebar
@@ -107,33 +108,23 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   // fully expanded.
   const renderSidebarContent = (compact: boolean) => (
     <div
-      className={`relative flex h-full flex-col overflow-hidden bg-linear-to-b from-[#1a3a5c] via-primary to-[#0d1f33] text-white shadow-2xl shadow-[#0d1f33]/40 sidebar-panel ${compact ? "w-19" : "w-66"}`}
+      className={`relative flex h-full flex-col overflow-hidden bg-[#024fa7] text-white shadow-2xl shadow-[#013a7c]/40 sidebar-panel ${compact ? "w-18" : "w-60"}`}
     >
-      {/* Decorative glows */}
-      <div className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-teal/25 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-10 -left-20 h-40 w-40 rounded-full bg-teal/15 blur-3xl" />
-      {/* Top accent line */}
-      <div className="h-1 w-full shrink-0 bg-linear-to-r from-teal via-[#2dd4bf] to-teal" />
-
-      {/* Logo */}
+      {/* Decorative glow (kept in the dark nav area only, header stays pure white) */}
+      <div className="pointer-events-none absolute bottom-10 -left-20 h-40 w-40 rounded-full bg-[#7db9ff]/20 blur-3xl" />
+      {/* Logo — white band continuous with the top navbar */}
       <div
-        className={`flex h-16 shrink-0 items-center px-4 ${compact ? "justify-center" : ""}`}
+        className="flex h-16 shrink-0 items-center justify-center overflow-hidden border-b border-[#D6E4E8]/70 bg-[#ffffff] px-4"
       >
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-[#14b8a6] via-teal to-[#0b5e5f] shadow-lg shadow-teal/50 ring-1 ring-white/30">
+        {compact ? (
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0265cc] shadow-lg shadow-[#013a7c]/50 ring-1 ring-white/30">
             <Building2 size={20} className="text-white drop-shadow-sm" />
           </div>
-          <div
-            className={`min-w-0 overflow-hidden whitespace-nowrap sidebar-fade ${compact ? "opacity-0" : "opacity-100"}`}
-          >
-            <h1 className="truncate bg-linear-to-r from-white via-white to-[#99f6e4] bg-clip-text text-[18px] font-extrabold tracking-tight text-transparent">
-              CodeQor
-            </h1>
-            <span className="mt-1.5 inline-flex items-center rounded-md bg-teal/30 px-2 py-0.75 text-[9px] font-bold uppercase tracking-[0.24em] text-[#5eead4] ring-1 ring-inset ring-[#5eead4]/40">
-              HRMS
-            </span>
+        ) : (
+          <div className="flex min-w-0 items-center justify-center">
+            <img src="/logo.jpg" alt="CodQor Technologies" className="h-24 w-auto max-w-none object-contain" />
           </div>
-        </div>
+        )}
       </div>
 
       {/* Navigation — scrollbar sits on the left edge, shows only while scrolling */}
@@ -154,18 +145,18 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                 saveNavScroll();
                 onMobileClose();
               }}
-              className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+              className={`group relative flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] font-medium transition-colors duration-200 ${
                 isActive
-                  ? "bg-linear-to-r from-teal to-[#14a8a0] text-white shadow-lg shadow-teal/30"
-                  : "text-white/60 hover:translate-x-0.5 hover:bg-white/10 hover:text-white"
+                  ? "bg-[#0265cc] text-white shadow-lg shadow-[#012f66]/40"
+                  : "text-white hover:translate-x-0.5 hover:bg-[#6aa9f5]/25 hover:text-white"
               }`}
               title={compact ? item.name : undefined}
             >
               {isActive && (
-                <span className="absolute -left-3 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-[#5eead4]" />
+                <span className="absolute -left-3 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-[#9cc9ff]" />
               )}
               <Icon
-                size={20}
+                size={18}
                 className={`shrink-0 transition-transform duration-200 ${isActive ? "drop-shadow" : "group-hover:scale-110"}`}
               />
               <span
@@ -175,7 +166,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               </span>
               {item.badge && item.badge > 0 && (
                 <span
-                  className={`ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-red-500 to-red-600 px-1.5 text-[11px] font-bold text-white shadow-sm ring-1 ring-white/30 sidebar-fade ${compact ? "opacity-0" : "opacity-100"}`}
+                  className={`ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white shadow-sm ring-1 ring-white/30 sidebar-fade ${compact ? "opacity-0" : "opacity-100"}`}
                 >
                   {item.badge}
                 </span>
@@ -186,31 +177,31 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
       </nav>
 
       {/* User profile */}
-      <div className="shrink-0 p-3">
-        <div className="rounded-2xl border border-white/15 bg-white/10 p-3 shadow-inner">
-          <div className="flex items-center gap-3">
+      <div className="shrink-0 p-2.5">
+        <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 shadow-inner">
+          <div className="flex items-center gap-2.5">
             <span className="relative shrink-0">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-teal to-[#14b8a6] text-sm font-bold shadow-md ring-2 ring-white/30">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0265cc] text-xs font-bold shadow-md ring-2 ring-white/30">
                 {user.avatar ||
                   user.name
                     .split(" ")
                     .map((n) => n[0])
                     .join("")}
               </span>
-              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-primary bg-green-400" />
+              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#024fa7] bg-green-400" />
             </span>
             <div
               className={`flex min-w-0 flex-1 items-center gap-2 overflow-hidden whitespace-nowrap sidebar-fade ${compact ? "opacity-0" : "opacity-100"}`}
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{user.name}</p>
-                <p className="text-[11px] text-white/50">
+                <p className="truncate text-[13px] font-semibold text-white">{user.name}</p>
+                <p className="text-[11px] text-white">
                   {ROLE_LABELS[user.role]}
                 </p>
               </div>
               <button
                 onClick={logout}
-                className="shrink-0 rounded-lg p-1.5 text-white/50 transition-colors hover:bg-red-500/20 hover:text-red-300"
+                className="shrink-0 rounded-lg p-1.5 text-white transition-colors hover:bg-red-500/20 hover:text-red-300"
                 title="Logout"
               >
                 <LogOut size={16} />
@@ -242,13 +233,13 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
       </div>
 
       {/* Desktop sidebar — in flex flow so the page content automatically
-          resizes as the sidebar expands/collapses on hover */}
+          resizes as the sidebar expands/collapses on hover (frozen while locked) */}
       <div
         className="sticky top-0 hidden h-screen shrink-0 lg:block"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {renderSidebarContent(!hovered)}
+        {renderSidebarContent(hoverLock ? false : !hovered)}
       </div>
     </>
   );

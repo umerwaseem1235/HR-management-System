@@ -13,11 +13,11 @@ export default function Button({ variant = 'primary', size = 'md', children, loa
   const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variants = {
-    primary: 'bg-[#0F8B8D] hover:bg-[#0c7072] text-white focus:ring-[#0F8B8D]',
+    primary: 'bg-[#024fa7] hover:bg-[#013a7c] text-white focus:ring-[#024fa7]',
     secondary: 'bg-[#17324D] hover:bg-[#1e3f5f] text-white focus:ring-[#17324D]',
-    outline: 'border-2 border-[#D6E4E8] text-[#263238] hover:bg-[#EAF2F4] focus:ring-[#0F8B8D]',
+    outline: 'border-2 border-[#D6E4E8] text-[#263238] hover:bg-[#EAF2F4] focus:ring-[#024fa7]',
     danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
-    ghost: 'text-[#263238] hover:bg-[#EAF2F4] focus:ring-[#0F8B8D]',
+    ghost: 'text-[#263238] hover:bg-[#EAF2F4] focus:ring-[#024fa7]',
   };
 
   const sizes = {

@@ -45,7 +45,7 @@ export default function EmployeeProfilePage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Back button */}
-        <Link href="/employees" className="inline-flex items-center gap-2 text-sm text-[#0F8B8D] hover:underline">
+        <Link href="/employees" className="inline-flex items-center gap-2 text-sm text-[#024fa7] hover:underline">
           <ArrowLeft size={16} /> Back to Employees
         </Link>
 
@@ -144,7 +144,7 @@ export default function EmployeeProfilePage() {
                         <span className="text-sm font-bold text-[#17324D]">{bal.remaining}/{bal.total}</span>
                       </div>
                       <div className="w-full bg-[#D6E4E8] rounded-full h-2">
-                        <div className="bg-[#0F8B8D] h-2 rounded-full" style={{ width: `${(bal.used / bal.total) * 100}%` }} />
+                        <div className="bg-[#024fa7] h-2 rounded-full" style={{ width: `${(bal.used / bal.total) * 100}%` }} />
                       </div>
                     </div>
                   ))}
