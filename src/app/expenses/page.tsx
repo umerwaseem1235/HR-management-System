@@ -176,7 +176,7 @@ export default function ExpensesPage() {
           title={isEmployee ? 'My Expenses' : 'Expenses'}
           subtitle="Submit claims and track reimbursements"
           actions={
-            <Button variant="primary" onClick={openNew}><Plus size={16} /> New Claim</Button>
+            isEmployee && <Button variant="primary" onClick={openNew}><Plus size={16} /> New Claim</Button>
           }
         />
 

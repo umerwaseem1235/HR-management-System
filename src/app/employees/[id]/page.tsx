@@ -16,6 +16,7 @@ export default function EmployeeProfilePage() {
   const params = useParams();
   const [activeTab, setActiveTab] = useState('personal');
   const employee = mockEmployees.find(e => e.id === params.id) || mockEmployees[0];
+  const employeeSlips = mockPayslips.filter(s => s.employeeId === employee.id);
 
   const tabs = [
     { id: 'personal', label: 'Personal Info' },
@@ -154,8 +155,11 @@ export default function EmployeeProfilePage() {
             {activeTab === 'payroll' && (
               <div>
                 <h3 className="text-base font-semibold text-[#17324D] mb-4">Payslip History</h3>
+                {employeeSlips.length === 0 ? (
+                  <p className="text-sm text-gray-500 py-8 text-center">No payslips generated for this employee yet.</p>
+                ) : (
                 <div className="space-y-3">
-                  {mockPayslips.map(slip => (
+                  {employeeSlips.map(slip => (
                     <div key={slip.id} className="flex items-center justify-between p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
                       <div>
                         <p className="text-sm font-medium text-[#263238]">{slip.month} {slip.year}</p>
@@ -168,6 +172,7 @@ export default function EmployeeProfilePage() {
                     </div>
                   ))}
                 </div>
+                )}
               </div>
             )}
             {activeTab === 'documents' && (
