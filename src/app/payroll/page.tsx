@@ -193,16 +193,11 @@ export default function PayrollPage() {
       <div className="space-y-6">
         <PageHeader
           title="Payroll"
-<<<<<<< HEAD
-          actions={isAdmin && <Button variant="primary"><Calculator size={16} /> Process Payroll</Button>}
-=======
-          subtitle="Payslips, payroll runs and salary structures"
           actions={isAdmin && (
             <Button variant="primary" onClick={() => setActiveTab('runs')}>
               <Calculator size={16} /> Process Payroll
             </Button>
           )}
->>>>>>> 8611868a8012faa1a2b29f66e06a66c62564ae7f
         />
 
         {successMsg && (
@@ -215,15 +210,9 @@ export default function PayrollPage() {
 
         {isAdmin && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-<<<<<<< HEAD
-            <StatCard title="Monthly Payroll" value={`$${Math.round(totalPayroll / 12).toLocaleString()}`} icon={<DollarSign size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
-            <StatCard title="Total Employees" value={mockEmployees.length} icon={<FileText size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
-            <StatCard title="Payroll Status" value="Processed" icon={<Calculator size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
-=======
             <StatCard title="Monthly Payroll" value={money(totalPayroll / 12)} icon={<DollarSign size={22} className="text-green-600" />} iconBg="bg-green-50" />
             <StatCard title="Total Employees" value={mockEmployees.length} icon={<FileText size={22} className="text-[#0F8B8D]" />} iconBg="bg-[#EAF2F4]" />
             <StatCard title="Payroll Status" value={payrollStatus} icon={<Calculator size={22} className="text-purple-600" />} iconBg="bg-purple-50" />
->>>>>>> 8611868a8012faa1a2b29f66e06a66c62564ae7f
           </div>
         )}
 
