@@ -61,17 +61,14 @@ export default function ReportsPage() {
       <div className="space-y-6">
         <PageHeader
           title="Reports"
-<<<<<<< HEAD
-          subtitle="Export HR analytics across every module — each PDF carries full record-level detail"
           actions={
             <Button variant="primary" size="md" onClick={handleExportAll} loading={downloading === 'all'} disabled={downloading !== null}>
               {!downloading && <FileDown size={16} />}
               {downloading === 'all' ? 'Building pack…' : 'Download all (PDF pack)'}
             </Button>
           }
-=======
->>>>>>> 8cc082be15aa43251f6903f3add562590a741837
         />
+        <p className="text-sm text-gray-500 -mt-4">Export HR analytics across every module — each PDF carries full record-level detail</p>
 
         <Card padding="sm">
           <div className="sm:max-w-sm">

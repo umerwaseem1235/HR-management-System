@@ -198,8 +198,7 @@ export default function RecruitmentPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-<<<<<<< HEAD
-        <PageHeader eyebrow="HR Internal" title="Recruitment" subtitle="Manual diary for HR — which position is free, how many candidates came, for reminder only. No online posting."
+        <PageHeader title="Recruitment"
           actions={<div className="flex gap-2">
             <Button variant="outline" onClick={() => setJobModal({ title: '', department: '', branch: '', vacancies: '1', requirements: '', description: '', closingDate: '', status: 'Open' })}><Briefcase size={16} /> Note Free Position</Button>
             <Button variant="primary" onClick={() => setCandModal(true)}><UserPlus size={16} /> Note Candidate</Button>
@@ -212,19 +211,6 @@ export default function RecruitmentPage() {
           <StatCard title="Candidates Noted" value={candidates.length} icon={<Users size={22} className="text-blue-600" />} iconBg="bg-blue-50" />
           <StatCard title="Reminders Left" value={interviews.filter(i => i.status === 'Scheduled').length} icon={<CalendarDays size={22} className="text-orange-600" />} iconBg="bg-orange-50" />
           <StatCard title="Hired" value={analytics.hired} change={`${analytics.conv}% hired`} icon={<UserCheck size={22} className="text-green-600" />} iconBg="bg-green-50" />
-=======
-        <PageHeader
-          title="Recruitment"
-          actions={
-            <Button variant="primary" onClick={() => setIsAddCandidateOpen(true)}><UserPlus size={16} /> Add Candidate</Button>
-          }
-        />
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard title="Open Positions" value={mockJobs.filter(j => j.status === 'Open').length} icon={<Briefcase size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
-           <StatCard title="Total Candidates" value={candidates.length} icon={<Users size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
-           <StatCard title="Hired This Month" value={candidates.filter(c => c.stage === 'Hired').length} icon={<UserCheck size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
->>>>>>> 8cc082be15aa43251f6903f3add562590a741837
         </div>
 
         <Card padding="none">
