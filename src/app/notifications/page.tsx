@@ -52,9 +52,7 @@ export default function NotificationsPage() {
           <ArrowLeft size={16} /> Back to Dashboard
         </button>
         <PageHeader
-          eyebrow="Inbox"
           title="Notifications"
-          subtitle={`${unreadCount} unread`}
           actions={unreadCount > 0 && (
             <Button variant="outline" size="sm" onClick={markAllAsRead}>
               <CheckCheck size={16} /> Mark all as read

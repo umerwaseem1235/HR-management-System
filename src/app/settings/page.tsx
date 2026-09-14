@@ -26,9 +26,7 @@ export default function SettingsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Configuration"
           title="Settings"
-          subtitle="Company, departments, branches, shifts and leave policies"
         />
 
         <Card padding="none">

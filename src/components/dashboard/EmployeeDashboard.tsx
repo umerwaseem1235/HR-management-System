@@ -36,9 +36,7 @@ export default function EmployeeDashboard() {
     <div className="space-y-6">
       {/* Welcome + Check In/Out */}
       <PageHeader
-        eyebrow="My Workspace"
         title={`Welcome, ${user?.name?.split(' ')[0]}! 👋`}
-        subtitle={new Date().toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
         actions={
           <>
             {checkInTime && (
@@ -63,25 +61,29 @@ export default function EmployeeDashboard() {
           title="Working Days"
           value="22/23"
           iconName="time"
-          iconBg="bg-gradient-to-br from-[#EAF2F4] to-[#D6E4E8]"
+          iconColor="#024fa7"
+          iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
         />
         <StatCard
           title="Leave Balance"
           value={`${mockLeaveBalances.reduce((sum, lb) => sum + lb.remaining, 0)} days`}
           iconName="onLeaveToday"
-          iconBg="bg-gradient-to-br from-orange-50 to-amber-50"
+          iconColor="#024fa7"
+          iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
         />
         <StatCard
           title="Last Payslip"
           value={`$${mockPayslips[0]?.netSalary.toLocaleString() || '0'}`}
           iconName="payroll"
-          iconBg="bg-gradient-to-br from-green-50 to-emerald-50"
+          iconColor="#024fa7"
+          iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
         />
         <StatCard
           title="Goals Progress"
           value={`${mockGoals.filter(g => g.status === 'Completed').length}/${mockGoals.length}`}
           iconName="goals"
-          iconBg="bg-gradient-to-br from-purple-50 to-violet-50"
+          iconColor="#024fa7"
+          iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
         />
       </div>
 

@@ -104,99 +104,109 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        <StatCard
-          title="Total Employees"
-          value={stats.totalEmployees}
-          iconName="totalEmployees"
-          iconColor="#024fa7"
-          iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
-        />
-        <StatCard
-          title="Present Today"
-          value={stats.presentToday}
-          iconName="presentToday"
-          iconColor="#024fa7"
-          iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
-        />
-        <StatCard
-          title="Absent Today"
-          value={stats.absentToday}
-          iconName="absentToday"
-          iconColor="#024fa7"
-          iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
-        />
-        <StatCard
-          title="On Leave Today"
-          value={stats.onLeaveToday}
-          iconName="onLeaveToday"
-          iconColor="#024fa7"
-          iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
-        />
-        <StatCard
-          title="Approvals"
-          value={stats.pendingLeaveApprovals + stats.pendingExpenseApprovals}
-          iconName="activity"
-          iconColor="#024fa7"
-          iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
-        />
+      {/* Stat Cards - fluid single row: always 5 in one line, shrink to fit, no scroll, no wrap */}
+      <div className="grid grid-cols-5 gap-3 2xl:gap-4">
+        <div className="min-w-0">
+          <StatCard
+            title="Total Employees"
+            value={stats.totalEmployees}
+            iconName="totalEmployees"
+            iconColor="#024fa7"
+            iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
+          />
+        </div>
+        <div className="min-w-0">
+          <StatCard
+            title="Present Today"
+            value={stats.presentToday}
+            iconName="presentToday"
+            iconColor="#024fa7"
+            iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
+          />
+        </div>
+        <div className="min-w-0">
+          <StatCard
+            title="Absent Today"
+            value={stats.absentToday}
+            iconName="absentToday"
+            iconColor="#024fa7"
+            iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
+          />
+        </div>
+        <div className="min-w-0">
+          <StatCard
+            title="On Leave Today"
+            value={stats.onLeaveToday}
+            iconName="onLeaveToday"
+            iconColor="#024fa7"
+            iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
+          />
+        </div>
+        <div className="min-w-0">
+          <StatCard
+            title="Approvals"
+            value={stats.pendingLeaveApprovals + stats.pendingExpenseApprovals}
+            iconName="activity"
+            iconColor="#024fa7"
+            iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
+          />
+        </div>
       </div>
 
-      {/* Quick Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <Card padding="sm" hover>
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-50 p-2 rounded-lg">
+      {/* Quick Stats Row - fluid single row: always 5 in one line, shrink to fit, no scroll, no wrap */}
+      <div className="grid grid-cols-5 gap-3 2xl:gap-4">
+        <Card padding="none" hover className="min-w-0 overflow-hidden p-3 xl:p-4">
+          <div className="flex items-center gap-2 xl:gap-3">
+            <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
               <Briefcase size={18} className="text-[#024fa7]" />
             </div>
-            <div>
-              <p className="text-lg font-bold text-[#17324D]">{stats.openVacancies}</p>
-              <p className="text-xs text-gray-500">Open Vacancies</p>
+            <div className="min-w-0">
+              <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{stats.openVacancies}</p>
+              <p className="truncate whitespace-nowrap text-[11px] xl:text-xs text-gray-500">Open Vacancies</p>
             </div>
           </div>
         </Card>
-        <Card padding="sm" hover>
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-50 p-2 rounded-lg">
+        <Card padding="none" hover className="min-w-0 overflow-hidden p-3 xl:p-4">
+          <div className="flex items-center gap-2 xl:gap-3">
+            <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
               <UserPlus size={18} className="text-[#024fa7]" />
             </div>
-            <div>
-              <p className="text-lg font-bold text-[#17324D]">{stats.newJoinersThisMonth}</p>
-              <p className="text-xs text-gray-500">New Joiners</p>
+            <div className="min-w-0">
+              <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{stats.newJoinersThisMonth}</p>
+              <p className="truncate whitespace-nowrap text-[11px] xl:text-xs text-gray-500">New Joiners</p>
             </div>
           </div>
         </Card>
-        <Card padding="sm" hover>
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-50 p-2 rounded-lg">
+        <Card padding="none" hover className="min-w-0 overflow-hidden p-3 xl:p-4">
+          <div className="flex items-center gap-2 xl:gap-3">
+            <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
               <Clock size={18} className="text-[#024fa7]" />
             </div>
-            <div>
-              <p className="text-lg font-bold text-[#17324D]">{stats.lateToday}</p>
-              <p className="text-xs text-gray-500">Late Today</p>
+            <div className="min-w-0">
+              <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{stats.lateToday}</p>
+              <p className="truncate whitespace-nowrap text-[11px] xl:text-xs text-gray-500">Late Today</p>
             </div>
           </div>
         </Card>
-        <Card padding="sm" hover>
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-50 p-2 rounded-lg">
+        <Card padding="none" hover className="min-w-0 overflow-hidden p-3 xl:p-4">
+          <div className="flex items-center gap-2 xl:gap-3">
+            <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
               <DollarSign size={18} className="text-[#024fa7]" />
             </div>
-            <div>
-              <p className="text-lg font-bold text-[#17324D]">{stats.payrollStatus}</p>
-              <p className="text-xs text-gray-500">Payroll Status</p>
+            <div className="min-w-0">
+              <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{stats.payrollStatus}</p>
+              <p className="truncate whitespace-nowrap text-[11px] xl:text-xs text-gray-500">Payroll Status</p>
             </div>
           </div>
         </Card>
-        <Card padding="sm" hover>
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-50 p-2 rounded-lg">
+        <Card padding="none" hover className="min-w-0 overflow-hidden p-3 xl:p-4">
+          <div className="flex items-center gap-2 xl:gap-3">
+            <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
               <ClipboardCheck size={18} className="text-[#024fa7]" />
             </div>
-            <div>
-              <p className="text-lg font-bold text-[#17324D]">{stats.attendanceRate}%</p>
-              <p className="text-xs text-gray-500">Attendance Rate</p>
+            <div className="min-w-0">
+              <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{stats.attendanceRate}%</p>
+              <p className="truncate whitespace-nowrap text-[11px] xl:text-xs text-gray-500">Attendance Rate</p>
             </div>
           </div>
         </Card>
@@ -272,18 +282,17 @@ export default function AdminDashboard() {
             <h3 className="text-base font-semibold text-[#17324D]">Department Headcount</h3>
             <Badge variant="default">{stats.totalEmployees} Total</Badge>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {deptCounts.slice(0, 6).map(dept => (
               <div key={dept.name} className="flex items-center gap-3">
-                <span className="text-sm text-[#263238] w-32 truncate">{dept.name}</span>
-                <div className="flex-1 bg-[#EAF2F4] rounded-full h-6 relative overflow-hidden">
+                <span className="text-[13px] font-medium text-[#263238] w-32 truncate">{dept.name}</span>
+                <div className="flex-1 bg-[#EAF2F4] rounded-full h-2.5 overflow-hidden">
                   <div
-                    className={`${dept.color} h-full rounded-full transition-all duration-500 flex items-center justify-end pr-2`}
-                    style={{ width: `${(dept.count / maxDeptCount) * 100}%`, minWidth: '32px' }}
-                  >
-                    <span className="text-xs font-semibold text-white">{dept.count}</span>
-                  </div>
+                    className={`${dept.color} h-full rounded-full transition-all duration-500`}
+                    style={{ width: `${(dept.count / maxDeptCount) * 100}%`, minWidth: '8px' }}
+                  />
                 </div>
+                <span className="w-6 text-right text-xs font-semibold tabular-nums text-[#17324D]">{dept.count}</span>
               </div>
             ))}
           </div>

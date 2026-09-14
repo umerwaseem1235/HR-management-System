@@ -60,8 +60,8 @@ export default function ReportsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Insights"
           title="Reports"
+<<<<<<< HEAD
           subtitle="Export HR analytics across every module — each PDF carries full record-level detail"
           actions={
             <Button variant="primary" size="md" onClick={handleExportAll} loading={downloading === 'all'} disabled={downloading !== null}>
@@ -69,6 +69,8 @@ export default function ReportsPage() {
               {downloading === 'all' ? 'Building pack…' : 'Download all (PDF pack)'}
             </Button>
           }
+=======
+>>>>>>> 8cc082be15aa43251f6903f3add562590a741837
         />
 
         <Card padding="sm">

@@ -97,10 +97,13 @@ export default function DocumentsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Records"
           title="Documents"
+<<<<<<< HEAD
           subtitle="Company and employee documents in one place"
           actions={!isEmployee && <Button variant="primary" onClick={() => { resetUpload(); setShowUpload(true); }} className="cursor-pointer whitespace-nowrap"><Upload size={16} /> Upload</Button>}
+=======
+          actions={!isEmployee && <Button variant="primary"><Upload size={16} /> Upload</Button>}
+>>>>>>> 8cc082be15aa43251f6903f3add562590a741837
         />
 
         <Card padding="sm">

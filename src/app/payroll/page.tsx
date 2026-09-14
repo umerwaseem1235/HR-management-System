@@ -209,9 +209,7 @@ export default function PayrollPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Compensation"
           title="Payroll"
-          subtitle="Payslips, payroll runs and salary structures"
           actions={isAdmin && (
             <Button variant="primary" onClick={() => setActiveTab('runs')}>
               <Calculator size={16} /> Process Payroll

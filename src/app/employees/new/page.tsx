@@ -28,9 +28,7 @@ export default function AddEmployeePage() {
         </Link>
 
         <PageHeader
-          eyebrow="Workforce"
           title="Add New Employee"
-          subtitle="Complete the steps below to onboard a new team member"
         />
 
         {/* Stepper */}

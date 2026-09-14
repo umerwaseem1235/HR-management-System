@@ -76,9 +76,7 @@ export default function LeaveRequestPage() {
           <ArrowLeft size={16} /> Back to Leave
         </Link>
         <PageHeader
-          eyebrow="Time Off"
           title="Request Leave"
-          subtitle={`Requesting as ${employee ? `${employee.firstName} ${employee.lastName}` : user.name}`}
         />
         <Card>
           <form onSubmit={handleSubmit} className="space-y-5">

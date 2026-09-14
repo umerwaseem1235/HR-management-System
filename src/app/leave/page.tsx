@@ -190,13 +190,7 @@ export default function LeavePage() {
     <DashboardLayout>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Time Off"
           title={isEmployee ? "My Leave" : "Leave Management"}
-          subtitle={
-            isEmployee
-              ? "Request time off and track your leave balances"
-              : "Review leave requests and balances across the organization"
-          }
           actions={
             user.role !== "super_admin" ? (
               <Button
