@@ -9,6 +9,7 @@ interface NotificationContextType {
   unreadCount: number;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
+  addNotification: (input: { title: string; message: string; type?: Notification['type']; link?: string }) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -50,9 +51,22 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
+  const addNotification = (input: { title: string; message: string; type?: Notification['type']; link?: string }) => {
+    const n: Notification = {
+      id: `n-${Date.now()}`,
+      title: input.title,
+      message: input.message,
+      type: input.type || 'info',
+      read: false,
+      createdAt: new Date().toISOString(),
+      link: input.link,
+    };
+    setNotifications((prev) => [n, ...prev]);
+  };
+
   return (
     <NotificationContext.Provider
-      value={{ notifications, unreadCount: notifications.filter((n) => !n.read).length, markAsRead, markAllAsRead }}
+      value={{ notifications, unreadCount: notifications.filter((n) => !n.read).length, markAsRead, markAllAsRead, addNotification }}
     >
       {children}
     </NotificationContext.Provider>

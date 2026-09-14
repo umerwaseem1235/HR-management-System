@@ -11,6 +11,7 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Select from '../../components/ui/Select';
 import Input from '../../components/ui/Input';
+import SearchBar from '../../components/ui/SearchBar';
 import {
   DollarSign, FileText, Calculator, Download, Eye, Plus, Pencil,
   Trash2, Lock, ArrowLeft, CheckCircle2, AlertTriangle, CalendarDays,
@@ -54,6 +55,10 @@ export default function PayrollPage() {
 
   // ---- Payslips tab: month filter + view ----
   const [payslipFilter, setPayslipFilter] = useState('all');
+  const [payslipSearch, setPayslipSearch] = useState('');
+  const [runSearch, setRunSearch] = useState('');
+  const [runDetailSearch, setRunDetailSearch] = useState('');
+  const [compSearch, setCompSearch] = useState('');
   const [viewSlip, setViewSlip] = useState<Payslip | null>(null);
 
   // ---- Runs tab: new run form ----
@@ -81,8 +86,20 @@ export default function PayrollPage() {
       const [m, y] = payslipFilter.split('|');
       list = list.filter(p => p.month === m && String(p.year) === y);
     }
+    if (payslipSearch.trim()) list = list.filter(p => p.employeeName.toLowerCase().includes(payslipSearch.trim().toLowerCase()));
     return list;
-  }, [payslips, payslipFilter, isAdmin, user]);
+  }, [payslips, payslipFilter, payslipSearch, isAdmin, user]);
+
+  const visibleRuns = useMemo(() => {
+    if (!runSearch.trim()) return runs;
+    return runs.filter(r => `${r.month} ${r.year} ${r.id} ${r.status}`.toLowerCase().includes(runSearch.trim().toLowerCase()));
+  }, [runs, runSearch]);
+
+  const visibleRunItems = useMemo(() => {
+    if (!selectedRun) return [];
+    if (!runDetailSearch.trim()) return selectedRun.items;
+    return selectedRun.items.filter(i => `${i.employeeName} ${i.department || ''}`.toLowerCase().includes(runDetailSearch.trim().toLowerCase()));
+  }, [selectedRun, runDetailSearch]);
 
   const monthFilterOptions = useMemo(() => {
     const seen = new Map<string, { m: string; y: number }>();
@@ -236,8 +253,11 @@ export default function PayrollPage() {
                       options={monthFilterOptions}
                     />
                   </div>
-                  <p className="text-xs text-gray-500 sm:ml-auto">{visiblePayslips.length} payslip(s)</p>
+                  <div className="flex-1 sm:max-w-xs sm:ml-auto">
+                    <SearchBar value={payslipSearch} onChange={setPayslipSearch} placeholder="Search employee…" />
+                  </div>
                 </div>
+                <p className="text-xs text-gray-500">{visiblePayslips.length} payslip(s)</p>
 
                 {visiblePayslips.length === 0 ? (
                   <div className="text-center py-12 text-gray-500">
@@ -297,9 +317,14 @@ export default function PayrollPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-base font-semibold text-[#17324D] mb-3">Payroll History ({runs.length})</h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
+                    <h3 className="text-base font-semibold text-[#17324D]">Payroll History ({visibleRuns.length})</h3>
+                    <div className="flex-1 sm:max-w-xs sm:ml-auto">
+                      <SearchBar value={runSearch} onChange={setRunSearch} placeholder="Search month / year / status…" />
+                    </div>
+                  </div>
                   <div className="space-y-3">
-                    {runs.map(run => (
+                    {visibleRuns.map(run => (
                       <div key={run.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg bg-white border border-[#D6E4E8] gap-3">
                         <div>
                           <p className="text-sm font-semibold text-[#17324D]">{run.month} {run.year} <span className="font-normal text-gray-400">· {run.id}</span></p>
@@ -380,6 +405,11 @@ export default function PayrollPage() {
                 </div>
 
                 <div className="overflow-x-auto rounded-xl border border-[#D6E4E8]">
+                  <div className="p-3 border-b border-[#D6E4E8]">
+                    <div className="sm:max-w-xs sm:ml-auto">
+                      <SearchBar value={runDetailSearch} onChange={setRunDetailSearch} placeholder="Search employee…" />
+                    </div>
+                  </div>
                   <table className="w-full min-w-[880px] text-sm">
                     <thead>
                       <tr className="bg-[#EAF2F4]/60 text-left text-xs uppercase tracking-wide text-gray-500">
@@ -394,7 +424,7 @@ export default function PayrollPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedRun.items.map(item => (
+                      {visibleRunItems.map(item => (
                         <tr key={item.employeeId} className="border-t border-[#D6E4E8] hover:bg-[#EAF2F4]/30">
                           <td className="px-4 py-3">
                             <p className="font-medium text-[#263238]">{item.employeeName}</p>
@@ -452,7 +482,10 @@ export default function PayrollPage() {
                     <h3 className="text-base font-semibold text-[#17324D]">Default Salary Components</h3>
                     <p className="text-xs text-gray-500">Applied automatically to every new payroll run. Changes affect future runs only — finalized runs keep their snapshot.</p>
                   </div>
-                  <div className="sm:ml-auto flex gap-2">
+                  <div className="sm:ml-auto flex gap-2 flex-wrap items-center">
+                    <div className="w-52">
+                      <SearchBar value={compSearch} onChange={setCompSearch} placeholder="Search component…" />
+                    </div>
                     <Button variant="outline" size="sm" onClick={() => setCompModal({ name: '', amount: '', kind: 'allowance' })}>
                       <Plus size={14} /> Add Allowance
                     </Button>
@@ -468,7 +501,7 @@ export default function PayrollPage() {
                       {kind === 'allowance' ? 'Allowances' : 'Deductions'}
                     </h4>
                     <div className="space-y-2">
-                      {components.filter(c => c.kind === kind).map(comp => (
+                      {components.filter(c => c.kind === kind && (!compSearch.trim() || c.name.toLowerCase().includes(compSearch.trim().toLowerCase()))).map(comp => (
                         <div key={comp.id} className="flex items-center justify-between p-3 rounded-lg bg-white border border-[#D6E4E8]">
                           <p className="text-sm font-medium text-[#263238]">{comp.name}</p>
                           <div className="flex items-center gap-3">
@@ -500,23 +533,19 @@ export default function PayrollPage() {
                 <div className="flex flex-col sm:flex-row sm:items-end gap-3 rounded-xl border border-[#D6E4E8] bg-[#EAF2F4]/40 p-4">
                   <div className="sm:w-64">
                     <label className="block text-sm font-medium text-[#263238] mb-1.5">Company default (days/month)</label>
-                    <input
-                      type="number"
-                      min={0}
-                      step="0.5"
+                    <NumberField
                       value={monthlyDefault}
-                      onChange={e => setMonthlyDefault(Math.max(0, Math.round((Number(e.target.value) || 0) * 100) / 100))}
+                      step="0.5"
+                      onCommit={n => setMonthlyDefault(Math.max(0, Math.round(n * 100) / 100))}
                       className="w-full rounded-lg border border-[#D6E4E8] bg-white px-4 py-2.5 text-sm focus:border-[#0F8B8D] focus:outline-none"
                     />
                   </div>
                   <div className="sm:w-64">
                     <label className="block text-sm font-medium text-[#263238] mb-1.5">Company default fine ($)</label>
-                    <input
-                      type="number"
-                      min={0}
-                      step="10"
+                    <NumberField
                       value={fineDefault}
-                      onChange={e => setFineDefault(Math.max(0, Math.round(Number(e.target.value) || 0)))}
+                      step="10"
+                      onCommit={n => setFineDefault(Math.max(0, Math.round(n)))}
                       className="w-full rounded-lg border border-[#D6E4E8] bg-white px-4 py-2.5 text-sm focus:border-[#0F8B8D] focus:outline-none"
                     />
                   </div>
@@ -576,7 +605,7 @@ export default function PayrollPage() {
                     const isCustom = empMonthly[overrideEmpId] !== undefined;
                     const effective = resolveMonthlyLeaves(overrideEmpId, monthlyDefault, empMonthly);
                     return (
-                      <div className="space-y-3 rounded-lg bg-white border border-[#D6E4E8] p-4">
+                        <div className="space-y-3 rounded-lg bg-white border border-[#D6E4E8] p-4">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold text-[#17324D]">{emp.firstName} {emp.lastName}</p>
                           {isCustom
@@ -597,35 +626,33 @@ export default function PayrollPage() {
                             </button>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 sm:w-72">
-                          <label className="text-xs text-gray-500 flex-shrink-0">Paid leaves</label>
-                          <input
-                            type="number"
-                            min={0}
-                            step="0.5"
+                        <div className="grid grid-cols-[96px_130px_60px] items-center justify-start gap-2">
+                          <label className="text-[13px] text-gray-500 whitespace-nowrap">Paid leaves</label>
+                          <NumberField
+                            key={`leaves-${overrideEmpId}`}
                             value={effective}
-                            onChange={e => setEmpMonthly(prev => ({
+                            step="0.5"
+                            onCommit={n => setEmpMonthly(prev => ({
                               ...prev,
-                              [overrideEmpId]: Math.max(0, Math.round((Number(e.target.value) || 0) * 100) / 100),
+                              [overrideEmpId]: Math.max(0, Math.round(n * 100) / 100),
                             }))}
-                            className="w-full rounded-lg border border-[#D6E4E8] px-3 py-2 text-sm text-right focus:border-[#0F8B8D] focus:outline-none"
+                            className="h-9 w-full min-w-0 rounded-lg border border-[#D6E4E8] px-3 text-sm text-center tabular-nums focus:border-[#0F8B8D] focus:outline-none"
                           />
-                          <span className="text-xs text-gray-500 flex-shrink-0">days/mo</span>
+                          <span className="text-[13px] text-gray-500 whitespace-nowrap">days/mo</span>
                         </div>
-                        <div className="flex items-center gap-2 sm:w-72">
-                          <label className="text-xs text-gray-500 flex-shrink-0">Manual fine</label>
-                          <input
-                            type="number"
-                            min={0}
-                            step="10"
+                        <div className="grid grid-cols-[96px_130px_60px] items-center justify-start gap-2">
+                          <label className="text-[13px] text-gray-500 whitespace-nowrap">Manual fine</label>
+                          <NumberField
+                            key={`fine-${overrideEmpId}`}
                             value={empFines[overrideEmpId] ?? fineDefault}
-                            onChange={e => setEmpFines(prev => ({
+                            step="10"
+                            onCommit={n => setEmpFines(prev => ({
                               ...prev,
-                              [overrideEmpId]: Math.max(0, Math.round(Number(e.target.value) || 0)),
+                              [overrideEmpId]: Math.max(0, Math.round(n)),
                             }))}
-                            className="w-full rounded-lg border border-[#D6E4E8] px-3 py-2 text-sm text-right focus:border-[#0F8B8D] focus:outline-none"
+                            className="h-9 w-full min-w-0 rounded-lg border border-[#D6E4E8] px-3 text-sm text-center tabular-nums focus:border-[#0F8B8D] focus:outline-none"
                           />
-                          <span className="text-xs text-gray-500 flex-shrink-0">$</span>
+                          <span className="text-[13px] text-gray-500 whitespace-nowrap">$</span>
                         </div>
                       </div>
                     );
@@ -746,6 +773,44 @@ export default function PayrollPage() {
   );
 }
 
+/* ---------- Professional numeric input: backspace clears, type fresh ---------- */
+function NumberField({ value, onCommit, step = 'any', min = 0, className = '', placeholder }: {
+  value: number;
+  onCommit: (n: number) => void;
+  step?: string;
+  min?: number;
+  className?: string;
+  placeholder?: string;
+}) {
+  const [draft, setDraft] = React.useState<string | null>(null);
+  const display = draft ?? String(value ?? 0);
+
+  return (
+    <input
+      type="number"
+      min={min}
+      step={step}
+      value={display}
+      placeholder={placeholder}
+      onFocus={e => e.target.select()}
+      onChange={e => {
+        const raw = e.target.value;
+        setDraft(raw);
+        if (raw === '') return; // let user clear with backspace, commit on blur / next type
+        const n = Number(raw);
+        if (!Number.isNaN(n)) onCommit(n);
+      }}
+      onBlur={() => {
+        if (draft !== null) {
+          if (draft === '' || Number.isNaN(Number(draft))) onCommit(0);
+          setDraft(null);
+        }
+      }}
+      className={className}
+    />
+  );
+}
+
 /* ---------- Inline line-item editor (draft runs only) ---------- */
 function LineEditor({ line, onSave, onCancel }: {
   line: PayrollLineItem;
@@ -783,11 +848,10 @@ function LineEditor({ line, onSave, onCancel }: {
               className="flex-1 rounded-lg border border-[#D6E4E8] px-3 py-2 text-sm focus:border-[#0F8B8D] focus:outline-none"
               placeholder="Name"
             />
-            <input
-              type="number"
-              min={0}
+            <NumberField
               value={row.amount}
-              onChange={e => editRow(list, setList, i, 'amount', e.target.value)}
+              step="10"
+              onCommit={v => editRow(list, setList, i, 'amount', String(v))}
               className="w-28 rounded-lg border border-[#D6E4E8] px-3 py-2 text-sm focus:border-[#0F8B8D] focus:outline-none"
               placeholder="0"
             />

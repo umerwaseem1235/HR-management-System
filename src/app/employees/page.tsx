@@ -17,6 +17,7 @@ import { Employee } from '../../lib/types';
 
 export default function EmployeesPage() {
   const [search, setSearch] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
@@ -24,7 +25,8 @@ export default function EmployeesPage() {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
   const filtered = employees.filter(emp => {
-    const matchSearch = !search || `${emp.firstName} ${emp.lastName} ${emp.employeeCode}`.toLowerCase().includes(search.toLowerCase());
+    const q = search.trim().toLowerCase();
+    const matchSearch = !q || `${emp.firstName} ${emp.lastName} ${emp.employeeCode} ${emp.email} ${emp.department} ${emp.designation} ${emp.branch} ${emp.phone}`.toLowerCase().includes(q);
     const matchDept = !deptFilter || emp.department === deptFilter;
     const matchStatus = !statusFilter || emp.status === statusFilter;
     return matchSearch && matchDept && matchStatus;
@@ -117,32 +119,54 @@ export default function EmployeesPage() {
         />
 
         <Card padding="sm">
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <SearchBar
               value={search}
               onChange={setSearch}
-              placeholder="Search by name or ID..."
-              className="flex-1"
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => { if (!search.trim()) setSearchFocused(false); }}
+              placeholder="Search by name or ID... (click to expand)"
+              className="flex-1 transition-all duration-300"
+              size="lg"
             />
-            <Select
-              value={deptFilter}
-              onChange={(e) => setDeptFilter(e.target.value)}
-              options={[
-                { value: '', label: 'All Departments' },
-                ...DEPARTMENTS.map(d => ({ value: d, label: d })),
-              ]}
-            />
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              options={[
-                { value: '', label: 'All Status' },
-                { value: 'Active', label: 'Active' },
-                { value: 'Inactive', label: 'Inactive' },
-                { value: 'Probation', label: 'Probation' },
-                { value: 'On Notice', label: 'On Notice' },
-              ]}
-            />
+            {searchFocused && (
+              <button
+                type="button"
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => { setSearch(''); setSearchFocused(false); }}
+                title="Show filters"
+                className="shrink-0 rounded-xl border border-[#D6E4E8] px-4 py-3.5 text-sm font-medium text-[#024fa7] hover:bg-[#EAF2F4] cursor-pointer whitespace-nowrap"
+              >
+                Show filters
+              </button>
+            )}
+            <div className={`grid gap-3 transition-all duration-300 overflow-hidden ${searchFocused ? 'grid-rows-[0fr] opacity-0 sm:hidden' : 'grid-rows-[1fr] opacity-100'}`}>
+              <div className="flex flex-col sm:flex-row gap-3 min-h-0">
+                <div className="sm:w-52">
+                  <Select
+                    value={deptFilter}
+                    onChange={(e) => setDeptFilter(e.target.value)}
+                    options={[
+                      { value: '', label: 'All Departments' },
+                      ...DEPARTMENTS.map(d => ({ value: d, label: d })),
+                    ]}
+                  />
+                </div>
+                <div className="sm:w-44">
+                  <Select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    options={[
+                      { value: '', label: 'All Status' },
+                      { value: 'Active', label: 'Active' },
+                      { value: 'Inactive', label: 'Inactive' },
+                      { value: 'Probation', label: 'Probation' },
+                      { value: 'On Notice', label: 'On Notice' },
+                    ]}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </Card>
 

@@ -11,11 +11,12 @@ import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import { Plus, DollarSign, CheckCircle2, XCircle, Send, Trash2, Pencil, Paperclip, X, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { Plus, DollarSign, CheckCircle2, XCircle, Send, Trash2, Pencil, Paperclip, X, ZoomIn, ZoomOut, RotateCcw, Eye } from 'lucide-react';
 import { mockEmployees } from '../../lib/mock-data';
 import { EXPENSE_CATEGORIES } from '../../lib/constants';
 import { useAuth } from '../../contexts/AuthContext';
 import { useExpense } from '../../contexts/ExpenseContext';
+import type { ExpenseClaim } from '../../lib/types';
 
 export default function ExpensesPage() {
   const { user } = useAuth();
@@ -34,14 +35,20 @@ export default function ExpensesPage() {
   const [receiptName, setReceiptName] = useState('');
   const [fileKey, setFileKey] = useState(0);
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
+  const [viewingExp, setViewingExp] = useState<ExpenseClaim | null>(null);
+  const [confirmApproveExp, setConfirmApproveExp] = useState<ExpenseClaim | null>(null);
+  const [confirmRejectExp, setConfirmRejectExp] = useState<ExpenseClaim | null>(null);
+  const [confirmDeleteExp, setConfirmDeleteExp] = useState<ExpenseClaim | null>(null);
   const [zoom, setZoom] = useState(0.5);
 
-  const openReceipt = (receipt: string) => {
-    setViewingReceipt(receipt);
+  const openReceipt = (exp: ExpenseClaim) => {
+    setViewingExp(exp);
+    setViewingReceipt(exp.receipt ?? null);
     setZoom(0.5);
   };
 
   const closeReceipt = () => {
+    setViewingExp(null);
     setViewingReceipt(null);
     setZoom(0.5);
   };
@@ -216,30 +223,46 @@ export default function ExpensesPage() {
                 {visibleExpenses.map(exp => (
                   <tr key={exp.id} className="hover:bg-[#EAF2F4]/50">
                     {!isEmployee && (
-                      <td className="px-6 py-4"><div className="flex items-center gap-3"><Avatar name={exp.employeeName} size="sm" /><div><p className="text-sm font-medium">{exp.employeeName}</p><p className="text-xs text-gray-500">{exp.description}</p>{exp.receipt && (<button type="button" onClick={() => openReceipt(exp.receipt!)} className="inline-flex items-center gap-1 text-xs text-[#024fa7] hover:underline mt-0.5"><Paperclip size={12} /> View receipt</button>)}</div></div></td>
+                      <td className="px-6 py-4"><div className="flex items-center gap-3"><Avatar name={exp.employeeName} size="sm" /><div><p className="text-sm font-medium">{exp.employeeName}</p><p className="text-xs text-gray-500">{exp.description}</p></div></div></td>
                     )}
                     {isEmployee && (
-                      <td className="px-6 py-4"><div><p className="text-sm font-medium">{exp.category}</p><p className="text-xs text-gray-500">{exp.description}</p>{exp.receipt && (<button type="button" onClick={() => openReceipt(exp.receipt!)} className="inline-flex items-center gap-1 text-xs text-[#024fa7] hover:underline mt-0.5"><Paperclip size={12} /> View receipt</button>)}</div></td>
+                      <td className="px-6 py-4"><div><p className="text-sm font-medium">{exp.category}</p><p className="text-xs text-gray-500">{exp.description}</p></div></td>
                     )}
                     {!isEmployee && <td className="px-6 py-4 text-sm">{exp.category}</td>}
                     <td className="px-6 py-4 text-sm font-semibold text-[#17324D]">${exp.amount.toLocaleString()}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{exp.date}</td>
                     <td className="px-6 py-4">{statusBadge(exp.status)}</td>
                     {!isEmployee && <td className="px-6 py-4">
-                      <div className="flex gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {exp.status === 'Pending' && <>
-                          <button title="Approve" onClick={() => updateExpenseStatus(exp.id, 'Approved')} className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-200"><CheckCircle2 size={16} /></button>
-                          <button title="Reject" onClick={() => updateExpenseStatus(exp.id, 'Rejected')} className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200"><XCircle size={16} /></button>
+                          <button title="Approve" onClick={() => setConfirmApproveExp(exp)} className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 cursor-pointer"><CheckCircle2 size={16} /></button>
+                          <button title="Reject" onClick={() => setConfirmRejectExp(exp)} className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 cursor-pointer"><XCircle size={16} /></button>
                         </>}
-                        <button title="Delete" onClick={() => { if (window.confirm('Delete this expense claim?')) deleteExpenseClaim(exp.id); }} className="p-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600"><Trash2 size={16} /></button>
+                        <button title="Delete" onClick={() => setConfirmDeleteExp(exp)} className="p-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 cursor-pointer"><Trash2 size={16} /></button>
+                        <button
+                          type="button"
+                          title="View Receipt"
+                          onClick={() => openReceipt(exp)}
+                          className="p-1.5 rounded-lg bg-[#EAF2F4] text-[#0F8B8D] hover:bg-[#D6E4E8] cursor-pointer"
+                        >
+                          <Eye size={16} />
+                        </button>
                       </div>
                     </td>}
                     {isEmployee && <td className="px-6 py-4">
-                      <div className="flex gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {exp.status === 'Pending' && (
-                          <button title="Edit" onClick={() => openEdit(exp)} className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"><Pencil size={16} /></button>
+                          <button title="Edit" onClick={() => openEdit(exp)} className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer"><Pencil size={16} /></button>
                         )}
-                        <button title="Delete" onClick={() => { if (window.confirm('Delete this expense claim?')) deleteExpenseClaim(exp.id); }} className="p-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600"><Trash2 size={16} /></button>
+                        <button title="Delete" onClick={() => setConfirmDeleteExp(exp)} className="p-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 cursor-pointer"><Trash2 size={16} /></button>
+                        <button
+                          type="button"
+                          title="View Receipt"
+                          onClick={() => openReceipt(exp)}
+                          className="p-1.5 rounded-lg bg-[#EAF2F4] text-[#0F8B8D] hover:bg-[#D6E4E8] cursor-pointer"
+                        >
+                          <Eye size={16} />
+                        </button>
                       </div>
                     </td>}
                   </tr>
@@ -315,53 +338,139 @@ export default function ExpensesPage() {
         </form>
       </Modal>
 
-      <Modal isOpen={!!viewingReceipt} onClose={closeReceipt} title="Receipt" size="lg">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <button
-            type="button"
-            title="Zoom out"
-            onClick={zoomOut}
-            disabled={zoom <= 0.1}
-            className="p-2 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8] disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <ZoomOut size={16} />
-          </button>
-          <span className="text-sm font-medium text-[#263238] w-14 text-center">{Math.round(zoom * 100)}%</span>
-          <button
-            type="button"
-            title="Zoom in"
-            onClick={zoomIn}
-            disabled={zoom >= 3}
-            className="p-2 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8] disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <ZoomIn size={16} />
-          </button>
-          <button
-            type="button"
-            title="Reset zoom"
-            onClick={() => setZoom(0.5)}
-            className="p-2 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8]"
-          >
-            <RotateCcw size={16} />
-          </button>
-        </div>
-        <div className="overflow-auto max-h-[65vh] rounded-lg border border-[#D6E4E8] bg-[#EAF2F4]/40">
-          {viewingReceipt?.startsWith('data:application/pdf') ? (
-            <iframe
-              src={viewingReceipt}
-              title="Receipt"
-              className="w-full h-[65vh] origin-top"
-              style={{ transform: `scale(${zoom})` }}
-            />
-          ) : viewingReceipt ? (
-            <img
-              src={viewingReceipt}
-              alt="Expense receipt"
-              className="block mx-auto max-w-none origin-top"
-              style={{ transform: `scale(${zoom})` }}
-            />
-          ) : null}
-        </div>
+      <Modal isOpen={!!viewingExp} onClose={closeReceipt} title="Expense Details — View Receipt" size="lg">
+        {viewingExp && (
+          <div className="space-y-5">
+            <div className="flex items-start gap-3">
+              <Avatar name={viewingExp.employeeName} size="sm" />
+              <div className="flex-1">
+                <p className="text-base font-semibold text-[#17324D]">{viewingExp.employeeName}</p>
+                <p className="text-xs text-gray-500">{viewingExp.description}</p>
+              </div>
+              {statusBadge(viewingExp.status)}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-xl bg-[#EAF2F4]/60 border border-[#D6E4E8] p-4">
+              <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Category</p><p className="text-sm font-semibold text-[#17324D]">{viewingExp.category}</p></div>
+              <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Amount</p><p className="text-sm font-semibold text-[#17324D]">${viewingExp.amount.toLocaleString()}</p></div>
+              <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Date</p><p className="text-sm font-semibold text-[#17324D]">{viewingExp.date}</p></div>
+              <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Submitted</p><p className="text-sm font-semibold text-[#17324D]">{viewingExp.submittedOn}</p></div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-semibold text-[#17324D]">Receipt</p>
+                {viewingReceipt && (
+                  <div className="flex items-center gap-2">
+                    <button type="button" title="Zoom out" onClick={zoomOut} disabled={zoom <= 0.1} className="p-1.5 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8] disabled:opacity-40 disabled:cursor-not-allowed"><ZoomOut size={14} /></button>
+                    <span className="text-xs font-medium text-[#263238] w-12 text-center">{Math.round(zoom * 100)}%</span>
+                    <button type="button" title="Zoom in" onClick={zoomIn} disabled={zoom >= 3} className="p-1.5 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8] disabled:opacity-40 disabled:cursor-not-allowed"><ZoomIn size={14} /></button>
+                    <button type="button" title="Reset zoom" onClick={() => setZoom(0.5)} className="p-1.5 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8]"><RotateCcw size={14} /></button>
+                  </div>
+                )}
+              </div>
+              <div className="overflow-auto max-h-[55vh] rounded-xl border border-[#D6E4E8] bg-[#EAF2F4]/40 min-h-[180px] flex items-center justify-center">
+                {viewingReceipt?.startsWith('data:application/pdf') ? (
+                  <iframe src={viewingReceipt} title="Receipt" className="w-full h-[55vh] origin-top" style={{ transform: `scale(${zoom})` }} />
+                ) : viewingReceipt ? (
+                  <img src={viewingReceipt} alt="Expense receipt" className="block mx-auto max-w-none origin-top" style={{ transform: `scale(${zoom})` }} />
+                ) : (
+                  <div className="flex flex-col items-center gap-2 py-10 text-center">
+                    <div className="p-3 rounded-full bg-white border border-[#D6E4E8]"><Paperclip size={20} className="text-gray-400" /></div>
+                    <p className="text-sm font-medium text-[#17324D]">No receipt attached</p>
+                    <p className="text-xs text-gray-500">Employee did not upload a receipt for this claim.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal isOpen={!!confirmApproveExp} onClose={() => setConfirmApproveExp(null)} title="Approve Expense?" size="sm">
+        {confirmApproveExp && (
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 rounded-xl bg-green-50 border border-green-200 p-4">
+              <div className="p-2 rounded-full bg-white border border-green-200">
+                <CheckCircle2 size={20} className="text-green-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-600">
+                  Approve <span className="font-semibold text-[#17324D]">${confirmApproveExp.amount.toLocaleString()}</span> for{' '}
+                  <span className="font-semibold text-[#17324D]">{confirmApproveExp.employeeName}</span>?
+                </p>
+                <p className="text-xs text-gray-500 mt-1">{confirmApproveExp.category} · {confirmApproveExp.date} · {confirmApproveExp.description}</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">This will mark the claim as <span className="font-semibold text-green-700">Approved</span>. You can still reimburse or delete it later.</p>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setConfirmApproveExp(null)}>Cancel</Button>
+              <Button
+                variant="primary"
+                onClick={() => { updateExpenseStatus(confirmApproveExp.id, 'Approved'); setConfirmApproveExp(null); }}
+              >
+                <CheckCircle2 size={16} /> Confirm Approve
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal isOpen={!!confirmRejectExp} onClose={() => setConfirmRejectExp(null)} title="Reject Expense?" size="sm">
+        {confirmRejectExp && (
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 rounded-xl bg-red-50 border border-red-200 p-4">
+              <div className="p-2 rounded-full bg-white border border-red-200">
+                <XCircle size={20} className="text-red-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-600">
+                  Reject <span className="font-semibold text-[#17324D]">${confirmRejectExp.amount.toLocaleString()}</span> for{' '}
+                  <span className="font-semibold text-[#17324D]">{confirmRejectExp.employeeName}</span>?
+                </p>
+                <p className="text-xs text-gray-500 mt-1">{confirmRejectExp.category} · {confirmRejectExp.date} · {confirmRejectExp.description}</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">This will mark the claim as <span className="font-semibold text-red-600">Rejected</span>. The employee will be able to see this status.</p>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setConfirmRejectExp(null)}>Cancel</Button>
+              <Button
+                variant="danger"
+                onClick={() => { updateExpenseStatus(confirmRejectExp.id, 'Rejected'); setConfirmRejectExp(null); }}
+              >
+                <XCircle size={16} /> Confirm Reject
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal isOpen={!!confirmDeleteExp} onClose={() => setConfirmDeleteExp(null)} title="Delete Expense?" size="sm">
+        {confirmDeleteExp && (
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 rounded-xl bg-gray-50 border border-[#D6E4E8] p-4">
+              <div className="p-2 rounded-full bg-white border border-[#D6E4E8]">
+                <Trash2 size={20} className="text-red-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-600">
+                  Delete <span className="font-semibold text-[#17324D]">${confirmDeleteExp.amount.toLocaleString()}</span> — {confirmDeleteExp.category}?
+                </p>
+                <p className="text-xs text-gray-500 mt-1">{confirmDeleteExp.employeeName} · {confirmDeleteExp.date} · {confirmDeleteExp.description}</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">This action <span className="font-semibold">cannot be undone</span>. The claim will be permanently removed.</p>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setConfirmDeleteExp(null)}>Cancel</Button>
+              <Button
+                variant="danger"
+                onClick={() => { deleteExpenseClaim(confirmDeleteExp.id); setConfirmDeleteExp(null); }}
+              >
+                <Trash2 size={16} /> Delete
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </DashboardLayout>
   );

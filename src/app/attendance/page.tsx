@@ -22,6 +22,7 @@ import { mockAttendance, mockDashboardStats, mockEmployees } from '../../lib/moc
 import { AttendanceRecord } from '../../lib/types';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLeave } from '../../contexts/LeaveContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All Status' },
@@ -142,6 +143,8 @@ function buildMonthlySchedule(employeeId: string, employeeName: string, year: nu
 export default function AttendancePage() {
   const { user } = useAuth();
   const { leaveRequests } = useLeave();
+  const { addNotification } = useNotifications();
+  const [holidayMsg, setHolidayMsg] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const stats = mockDashboardStats;
@@ -430,11 +433,18 @@ export default function AttendancePage() {
   const handleAddHoliday = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const name = String(fd.get('holidayName') || '');
+    const name = String(fd.get('holidayName') || '').trim();
     const date = String(fd.get('holidayDate') || '');
     const type = String(fd.get('holidayType') || 'Public');
     if (!name || !date) return;
     setHolidays(current => [...current, { id: `h-${Date.now()}`, name, date, type: type as Holiday['type'] }]);
+    addNotification({
+      title: 'New Holiday Announced',
+      message: `${name} on ${date} (${type}) — notified to all ${mockEmployees.length} employees.`,
+      type: 'info',
+      link: '/attendance',
+    });
+    setHolidayMsg(`${name} on ${date} added — notification sent to all employees.`);
     e.currentTarget.reset();
   };
 
@@ -473,21 +483,20 @@ export default function AttendancePage() {
         {activeTab === 'daily' && (
           <>
             <Card padding="sm">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Input
-                  type="date"
-                  label="Date"
-                  value={viewDate}
-                  onChange={(e) => setViewDate(e.target.value)}
-                  className="sm:max-w-[200px]"
-                />
-                <div className="sm:ml-auto">
-                  <Button variant="primary" onClick={() => setViewDate(todayStr())}>
+              <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+                <div className="sm:w-[200px] shrink-0">
+                  <Input
+                    type="date"
+                    label="Date"
+                    value={viewDate}
+                    onChange={(e) => setViewDate(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2 sm:ml-auto shrink-0">
+                  <Button variant="primary" onClick={() => setViewDate(todayStr())} className="whitespace-nowrap">
                     <CalendarDays size={16} /> Today
                   </Button>
-                </div>
-                <div>
-                  <Button variant="secondary" onClick={() => setManualOpen(true)}>
+                  <Button variant="secondary" onClick={() => setManualOpen(true)} className="whitespace-nowrap">
                     <UserPlus size={16} /> Manual Entry
                   </Button>
                 </div>
@@ -783,7 +792,10 @@ export default function AttendancePage() {
                     ]}
                   />
                 </div>
-                <Button type="submit" size="sm" className="mt-3">
+                {holidayMsg && (
+                  <p className="mt-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs font-medium text-green-700">{holidayMsg}</p>
+                )}
+                <Button type="submit" size="sm" className="mt-3 cursor-pointer">
                   <Plus size={15} /> Add Holiday
                 </Button>
               </form>
