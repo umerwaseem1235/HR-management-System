@@ -172,9 +172,7 @@ export default function ExpensesPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Finance"
           title={isEmployee ? 'My Expenses' : 'Expenses'}
-          subtitle="Submit claims and track reimbursements"
           actions={
             <Button variant="primary" onClick={openNew}><Plus size={16} /> New Claim</Button>
           }
@@ -183,19 +181,19 @@ export default function ExpensesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card padding="sm">
             <div className="flex items-center gap-3">
-              <div className="bg-yellow-50 p-2.5 rounded-lg"><DollarSign size={20} className="text-yellow-600" /></div>
+              <div className="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] p-2 rounded-lg shadow-md ring-1 ring-black/5"><DollarSign size={18} strokeWidth={1.6} className="text-[#024fa7]" /></div>
               <div><p className="text-lg font-bold text-[#17324D]">${totalPending.toLocaleString()}</p><p className="text-xs text-gray-500">Pending Amount</p></div>
             </div>
           </Card>
           <Card padding="sm">
             <div className="flex items-center gap-3">
-              <div className="bg-green-50 p-2.5 rounded-lg"><CheckCircle2 size={20} className="text-green-600" /></div>
+              <div className="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] p-2 rounded-lg shadow-md ring-1 ring-black/5"><CheckCircle2 size={18} strokeWidth={1.6} className="text-[#024fa7]" /></div>
               <div><p className="text-lg font-bold text-[#17324D]">{visibleExpenses.filter(e => e.status === 'Approved').length}</p><p className="text-xs text-gray-500">Approved</p></div>
             </div>
           </Card>
           <Card padding="sm">
             <div className="flex items-center gap-3">
-              <div className="bg-blue-50 p-2.5 rounded-lg"><DollarSign size={20} className="text-blue-600" /></div>
+              <div className="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] p-2 rounded-lg shadow-md ring-1 ring-black/5"><DollarSign size={18} strokeWidth={1.6} className="text-[#024fa7]" /></div>
               <div><p className="text-lg font-bold text-[#17324D]">{visibleExpenses.filter(e => e.status === 'Reimbursed').length}</p><p className="text-xs text-gray-500">Reimbursed</p></div>
             </div>
           </Card>

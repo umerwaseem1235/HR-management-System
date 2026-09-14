@@ -37,9 +37,7 @@ export default function DocumentsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Records"
           title="Documents"
-          subtitle="Company and employee documents in one place"
           actions={!isEmployee && <Button variant="primary"><Upload size={16} /> Upload</Button>}
         />
 

@@ -249,32 +249,32 @@ export default function PerformancePage() {
       <DashboardLayout>
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-[#17324D]">My Daily Work</h1>
+            <h1 className="text-2xl font-bold leading-tight tracking-tight text-[#17324D]">My Daily Work</h1>
             <Button variant="primary" onClick={openAddWork}><Plus size={16} /> Add Daily Work</Button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card padding="sm">
               <div className="flex items-center gap-3">
-                <div className="bg-[#EAF2F4] p-2.5 rounded-lg"><ClipboardList size={20} className="text-[#024fa7]" /></div>
+                <div className="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] p-2 rounded-lg shadow-md ring-1 ring-black/5"><ClipboardList size={18} strokeWidth={1.6} className="text-[#024fa7]" /></div>
                 <div><p className="text-lg font-bold text-[#17324D]">{myWork.length}</p><p className="text-xs text-gray-500">Total Entries</p></div>
               </div>
             </Card>
             <Card padding="sm">
               <div className="flex items-center gap-3">
-                <div className="bg-blue-50 p-2.5 rounded-lg"><Send size={20} className="text-blue-600" /></div>
+                <div className="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] p-2 rounded-lg shadow-md ring-1 ring-black/5"><Send size={18} strokeWidth={1.6} className="text-[#024fa7]" /></div>
                 <div><p className="text-lg font-bold text-[#17324D]">{submittedCount}</p><p className="text-xs text-gray-500">Submitted</p></div>
               </div>
             </Card>
             <Card padding="sm">
               <div className="flex items-center gap-3">
-                <div className="bg-green-50 p-2.5 rounded-lg"><CheckCircle2 size={20} className="text-green-600" /></div>
+                <div className="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] p-2 rounded-lg shadow-md ring-1 ring-black/5"><CheckCircle2 size={18} strokeWidth={1.6} className="text-[#024fa7]" /></div>
                 <div><p className="text-lg font-bold text-[#17324D]">{approvedCount}</p><p className="text-xs text-gray-500">Approved</p></div>
               </div>
             </Card>
             <Card padding="sm">
               <div className="flex items-center gap-3">
-                <div className="bg-yellow-50 p-2.5 rounded-lg"><AlertCircle size={20} className="text-yellow-600" /></div>
+                <div className="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] p-2 rounded-lg shadow-md ring-1 ring-black/5"><AlertCircle size={18} strokeWidth={1.6} className="text-[#024fa7]" /></div>
                 <div><p className="text-lg font-bold text-[#17324D]">{revisionCount}</p><p className="text-xs text-gray-500">Needs Revision</p></div>
               </div>
             </Card>
@@ -374,16 +374,14 @@ export default function PerformancePage() {
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-5">
         <PageHeader
-          eyebrow="Growth"
           title="Performance Management"
-          subtitle="Reviews, goals and appraisal cycles at a glance"
         />
 
         {/* Compact metric cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <Card padding="none" hover>
             <div className="flex items-center gap-3 px-4 py-3">
-              <div className="bg-purple-50 p-2 rounded-xl shrink-0"><Target size={18} className="text-purple-600" /></div>
+              <div className="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] p-2 rounded-xl shadow-md ring-1 ring-black/5 shrink-0"><Target size={18} strokeWidth={1.6} className="text-[#024fa7]" /></div>
               <div className="min-w-0 leading-tight">
                 <p className="text-xl font-extrabold tracking-tight text-[#17324D]">{mockPerformanceReviews.length}</p>
                 <p className="text-xs text-gray-500 truncate">Total Reviews</p>
@@ -392,7 +390,7 @@ export default function PerformancePage() {
           </Card>
           <Card padding="none" hover>
             <div className="flex items-center gap-3 px-4 py-3">
-              <div className="bg-yellow-50 p-2 rounded-xl shrink-0"><Star size={18} className="text-yellow-600" /></div>
+              <div className="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] p-2 rounded-xl shadow-md ring-1 ring-black/5 shrink-0"><Star size={18} strokeWidth={1.6} className="text-[#024fa7]" /></div>
               <div className="min-w-0 leading-tight">
                 <p className="text-xl font-extrabold tracking-tight text-[#17324D]">{mockPerformanceReviews.filter(r => r.status !== 'Completed').length}</p>
                 <p className="text-xs text-gray-500 truncate">Pending Reviews</p>
@@ -401,7 +399,7 @@ export default function PerformancePage() {
           </Card>
           <Card padding="none" hover>
             <div className="flex items-center gap-3 px-4 py-3">
-              <div className="bg-green-50 p-2 rounded-xl shrink-0"><TrendingUp size={18} className="text-green-600" /></div>
+              <div className="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] p-2 rounded-xl shadow-md ring-1 ring-black/5 shrink-0"><TrendingUp size={18} strokeWidth={1.6} className="text-[#024fa7]" /></div>
               <div className="min-w-0 leading-tight">
                 <p className="text-xl font-extrabold tracking-tight text-[#17324D]">{mockGoals.length}</p>
                 <p className="text-xs text-gray-500 truncate">Active Goals</p>

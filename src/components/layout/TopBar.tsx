@@ -10,11 +10,9 @@ import { ROLE_LABELS } from '../../lib/constants';
 interface TopBarProps {
   onMenuClick: () => void;
   title?: string;
-  sidebarLocked?: boolean;
-  onToggleSidebarLock?: () => void;
 }
 
-export default function TopBar({ onMenuClick, title, sidebarLocked = false, onToggleSidebarLock }: TopBarProps) {
+export default function TopBar({ onMenuClick, title }: TopBarProps) {
   const { user, logout } = useAuth();
   const { notifications, markAsRead } = useNotifications();
   const router = useRouter();
@@ -49,22 +47,8 @@ export default function TopBar({ onMenuClick, title, sidebarLocked = false, onTo
   return (
     <header className="sticky top-0 z-30 border-b border-[#D6E4E8]/70 bg-white shadow-[0_4px_24px_-12px_rgba(23,50,77,0.25)]">
       <div className="flex h-16 items-center justify-between gap-3 px-4 lg:px-6">
-        {/* Left: Menu + Title */}
+        {/* Left: Title (mobile menu + title) */}
         <div className="flex min-w-0 items-center gap-3">
-          {onToggleSidebarLock && (
-            <button
-              onClick={onToggleSidebarLock}
-              title={sidebarLocked ? "Unlock sidebar hover" : "Lock sidebar open"}
-              aria-label={sidebarLocked ? "Unlock sidebar hover" : "Lock sidebar open"}
-              className={`hidden rounded-xl p-2 transition-all duration-200 active:scale-95 lg:block ${
-                sidebarLocked
-                  ? "bg-[#024fa7] text-white shadow-md shadow-[#024fa7]/30"
-                  : "text-[#263238] hover:bg-[#EAF2F4] hover:text-[#024fa7]"
-              }`}
-            >
-              <Menu size={20} />
-            </button>
-          )}
           <button
             onClick={onMenuClick}
             className="rounded-xl p-2 text-[#263238] transition-all hover:bg-[#EAF2F4] hover:text-[#024fa7] active:scale-95 lg:hidden"

@@ -278,16 +278,14 @@ export default function AttendancePage() {
       <DashboardLayout>
         <div className="space-y-6">
           <PageHeader
-            eyebrow="Time Tracking"
             title="My Attendance"
-            subtitle={monthLabel}
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard title="Present Days" value={presentDays} change={monthLabel} icon={<UserCheck size={22} className="text-green-600" />} iconBg="bg-green-50" />
-            <StatCard title="Absent Days" value={absentDays} change={monthLabel} icon={<UserX size={22} className="text-red-500" />} iconBg="bg-red-50" />
-            <StatCard title="Late Days" value={lateDays} change={monthLabel} icon={<Clock size={22} className="text-orange-500" />} iconBg="bg-orange-50" />
-            <StatCard title="Leaves Taken" value={leavesTaken} change={monthLabel} icon={<CalendarDays size={22} className="text-blue-500" />} iconBg="bg-blue-50" />
+            <StatCard title="Present Days" value={presentDays} change={monthLabel} icon={<UserCheck size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+            <StatCard title="Absent Days" value={absentDays} change={monthLabel} icon={<UserX size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+            <StatCard title="Late Days" value={lateDays} change={monthLabel} icon={<Clock size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+            <StatCard title="Leaves Taken" value={leavesTaken} change={monthLabel} icon={<CalendarDays size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
           </div>
 
           <Card padding="sm">
@@ -441,11 +439,9 @@ export default function AttendancePage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <PageHeader
-          eyebrow="Time Tracking"
-          title="Attendance"
-          subtitle="Monitor attendance across the organization"
-          actions={
+          <PageHeader
+            title="Attendance"
+            actions={
             <>
               <Badge variant="success">{stats.presentToday} Present</Badge>
               <Badge variant="danger">{stats.absentToday} Absent</Badge>
@@ -457,10 +453,10 @@ export default function AttendancePage() {
 
         {/* Today snapshot */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Present" value={stats.presentToday} icon={<UserCheck size={22} className="text-green-600" />} iconBg="bg-green-50" change="Today" />
-          <StatCard title="Absent" value={stats.absentToday} icon={<UserX size={22} className="text-red-500" />} iconBg="bg-red-50" change="Today" />
-          <StatCard title="Late" value={stats.lateToday} icon={<Clock size={22} className="text-orange-500" />} iconBg="bg-orange-50" change="Today" />
-          <StatCard title="On Leave" value={stats.onLeaveToday} icon={<CalendarDays size={22} className="text-blue-500" />} iconBg="bg-blue-50" change="Today" />
+          <StatCard title="Present" value={stats.presentToday} icon={<UserCheck size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" change="Today" />
+          <StatCard title="Absent" value={stats.absentToday} icon={<UserX size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" change="Today" />
+          <StatCard title="Late" value={stats.lateToday} icon={<Clock size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" change="Today" />
+          <StatCard title="On Leave" value={stats.onLeaveToday} icon={<CalendarDays size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" change="Today" />
         </div>
 
         <Card padding="none">
@@ -589,11 +585,11 @@ export default function AttendancePage() {
             </Card>
 
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-              <StatCard title="Present" value={agg.present} icon={<UserCheck size={22} className="text-green-600" />} iconBg="bg-green-50" change="employees" />
-              <StatCard title="Absent" value={agg.absent} icon={<UserX size={22} className="text-red-500" />} iconBg="bg-red-50" change="employees" />
-              <StatCard title="Late" value={agg.late} icon={<Clock size={22} className="text-orange-500" />} iconBg="bg-orange-50" change="employees" />
-              <StatCard title="Half Day" value={agg.halfDay} icon={<Sun size={22} className="text-yellow-500" />} iconBg="bg-yellow-50" change="employees" />
-              <StatCard title="On Leave" value={agg.leave} icon={<CalendarDays size={22} className="text-blue-500" />} iconBg="bg-blue-50" change="employees" />
+              <StatCard title="Present" value={agg.present} icon={<UserCheck size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" change="employees" />
+              <StatCard title="Absent" value={agg.absent} icon={<UserX size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" change="employees" />
+              <StatCard title="Late" value={agg.late} icon={<Clock size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" change="employees" />
+              <StatCard title="Half Day" value={agg.halfDay} icon={<Sun size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" change="employees" />
+              <StatCard title="On Leave" value={agg.leave} icon={<CalendarDays size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" change="employees" />
             </div>
 
             <Card>

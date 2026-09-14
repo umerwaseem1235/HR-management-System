@@ -106,9 +106,7 @@ export default function EmployeesPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Workforce"
           title="Employees"
-          subtitle={`${employees.length} total employees`}
           actions={
             <Button variant="primary" onClick={() => setIsAddEmployeeOpen(true)}>
               <UserPlus size={16} /> Add Employee

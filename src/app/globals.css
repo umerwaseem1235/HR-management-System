@@ -64,36 +64,35 @@ body {
   transition: opacity 300ms ease-in-out;
 }
 
-/* Sidebar nav scroll — thin scrollbar on the LEFT edge, visible ONLY while scrolling
-   (direction:rtl moves the scrollbar; children are reset to ltr) */
+/* Sidebar nav — scrollbar always hidden, still scrollable
+   (direction:rtl keeps the layout flushed; children are reset to ltr) */
 .sidebar-scroll {
   direction: rtl;
-  scrollbar-width: none; /* Firefox: hidden by default */
+  scrollbar-width: none; /* Firefox: hidden */
   -ms-overflow-style: none; /* IE/Edge legacy */
 }
 .sidebar-scroll > * {
   direction: ltr;
 }
 .sidebar-scroll::-webkit-scrollbar {
-  width: 0; /* Chrome/Safari/Edge: hidden by default */
+  display: none; /* Chrome/Safari/Edge: hidden */
+  width: 0;
+  height: 0;
 }
 .sidebar-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 .sidebar-scroll::-webkit-scrollbar-thumb {
-  background: rgba(147, 197, 253, 0.3);
-  border-radius: 999px;
+  background: transparent;
 }
-.sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(147, 197, 253, 0.55);
-}
-/* Shown while the user is actively scrolling (toggled via JS) */
+/* Neutralized: scrollbar must stay hidden even if `is-scrolling` is toggled */
 .sidebar-scroll.is-scrolling {
-  scrollbar-width: thin; /* Firefox */
-  scrollbar-color: rgba(147, 197, 253, 0.3) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 .sidebar-scroll.is-scrolling::-webkit-scrollbar {
-  width: 5px; /* Chrome/Safari/Edge */
+  display: none;
+  width: 0;
 }
 
 /* Dropdown entrance animation */

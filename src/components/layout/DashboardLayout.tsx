@@ -27,7 +27,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [sidebarLocked, setSidebarLocked] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -55,14 +55,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
-        hoverLock={sidebarLocked}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
       />
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar
           onMenuClick={() => setMobileOpen(true)}
           title={pageTitle}
-          sidebarLocked={sidebarLocked}
-          onToggleSidebarLock={() => setSidebarLocked((v) => !v)}
         />
         <main className="relative flex-1 p-4 lg:p-6 overflow-auto">
           {/* Subtle premium background wash */}

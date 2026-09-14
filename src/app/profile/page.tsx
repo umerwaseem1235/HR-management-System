@@ -63,7 +63,6 @@ export default function ProfilePage() {
 
   const renderHeader = (
     displayName: string,
-    subtitle: React.ReactNode,
     badges: React.ReactNode,
     isActive: boolean
   ) => (
@@ -86,11 +85,10 @@ export default function ProfilePage() {
             />
           </div>
           <div className="min-w-0 sm:pb-0.5">
-            <h1 className="truncate text-xl sm:text-2xl font-extrabold tracking-tight text-[#17324D]">
+            <h1 className="truncate text-xl sm:text-2xl font-bold leading-tight tracking-tight text-[#17324D]">
               {displayName}
             </h1>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">{badges}</div>
-            {subtitle}
           </div>
         </div>
       </div>
@@ -121,7 +119,6 @@ export default function ProfilePage() {
           <div className="overflow-hidden rounded-2xl border border-[#D6E4E8]/70 bg-white shadow-[0_1px_2px_rgba(23,50,77,0.05),0_16px_44px_-20px_rgba(23,50,77,0.25)]">
             {renderHeader(
               user.name,
-              null,
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[#024fa7]/10 px-3 py-1 text-xs font-bold text-[#024fa7]">
                 <ShieldCheck size={14} /> {ROLE_LABELS[user.role]}
               </span>,
@@ -152,19 +149,16 @@ export default function ProfilePage() {
         </Link>
 
         <div className="overflow-hidden rounded-2xl border border-[#D6E4E8]/70 bg-white shadow-[0_1px_2px_rgba(23,50,77,0.05),0_16px_44px_-20px_rgba(23,50,77,0.25)]">
-          {renderHeader(
-            fullName,
-            <p className="mt-1 text-[13px] text-gray-500 truncate">
-              {employee.designation} · {employee.department}
-            </p>,
-            <>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#024fa7]/10 px-3 py-1 text-xs font-bold text-[#024fa7]">
-                <ShieldCheck size={14} /> {ROLE_LABELS[user.role]}
-              </span>
-              {statusBadge(employee.status)}
-            </>,
-            employee.status === 'Active'
-          )}
+            {renderHeader(
+              fullName,
+              <>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#024fa7]/10 px-3 py-1 text-xs font-bold text-[#024fa7]">
+                  <ShieldCheck size={14} /> {ROLE_LABELS[user.role]}
+                </span>
+                {statusBadge(employee.status)}
+              </>,
+              employee.status === 'Active'
+            )}
           {renderSection(
             User,
             'Personal Information',

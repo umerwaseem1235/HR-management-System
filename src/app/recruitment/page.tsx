@@ -66,18 +66,16 @@ export default function RecruitmentPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Talent Acquisition"
           title="Recruitment"
-          subtitle="Track job openings and candidates through the hiring pipeline"
           actions={
             <Button variant="primary" onClick={() => setIsAddCandidateOpen(true)}><UserPlus size={16} /> Add Candidate</Button>
           }
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard title="Open Positions" value={mockJobs.filter(j => j.status === 'Open').length} icon={<Briefcase size={22} className="text-[#024fa7]" />} iconBg="bg-[#EAF2F4]" />
-           <StatCard title="Total Candidates" value={candidates.length} icon={<Users size={22} className="text-blue-600" />} iconBg="bg-blue-50" />
-           <StatCard title="Hired This Month" value={candidates.filter(c => c.stage === 'Hired').length} icon={<UserCheck size={22} className="text-green-600" />} iconBg="bg-green-50" />
+          <StatCard title="Open Positions" value={mockJobs.filter(j => j.status === 'Open').length} icon={<Briefcase size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+           <StatCard title="Total Candidates" value={candidates.length} icon={<Users size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+           <StatCard title="Hired This Month" value={candidates.filter(c => c.stage === 'Hired').length} icon={<UserCheck size={18} strokeWidth={1.6} className="text-[#024fa7]" />} iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
         </div>
 
         <Card padding="none">
