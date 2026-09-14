@@ -174,7 +174,7 @@ export default function ExpensesPage() {
         <PageHeader
           title={isEmployee ? 'My Expenses' : 'Expenses'}
           actions={
-            <Button variant="primary" onClick={openNew}><Plus size={16} /> New Claim</Button>
+            isEmployee && <Button variant="primary" onClick={openNew}><Plus size={16} /> New Claim</Button>
           }
         />
 
