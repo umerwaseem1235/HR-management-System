@@ -24,7 +24,11 @@ export type ReportId =
   | 'recruitment-pipeline'
   | 'performance-reviews'
   | 'expense-claims'
-  | 'audit-log';
+  | 'audit-log'
+  | 'progress';
+
+/** The four reports surfaced in the Export Library UI (and the PDF pack). */
+export const LIBRARY_REPORT_IDS: ReportId[] = ['attendance', 'progress', 'payroll-summary', 'expense-claims'];
 
 export const REPORT_META: Record<ReportId, { fileSlug: string; title: string; category: string }> = {
   'employee-master': { fileSlug: 'employee-master-report', title: 'Employee Master Report', category: 'HR' },
@@ -38,6 +42,7 @@ export const REPORT_META: Record<ReportId, { fileSlug: string; title: string; ca
   'performance-reviews': { fileSlug: 'performance-reviews-report', title: 'Performance Reviews', category: 'Performance' },
   'expense-claims': { fileSlug: 'expense-claims-report', title: 'Expense Claims Report', category: 'Finance' },
   'audit-log': { fileSlug: 'audit-activity-log', title: 'Audit Activity Log', category: 'Security' },
+  'progress': { fileSlug: 'progress-report', title: 'Progress Report', category: 'Progress' },
 };
 
 /* ================= Brand theme (matches payroll PDFs) ================= */
@@ -257,6 +262,59 @@ function groupCount<T>(items: T[], key: (t: T) => string): { label: string; coun
   return [...map.entries()]
     .map(([label, count]) => ({ label, count }))
     .sort((a, b) => b.count - a.count);
+}
+
+interface ProgressRow {
+  projectName: string;
+  description: string;
+  submissionDate: string;
+  employeeName: string;
+}
+
+const PROGRESS_SEED: ProgressRow[] = [
+  { projectName: 'BIG Team Progress', description: 'Sprint execution update, blockers cleared and milestones tracked for the BIG team.', submissionDate: '2026-09-01', employeeName: 'Michael Chen' },
+  { projectName: 'BIG Team Progress', description: 'Daily delivery sync — completed modules reviewed and next-day plan aligned.', submissionDate: '2026-09-02', employeeName: 'Michael Chen' },
+  { projectName: 'BIG Team Progress', description: 'QA pass on released features with regression notes shared with stakeholders.', submissionDate: '2026-09-03', employeeName: 'Michael Chen' },
+  { projectName: 'BIG Team Progress', description: 'Backend API progress — endpoints optimized and integration tests updated.', submissionDate: '2026-09-04', employeeName: 'Michael Chen' },
+  { projectName: 'BIG Team Progress', description: 'Frontend milestone — dashboard widgets completed and pending design review.', submissionDate: '2026-09-05', employeeName: 'Michael Chen' },
+  { projectName: 'BIG Team Progress', description: 'Weekend handover notes — open items documented for Monday kickoff.', submissionDate: '2026-09-07', employeeName: 'Michael Chen' },
+  { projectName: 'BIG Team Progress', description: 'Client demo preparation — walkthrough script and release notes finalized.', submissionDate: '2026-09-08', employeeName: 'Michael Chen' },
+  { projectName: 'BIG Team Progress', description: 'Deployment progress — staging verified and production checklist updated.', submissionDate: '2026-09-09', employeeName: 'Michael Chen' },
+  { projectName: 'BIG Team Progress', description: 'Sprint retrospective inputs — velocity, risks and next-sprint scope drafted.', submissionDate: '2026-09-10', employeeName: 'Michael Chen' },
+  { projectName: 'BIG Team Progress', description: 'Weekly consolidation — accomplishments, pending work and support needs.', submissionDate: '2026-09-11', employeeName: 'Michael Chen' },
+];
+
+/** Live progress entries (same storage key as the Progress module), seed fallback. */
+function readProgressEntries(): ProgressRow[] {
+  try {
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('hrms_progress_entries') : null;
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed
+          .filter((e) => e && typeof e.projectName === 'string')
+          .map((e) => ({
+            projectName: e.projectName,
+            description: typeof e.description === 'string' ? e.description : '',
+            submissionDate: e.submissionDate ?? '',
+            employeeName: e.employeeName ?? '-',
+          }));
+      }
+    }
+  } catch {
+    // Corrupt storage — fall through to seed
+  }
+  return PROGRESS_SEED;
+}
+
+function plainNote(html: string): string {
+  return html
+    .replace(/<(br|p|div|li|h1|h2|h3)[^>]*>/gi, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function addReportContent(doc: jsPDF, id: ReportId, firstPage: boolean): void {
@@ -578,6 +636,31 @@ function addReportContent(doc: jsPDF, id: ReportId, firstPage: boolean): void {
       );
       break;
     }
+    case 'progress': {
+      const entries = readProgressEntries()
+        .slice()
+        .sort((a, b) => (a.submissionDate < b.submissionDate ? -1 : a.submissionDate > b.submissionDate ? 1 : 0));
+      const projects = new Set(entries.map((e) => e.projectName)).size;
+      const contributors = new Set(entries.map((e) => e.employeeName)).size;
+      y = titleBlock(doc, y, meta.title, 'Daily progress updates with project, submitter and notes', `Generated ${todayLabel()} · ${entries.length} entries · ${projects} projects`);
+      y = kpiStrip(doc, y, [
+        { label: 'Entries', value: String(entries.length) },
+        { label: 'Projects', value: String(projects) },
+        { label: 'Contributors', value: String(contributors) },
+        { label: 'Latest', value: entries[entries.length - 1]?.submissionDate ?? '-' },
+      ]);
+      y = sectionBar(doc, y, 'ENTRIES — FULL DETAIL');
+      y = drawTable(doc, y,
+        [
+          { label: 'Date', width: 26, align: 'left' },
+          { label: 'Employee', width: 36, align: 'left' },
+          { label: 'Project', width: 38, align: 'left' },
+          { label: 'Progress Note', width: 82, align: 'left' },
+        ],
+        entries.map((e) => [e.submissionDate, e.employeeName, e.projectName, plainNote(e.description) || '-']),
+      );
+      break;
+    }
   }
 
   y = ensureSpace(doc, y, 12);
@@ -606,14 +689,14 @@ export function downloadReport(id: ReportId): void {
   downloadBlob(reportFileName(id), generateReportBlob(id));
 }
 
-/** One combined, professionally paginated pack with every report. */
+/** One combined, professionally paginated pack with the library reports. */
 export function downloadAllReportsPack(): void {
   const doc = new jsPDF();
-  const ids = Object.keys(REPORT_META) as ReportId[];
+  const ids = LIBRARY_REPORT_IDS;
 
   header(doc, `Complete pack · ${todayLabel()}`, 'HR Reports Pack');
   let y = 40;
-  y = titleBlock(doc, y, 'HR Reports Pack', 'All modules — one professionally formatted PDF', `Generated ${todayLabel()} · ${ids.length} reports · CodeQor HRMS`);
+  y = titleBlock(doc, y, 'HR Reports Pack', 'Attendance · Progress · Payroll · Expenses — one professionally formatted PDF', `Generated ${todayLabel()} · ${ids.length} reports · CodeQor HRMS`);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...DARK);

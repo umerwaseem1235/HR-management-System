@@ -11,7 +11,7 @@ export const NAVIGATION: NavItem[] = [
   { name: 'Leave', href: '/leave', icon: 'CalendarDays', roles: ['super_admin', 'hr_manager', 'employee'] },
   { name: 'Remote', href: '/remote', icon: 'Wifi', roles: ['super_admin', 'hr_manager', 'employee'] },
   { name: 'Payroll', href: '/payroll', icon: 'Wallet', roles: ['super_admin', 'hr_manager', 'employee'] },
-  { name: 'Performance', href: '/performance', icon: 'TrendingUp', roles: ['super_admin', 'hr_manager', 'employee'] },
+  { name: 'Progress', href: '/progress', icon: 'TrendingUp', roles: ['super_admin', 'hr_manager', 'employee'] },
   { name: 'Expenses', href: '/expenses', icon: 'Receipt', roles: ['super_admin', 'hr_manager', 'employee'] },
   { name: 'Documents', href: '/documents', icon: 'FileText', roles: ['super_admin', 'hr_manager', 'employee'] },
   { name: 'Reports', href: '/reports', icon: 'BarChart3', roles: ['super_admin', 'hr_manager'] },
@@ -79,12 +79,10 @@ export const SHIFTS = [
 ];
 
 export const LEAVE_TYPES = [
-  { id: '1', name: 'Annual Leave', daysAllowed: 20, carryForward: true, color: '#024fa7' },
-  { id: '2', name: 'Sick Leave', daysAllowed: 12, carryForward: false, color: '#ef4444' },
-  { id: '3', name: 'Personal Leave', daysAllowed: 5, carryForward: false, color: '#f59e0b' },
-  { id: '4', name: 'Maternity Leave', daysAllowed: 90, carryForward: false, color: '#ec4899' },
-  { id: '5', name: 'Paternity Leave', daysAllowed: 15, carryForward: false, color: '#8b5cf6' },
-  { id: '6', name: 'Unpaid Leave', daysAllowed: 30, carryForward: false, color: '#6b7280' },
+  { id: '1', name: 'Monthly Leave', daysAllowed: 2, carryForward: false, color: '#0d9488', period: 'month' as const, description: 'Paid short leaves · resets every month' },
+  { id: '2', name: 'Annual Leave', daysAllowed: 20, carryForward: true, color: '#024fa7', period: 'year' as const, description: 'Planned vacations & long leaves' },
+  { id: '3', name: 'Maternity Leave', daysAllowed: 90, carryForward: false, color: '#ec4899', period: 'year' as const, description: 'Statutory maternity benefit' },
+  { id: '4', name: 'Paternity Leave', daysAllowed: 15, carryForward: false, color: '#8b5cf6', period: 'year' as const, description: 'Statutory paternity benefit' },
 ];
 
 export const EXPENSE_CATEGORIES = [

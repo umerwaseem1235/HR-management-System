@@ -11,6 +11,7 @@ import Button from '../../../components/ui/Button';
 import { Mail, Phone, MapPin, Calendar, Building2, Briefcase, Edit, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { mockEmployees, mockAttendance, mockLeaveBalances, mockPayslips, mockGoals, mockAssets } from '../../../lib/mock-data';
+import { LEAVE_TYPES } from '../../../lib/constants';
 
 export default function EmployeeProfilePage() {
   const params = useParams();
@@ -137,17 +138,24 @@ export default function EmployeeProfilePage() {
               <div>
                 <h3 className="text-base font-semibold text-[#17324D] mb-4">Leave Balances</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {mockLeaveBalances.map(bal => (
-                    <div key={bal.leaveType} className="p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
-                      <div className="flex justify-between mb-2">
-                        <span className="text-sm font-medium">{bal.leaveType}</span>
-                        <span className="text-sm font-bold text-[#17324D]">{bal.remaining}/{bal.total}</span>
+                  {mockLeaveBalances.map(bal => {
+                    const meta = LEAVE_TYPES.find((t) => t.name === bal.leaveType);
+                    const isMonthly = bal.leaveType === 'Monthly Leave';
+                    return (
+                      <div key={bal.leaveType} className="p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]" style={{ borderTop: `3px solid ${meta?.color ?? '#0d9488'}` }}>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-sm font-medium">{bal.leaveType}</span>
+                          <span className="text-sm font-bold text-[#17324D]">{bal.remaining}/{bal.total}</span>
+                        </div>
+                        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                          {isMonthly ? 'Resets monthly · no carry forward' : `${bal.total} days / year`}
+                        </p>
+                        <div className="w-full bg-[#D6E4E8] rounded-full h-2">
+                          <div className="h-2 rounded-full" style={{ width: `${bal.total > 0 ? Math.min(100, (bal.used / bal.total) * 100) : 0}%`, backgroundColor: meta?.color ?? '#024fa7' }} />
+                        </div>
                       </div>
-                      <div className="w-full bg-[#D6E4E8] rounded-full h-2">
-                        <div className="bg-[#024fa7] h-2 rounded-full" style={{ width: `${(bal.used / bal.total) * 100}%` }} />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

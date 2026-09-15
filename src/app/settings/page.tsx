@@ -115,7 +115,15 @@ export default function SettingsPage() {
                     <div key={lt.id} className="flex items-center justify-between p-3 rounded-lg border border-[#D6E4E8]">
                       <div className="flex items-center gap-3">
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: lt.color }} />
-                        <div><p className="text-sm font-medium text-[#263238]">{lt.name}</p><p className="text-xs text-gray-500">{lt.daysAllowed} days/year · {lt.carryForward ? 'Carry forward' : 'No carry forward'}</p></div>
+                        <div>
+                          <p className="text-sm font-medium text-[#263238]">
+                            {lt.name}
+                            {lt.period === 'month' && (
+                              <span className="ml-2 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-teal-700">Monthly</span>
+                            )}
+                          </p>
+                          <p className="text-xs text-gray-500">{lt.daysAllowed} days/{lt.period === 'month' ? 'month · resets monthly' : 'year'} · {lt.carryForward ? 'Carry forward' : 'No carry forward'}{lt.description ? ` · ${lt.description}` : ''}</p>
+                        </div>
                       </div>
                       <button className="p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50"><Trash2 size={14} /></button>
                     </div>

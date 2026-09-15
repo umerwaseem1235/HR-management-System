@@ -10,6 +10,7 @@ export const PAYROLL_YEARS = [2023, 2024, 2025, 2026];
 /** Daily rate divisor (30-day month convention, shown in the UI). */
 export const DAILY_RATE_DIVISOR = 30;
 
+/** Legacy type kept for backward compatibility with old stored requests — no longer offered in the UI. */
 const UNPAID_LEAVE_TYPE = 'Unpaid Leave';
 
 export interface SalaryComponent {
@@ -87,11 +88,11 @@ export function isInMonth(dateStr: string, monthIndex: number, year: number): bo
   return p.y === year && p.m === monthIndex;
 }
 
-/** Monthly paid leaves — the whole leave calculation is monthly.
+/** Monthly paid leaves — mirrors the "Monthly Leave" balance card.
  *  Each employee gets this many paid leave days per calendar month
- *  (fresh every month, no carryover). Approved days within it are fully paid;
- *  anything beyond it is automatically unpaid and flows into the payslip
- *  deduction. 'Unpaid Leave' requests are always fully unpaid. */
+ *  (fresh every month, no carryover). Approved Monthly/Annual leave days
+ *  within it are fully paid; anything beyond it is automatically unpaid
+ *  and flows into the payslip deduction. */
 export const DEFAULT_MONTHLY_PAID_LEAVES = 2;
 
 /** Per-employee monthly manual fines (flat amount added to payslip deduction). */

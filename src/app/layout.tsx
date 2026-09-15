@@ -6,6 +6,7 @@ import { ExpenseProvider } from '../contexts/ExpenseContext';
 import { NotificationProvider } from '../contexts/NotificationContext';
 import { WorkProvider } from '../contexts/WorkContext';
 import { RemoteProvider } from '../contexts/RemoteContext';
+import { ProgressProvider } from '../contexts/ProgressContext';
 
 export const metadata: Metadata = {
   title: 'CodeQor HRMS',
@@ -26,7 +27,9 @@ export default function RootLayout({
               <NotificationProvider>
                 <WorkProvider>
                   <RemoteProvider>
-                    {children}
+                    <ProgressProvider>
+                      {children}
+                    </ProgressProvider>
                   </RemoteProvider>
                 </WorkProvider>
               </NotificationProvider>
