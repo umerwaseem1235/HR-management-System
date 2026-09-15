@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Send, CheckCircle2, LogIn, LogOut, AlertCircle, FileText } from 'lucide-react';
-import Card from '../ui/Card';
-import StatCard from '../ui/StatCard';
-import Badge from '../ui/Badge';
+import { LogIn, LogOut } from 'lucide-react';
 import Button from '../ui/Button';
 import PageHeader from '../ui/PageHeader';
+import EmployeeStats from './employee/EmployeeStats';
+import EmployeeLeaveBalances from './employee/EmployeeLeaveBalances';
+import EmployeeGoals from './employee/EmployeeGoals';
+import EmployeeNotifications from './employee/EmployeeNotifications';
+import EmployeePayslips from './employee/EmployeePayslips';
 import { mockLeaveBalances, mockPayslips, mockGoals } from '../../lib/mock-data';
-import { LEAVE_TYPES } from '../../lib/constants';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
-import Link from 'next/link';
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
@@ -32,6 +32,10 @@ export default function EmployeeDashboard() {
   const { notifications } = useNotifications();
 
   const employeeNotifs = notifications.filter(n => !n.read).slice(0, 3);
+
+  const visibleLeaveBalances = mockLeaveBalances.filter(
+    (lb) => lb.leaveType !== 'Maternity Leave' && lb.leaveType !== 'Paternity Leave'
+  );
 
   return (
     <div className="space-y-6">
@@ -57,160 +61,27 @@ export default function EmployeeDashboard() {
       />
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Working Days"
-          value="22/23"
-          iconName="time"
-          iconColor="#024fa7"
-          iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
-        />
-        <StatCard
-          title="Leave Balance"
-          value={`${mockLeaveBalances.reduce((sum, lb) => sum + lb.remaining, 0)} days`}
-          iconName="onLeaveToday"
-          iconColor="#024fa7"
-          iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
-        />
-        <StatCard
-          title="Last Payslip"
-          value={`$${mockPayslips[0]?.netSalary.toLocaleString() || '0'}`}
-          iconName="payroll"
-          iconColor="#024fa7"
-          iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
-        />
-        <StatCard
-          title="Goals Progress"
-          value={`${mockGoals.filter(g => g.status === 'Completed').length}/${mockGoals.length}`}
-          iconName="goals"
-          iconColor="#024fa7"
-          iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
-        />
-      </div>
+      <EmployeeStats
+        leaveRemainingTotal={visibleLeaveBalances.reduce((sum, lb) => sum + lb.remaining, 0)}
+        lastPayslipNet={mockPayslips[0]?.netSalary || 0}
+        goalsCompleted={mockGoals.filter(g => g.status === 'Completed').length}
+        goalsTotal={mockGoals.length}
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         {/* Leave Balances */}
-        <Card className="lg:col-span-2">
-          <h3 className="text-base font-semibold text-[#17324D] mb-4">Leave Balances</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {mockLeaveBalances.map(balance => {
-              const meta = LEAVE_TYPES.find((t) => t.name === balance.leaveType);
-              const isMonthly = balance.leaveType === 'Monthly Leave';
-              return (
-                <div key={balance.leaveType} className="p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]" style={{ borderTop: `3px solid ${meta?.color ?? '#0d9488'}` }}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-[#263238]">{balance.leaveType}</span>
-                    <Badge variant={balance.remaining > 5 ? 'success' : balance.remaining > 0 ? 'warning' : 'danger'} size="sm">
-                      {balance.remaining} left
-                    </Badge>
-                  </div>
-                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                    {isMonthly ? '2 days / month · resets monthly' : `${balance.total} days / year`}
-                  </p>
-                  <div className="w-full bg-[#D6E4E8] rounded-full h-2 mb-2">
-                    <div
-                      className="h-2 rounded-full transition-all"
-                      style={{ width: `${balance.total > 0 ? Math.min(100, (balance.used / balance.total) * 100) : 0}%`, backgroundColor: meta?.color ?? '#024fa7' }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>Used: {balance.used}</span>
-                    <span>Total: {balance.total}</span>
-                  </div>
-                  {balance.pending > 0 && (
-                    <p className="text-xs text-orange-500 mt-1 flex items-center gap-1">
-                      <AlertCircle size={12} /> {balance.pending} pending approval
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-4 flex justify-end">
-            <Button variant="outline" size="sm">
-              <Send size={14} /> Request Leave
-            </Button>
-          </div>
-        </Card>
+        <EmployeeLeaveBalances balances={visibleLeaveBalances} />
 
-        {/* Notifications */}
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-[#17324D]">Notifications</h3>
-            <Link href="/notifications" className="text-sm text-[#024fa7] hover:underline font-medium">View All</Link>
-          </div>
-          <div className="space-y-3">
-            {employeeNotifs.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-4">No new notifications</p>
-            ) : (
-              employeeNotifs.map(notif => (
-                <div key={notif.id} className="p-3 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
-                  <p className="text-sm font-medium text-[#263238]">{notif.title}</p>
-                  <p className="text-xs text-gray-500 mt-1">{notif.message}</p>
-                  <p className="text-[10px] text-gray-400 mt-1">{new Date(notif.createdAt).toLocaleDateString()}</p>
-                </div>
-              ))
-            )}
-          </div>
-        </Card>
+        {/* My Goals */}
+        <EmployeeGoals goals={mockGoals} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* My Goals */}
-        <Card>
-          <h3 className="text-base font-semibold text-[#17324D] mb-4">My Goals</h3>
-          <div className="space-y-4">
-            {mockGoals.map(goal => (
-              <div key={goal.id} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-[#263238]">{goal.title}</span>
-                  <Badge
-                    variant={goal.status === 'Completed' ? 'success' : goal.status === 'In Progress' ? 'info' : 'neutral'}
-                    size="sm"
-                  >
-                    {goal.status}
-                  </Badge>
-                </div>
-                <div className="w-full bg-[#D6E4E8] rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all ${
-                      goal.progress >= 75 ? 'bg-green-500' : goal.progress >= 50 ? 'bg-[#024fa7]' : 'bg-orange-400'
-                    }`}
-                    style={{ width: `${goal.progress}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>{goal.progress}% complete</span>
-                  <span>Due: {goal.dueDate}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+        {/* Notifications */}
+        <EmployeeNotifications notifications={employeeNotifs} />
 
         {/* Recent Payslips */}
-        <Card>
-          <h3 className="text-base font-semibold text-[#17324D] mb-4">Recent Payslips</h3>
-          <div className="space-y-3">
-            {mockPayslips.slice(0, 3).map(slip => (
-              <div key={slip.id} className="flex items-center justify-between p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <FileText size={18} className="text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-[#263238]">{slip.month} {slip.year}</p>
-                    <p className="text-xs text-gray-500">Generated: {slip.generatedOn}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-[#17324D]">${slip.netSalary.toLocaleString()}</p>
-                  <Badge variant="success" size="sm">Paid</Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+        <EmployeePayslips payslips={mockPayslips} />
       </div>
     </div>
   );

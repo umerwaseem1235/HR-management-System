@@ -1,40 +1,32 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
 import PageHeader from '../../components/ui/PageHeader';
 import StatCard from '../../components/ui/StatCard';
 import Tabs from '../../components/ui/Tabs';
-import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
-import Modal from '../../components/ui/Modal';
-import Select from '../../components/ui/Select';
-import Input from '../../components/ui/Input';
-import SearchBar from '../../components/ui/SearchBar';
-import {
-  Calculator, Download, Eye, Plus, Pencil,
-  Trash2, Lock, ArrowLeft, CheckCircle2, AlertTriangle, CalendarDays,
-} from 'lucide-react';
+import { Calculator, CheckCircle2 } from 'lucide-react';
 import type { Payslip } from '../../lib/types';
 import { mockPayslips, mockEmployees, mockLeaveRequests, mockAttendance } from '../../lib/mock-data';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  PAYROLL_MONTHS, PAYROLL_YEARS, DAILY_RATE_DIVISOR,
+  PAYROLL_MONTHS,
   DEFAULT_COMPONENTS, createRun, recalcLine, calcRunTotals,
   runToPayslips, todayISO, seedDecember2023Run,
-  DEFAULT_MONTHLY_PAID_LEAVES, resolveMonthlyLeaves,
+  DEFAULT_MONTHLY_PAID_LEAVES,
 } from '../../lib/payroll';
 import type { PayrollRun, PayrollLineItem, SalaryComponent, EmployeeMonthlyLeaves, EmployeeMonthlyFines } from '../../lib/payroll';
 import { payslipToPDF, runSummaryToPDF, downloadBlob } from '../../lib/payroll-pdf';
-
-const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
-
-function runStatusBadge(status: PayrollRun['status']) {
-  if (status === 'Finalized') return <Badge variant="success"><span className="inline-flex items-center gap-1"><Lock size={12} /> Finalized</span></Badge>;
-  if (status === 'Reviewed') return <Badge variant="info">Reviewed</Badge>;
-  return <Badge variant="warning">Draft</Badge>;
-}
+import { money } from '../../components/payroll/payroll-helpers';
+import type { CompModalState } from '../../components/payroll/types';
+import PayslipsTab from '../../components/payroll/PayslipsTab';
+import RunsTab from '../../components/payroll/RunsTab';
+import RunDetail from '../../components/payroll/RunDetail';
+import StructuresTab from '../../components/payroll/StructuresTab';
+import MonthlyLeavesTab from '../../components/payroll/MonthlyLeavesTab';
+import { PayslipViewModal, LineEditorModal, FinalizeModal, ComponentModal } from '../../components/payroll/PayrollModals';
 
 export default function PayrollPage() {
   const { user } = useAuth();
@@ -46,7 +38,6 @@ export default function PayrollPage() {
   const [runs, setRuns] = useState<PayrollRun[]>(() => [seedDecember2023Run(mockPayslips)]);
   const [components, setComponents] = useState<SalaryComponent[]>(DEFAULT_COMPONENTS);
   // Monthly leaves: paid leave days per employee per month (fresh every month).
-  // Company default + per-employee overrides; extra days auto-unpaid in payslip.
   const [monthlyDefault, setMonthlyDefault] = useState(DEFAULT_MONTHLY_PAID_LEAVES);
   const [empMonthly, setEmpMonthly] = useState<EmployeeMonthlyLeaves>({});
   const [empFines, setEmpFines] = useState<EmployeeMonthlyFines>({});
@@ -75,7 +66,7 @@ export default function PayrollPage() {
   const [busy, setBusy] = useState(false);
 
   // ---- Structures tab: add/edit component ----
-  const [compModal, setCompModal] = useState<{ id?: string; name: string; amount: string; kind: 'allowance' | 'deduction' } | null>(null);
+  const [compModal, setCompModal] = useState<CompModalState | null>(null);
 
   const selectedRun = runs.find(r => r.id === selectedRunId) || null;
 
@@ -236,658 +227,106 @@ export default function PayrollPage() {
         <Card padding="none">
           <div className="px-6 pt-4"><Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} /></div>
           <div className="p-6">
-
-            {/* ==================== PAYSLIPS ==================== */}
             {activeTab === 'payslips' && (
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <div className="flex items-center gap-2 text-sm font-medium text-[#17324D]">
-                    <CalendarDays size={16} className="text-[#0F8B8D]" /> Payroll Month
-                  </div>
-                  <div className="sm:w-64">
-                    <Select
-                      value={payslipFilter}
-                      onChange={e => setPayslipFilter(e.target.value)}
-                      options={monthFilterOptions}
-                    />
-                  </div>
-                  <div className="flex-1 sm:max-w-xs sm:ml-auto">
-                    <SearchBar value={payslipSearch} onChange={setPayslipSearch} placeholder="Search employee…" />
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500">{visiblePayslips.length} payslip(s)</p>
-
-                {visiblePayslips.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    <p className="text-lg font-medium text-[#17324D] mb-2">No payslips found</p>
-                    <p className="text-sm">Finalize a payroll run to generate payslips for this month.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {visiblePayslips.map(slip => (
-                      <div key={slip.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8] gap-3">
-                        <div>
-                          <p className="text-sm font-medium text-[#263238]">{slip.employeeName} — {slip.month} {slip.year}</p>
-                          <p className="text-xs text-gray-500">Gross: {money(slip.grossSalary)} | Deductions: {money(slip.deductions.reduce((s, d) => s + d.amount, 0))} | Net: {money(slip.netSalary)}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Badge variant={slip.status === 'Finalized' ? 'success' : slip.status === 'Processed' ? 'info' : 'neutral'}>{slip.status}</Badge>
-                          <button onClick={() => setViewSlip(slip)} title="View payslip" className="p-2 rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4]"><Eye size={16} /></button>
-                          <button onClick={() => downloadSlip(slip)} title="Download payslip (PDF)" className="p-2 rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4]"><Download size={16} /></button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <PayslipsTab
+                slips={visiblePayslips}
+                filter={payslipFilter}
+                filterOptions={monthFilterOptions}
+                search={payslipSearch}
+                onFilter={setPayslipFilter}
+                onSearch={setPayslipSearch}
+                onView={setViewSlip}
+                onDownload={downloadSlip}
+              />
             )}
 
-            {/* ==================== PAYROLL RUNS ==================== */}
             {activeTab === 'runs' && isAdmin && !selectedRun && (
-              <div className="space-y-6">
-                <div className="rounded-xl border border-[#D6E4E8] bg-[#EAF2F4]/40 p-5">
-                  <h3 className="text-base font-semibold text-[#17324D] mb-1">Start a New Payroll Run</h3>
-                  <p className="text-xs text-gray-500 mb-4">Select the payroll month — gross salary, allowances, deductions and approved leave/attendance are calculated automatically for every employee.</p>
-                  <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
-                    <div className="sm:w-56">
-                      <Select
-                        label="Payroll Month"
-                        value={newMonth}
-                        onChange={e => setNewMonth(e.target.value)}
-                        options={PAYROLL_MONTHS.map((m, i) => ({ value: String(i), label: m }))}
-                      />
-                    </div>
-                    <div className="sm:w-40">
-                      <Select
-                        label="Year"
-                        value={newYear}
-                        onChange={e => setNewYear(e.target.value)}
-                        options={PAYROLL_YEARS.map(y => ({ value: String(y), label: String(y) }))}
-                      />
-                    </div>
-                    <Button variant="primary" onClick={startNewRun}>
-                      <Calculator size={16} /> Start New Run
-                    </Button>
-                  </div>
-                  {runError && (
-                    <p className="mt-3 flex items-center gap-2 text-sm text-red-600"><AlertTriangle size={15} /> {runError}</p>
-                  )}
-                </div>
-
-                <div>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
-                    <h3 className="text-base font-semibold text-[#17324D]">Payroll History ({visibleRuns.length})</h3>
-                    <div className="flex-1 sm:max-w-xs sm:ml-auto">
-                      <SearchBar value={runSearch} onChange={setRunSearch} placeholder="Search month / year / status…" />
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    {visibleRuns.map(run => (
-                      <div key={run.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg bg-white border border-[#D6E4E8] gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-[#17324D]">{run.month} {run.year} <span className="font-normal text-gray-400">· {run.id}</span></p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {run.items.length} employees · Gross {money(run.totalGross)} · Net {money(run.totalNet)} ·
-                            Created {run.createdOn}{run.finalizedOn ? ` · Finalized ${run.finalizedOn}` : ''}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {runStatusBadge(run.status)}
-                          <Button variant="outline" size="sm" onClick={() => setSelectedRunId(run.id)}>
-                            <Eye size={14} /> {run.status === 'Finalized' ? 'View' : 'Review'}
-                          </Button>
-                          <button onClick={() => exportRun(run)} title="Export payroll summary (PDF)" className="p-2 rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4]"><Download size={16} /></button>
-                          {run.status === 'Draft' && (
-                            confirmDeleteId === run.id ? (
-                              <span className="inline-flex items-center gap-2 text-xs">
-                                <span className="text-gray-500">Delete?</span>
-                                <button onClick={() => deleteRun(run.id)} className="font-semibold text-red-600 hover:underline">Yes</button>
-                                <button onClick={() => setConfirmDeleteId(null)} className="font-semibold text-gray-500 hover:underline">No</button>
-                              </span>
-                            ) : (
-                              <button onClick={() => setConfirmDeleteId(run.id)} title="Delete draft run" className="p-2 rounded-lg text-red-500 hover:bg-red-50"><Trash2 size={16} /></button>
-                            )
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <RunsTab
+                runs={visibleRuns}
+                newMonth={newMonth}
+                newYear={newYear}
+                runError={runError}
+                search={runSearch}
+                confirmDeleteId={confirmDeleteId}
+                onMonthChange={setNewMonth}
+                onYearChange={setNewYear}
+                onStartRun={startNewRun}
+                onSearch={setRunSearch}
+                onReview={setSelectedRunId}
+                onExport={exportRun}
+                onDelete={deleteRun}
+                onConfirmDelete={setConfirmDeleteId}
+              />
             )}
 
-            {/* ==================== RUN DETAIL / REVIEW ==================== */}
             {activeTab === 'runs' && isAdmin && selectedRun && (
-              <div className="space-y-5">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <button onClick={() => setSelectedRunId(null)} className="inline-flex items-center gap-2 text-sm font-medium text-[#0F8B8D] hover:underline">
-                    <ArrowLeft size={16} /> All Runs
-                  </button>
-                  <h3 className="text-lg font-bold text-[#17324D]">{selectedRun.month} {selectedRun.year} <span className="font-normal text-gray-400 text-sm">· {selectedRun.id}</span></h3>
-                  <div className="sm:ml-auto flex items-center gap-2">
-                    {runStatusBadge(selectedRun.status)}
-                    <Button variant="outline" size="sm" onClick={() => exportRun(selectedRun)}>
-                      <Download size={14} /> Export PDF
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Review stepper */}
-                <div className="flex items-center gap-2 text-xs font-medium">
-                  {(['Draft', 'Reviewed', 'Finalized'] as const).map((step, i) => {
-                    const order = { Draft: 0, Reviewed: 1, Finalized: 2 };
-                    const reached = order[selectedRun.status] >= order[step];
-                    return (
-                      <React.Fragment key={step}>
-                        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 ${reached ? 'bg-[#0F8B8D] text-white' : 'bg-gray-100 text-gray-400'}`}>
-                          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white/25 text-[10px] font-bold">{i + 1}</span>
-                          {step}
-                        </span>
-                        {i < 2 && <span className={`h-0.5 w-8 rounded ${order[selectedRun.status] > i ? 'bg-[#0F8B8D]' : 'bg-gray-200'}`} />}
-                      </React.Fragment>
-                    );
-                  })}
-                </div>
-
-                {selectedRun.status === 'Finalized' && (
-                  <div className="flex items-start gap-3 rounded-xl border border-[#D6E4E8] bg-[#EAF2F4]/60 p-4 text-sm text-[#17324D]">
-                    <Lock size={18} className="mt-0.5 flex-shrink-0 text-[#0F8B8D]" />
-                    <p><span className="font-semibold">Locked.</span> Finalized{selectedRun.finalizedOn ? ` on ${selectedRun.finalizedOn}` : ''}{selectedRun.finalizedBy ? ` by ${selectedRun.finalizedBy}` : ''} — no further edits allowed. Payslips are available under the Payslips tab.</p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <StatCard title="Total Gross" value={money(selectedRun.totalGross)} iconName="growth" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
-                  <StatCard title="Total Deductions" value={money(selectedRun.totalDeductions)} iconName="decline" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
-                  <StatCard title="Total Net Payable" value={money(selectedRun.totalNet)} iconName="payrollStatus" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
-                </div>
-
-                <div className="overflow-x-auto rounded-xl border border-[#D6E4E8]">
-                  <div className="p-3 border-b border-[#D6E4E8]">
-                    <div className="sm:max-w-xs sm:ml-auto">
-                      <SearchBar value={runDetailSearch} onChange={setRunDetailSearch} placeholder="Search employee…" />
-                    </div>
-                  </div>
-                  <table className="w-full min-w-[880px] text-sm">
-                    <thead>
-                      <tr className="bg-[#EAF2F4]/60 text-left text-xs uppercase tracking-wide text-gray-500">
-                        <th className="px-4 py-3 font-semibold">Employee</th>
-                        <th className="px-4 py-3 font-semibold text-right">Basic</th>
-                        <th className="px-4 py-3 font-semibold text-right">Allowances</th>
-                        <th className="px-4 py-3 font-semibold text-right">Deductions</th>
-                        <th className="px-4 py-3 font-semibold text-right">Leave / Absent</th>
-                        <th className="px-4 py-3 font-semibold text-right">Gross</th>
-                        <th className="px-4 py-3 font-semibold text-right">Net</th>
-                        {selectedRun.status === 'Draft' && <th className="px-4 py-3 font-semibold text-right">Action</th>}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleRunItems.map(item => (
-                        <tr key={item.employeeId} className="border-t border-[#D6E4E8] hover:bg-[#EAF2F4]/30">
-                          <td className="px-4 py-3">
-                            <p className="font-medium text-[#263238]">{item.employeeName}</p>
-                            {item.department && <p className="text-xs text-gray-500">{item.department}</p>}
-                          </td>
-                          <td className="px-4 py-3 text-right">{money(item.basicSalary)}</td>
-                          <td className="px-4 py-3 text-right text-green-700">+{money(item.totalAllowances)}</td>
-                          <td className="px-4 py-3 text-right text-red-600">-{money(item.totalDeductions)}</td>
-                          <td className="px-4 py-3 text-right text-xs text-gray-500">
-                            {empMonthly[item.employeeId] !== undefined && (
-                              <span className="mr-1 rounded bg-blue-100 px-1.5 py-0.5 font-semibold text-blue-700" title="This employee has custom monthly leaves">Custom</span>
-                            )}
-                            {item.paidLeaveDays > 0 && <span className="mr-1 rounded bg-green-100 px-1.5 py-0.5 text-green-700">{item.paidLeaveDays}d paid</span>}
-                            {(item.unpaidLeaveDays + item.absentDays) > 0
-                              ? <span className="rounded bg-red-100 px-1.5 py-0.5 text-red-700">{item.unpaidLeaveDays + item.absentDays}d unpaid · -{money(item.leaveDeduction)}</span>
-                              : <span>—</span>}
-                          </td>
-                          <td className="px-4 py-3 text-right font-medium">{money(item.grossSalary)}</td>
-                          <td className="px-4 py-3 text-right font-bold text-[#17324D]">{money(item.netSalary)}</td>
-                          {selectedRun.status === 'Draft' && (
-                            <td className="px-4 py-3 text-right">
-                              <button onClick={() => setEditingLine(item)} title="Adjust allowances & deductions" className="p-2 rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4]"><Pencil size={15} /></button>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <p className="text-xs text-gray-500">Unpaid leave & absence deduction = (monthly basic ÷ {DAILY_RATE_DIVISOR}) × unpaid days. Each employee gets their monthly paid leaves (Monthly Leaves tab); extra approved days are automatically unpaid.</p>
-
-                <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
-                  {selectedRun.status === 'Draft' && (
-                    <Button variant="primary" onClick={() => markReviewed(selectedRun)}>
-                      <CheckCircle2 size={16} /> Mark as Reviewed
-                    </Button>
-                  )}
-                  {selectedRun.status === 'Reviewed' && (
-                    <>
-                      <Button variant="outline" onClick={() => reopenToDraft(selectedRun)}>Reopen to Draft</Button>
-                      <Button variant="primary" onClick={() => setShowFinalize(true)}>
-                        <Lock size={16} /> Finalize & Lock
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
+              <RunDetail
+                run={selectedRun}
+                items={visibleRunItems}
+                search={runDetailSearch}
+                empMonthly={empMonthly}
+                onSearch={setRunDetailSearch}
+                onBack={() => setSelectedRunId(null)}
+                onExport={exportRun}
+                onEditLine={setEditingLine}
+                onMarkReviewed={markReviewed}
+                onReopen={reopenToDraft}
+                onFinalize={() => setShowFinalize(true)}
+              />
             )}
 
-            {/* ==================== SALARY STRUCTURES ==================== */}
             {activeTab === 'structures' && isAdmin && (
-              <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <div>
-                    <h3 className="text-base font-semibold text-[#17324D]">Default Salary Components</h3>
-                    <p className="text-xs text-gray-500">Applied automatically to every new payroll run. Changes affect future runs only — finalized runs keep their snapshot.</p>
-                  </div>
-                  <div className="sm:ml-auto flex gap-2 flex-wrap items-center">
-                    <div className="w-52">
-                      <SearchBar value={compSearch} onChange={setCompSearch} placeholder="Search component…" />
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => setCompModal({ name: '', amount: '', kind: 'allowance' })}>
-                      <Plus size={14} /> Add Allowance
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setCompModal({ name: '', amount: '', kind: 'deduction' })}>
-                      <Plus size={14} /> Add Deduction
-                    </Button>
-                  </div>
-                </div>
-
-                {(['allowance', 'deduction'] as const).map(kind => (
-                  <div key={kind}>
-                    <h4 className={`text-sm font-semibold mb-2 ${kind === 'allowance' ? 'text-green-700' : 'text-red-600'}`}>
-                      {kind === 'allowance' ? 'Allowances' : 'Deductions'}
-                    </h4>
-                    <div className="space-y-2">
-                      {components.filter(c => c.kind === kind && (!compSearch.trim() || c.name.toLowerCase().includes(compSearch.trim().toLowerCase()))).map(comp => (
-                        <div key={comp.id} className="flex items-center justify-between p-3 rounded-lg bg-white border border-[#D6E4E8]">
-                          <p className="text-sm font-medium text-[#263238]">{comp.name}</p>
-                          <div className="flex items-center gap-3">
-                            <p className={`text-sm font-bold ${kind === 'allowance' ? 'text-green-700' : 'text-red-600'}`}>
-                              {kind === 'allowance' ? '+' : '-'}{money(comp.amount)}/mo
-                            </p>
-                            <button onClick={() => setCompModal({ id: comp.id, name: comp.name, amount: String(comp.amount), kind: comp.kind })} title="Edit" className="p-2 rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4]"><Pencil size={15} /></button>
-                            <button onClick={() => setComponents(prev => prev.filter(c => c.id !== comp.id))} title="Remove" className="p-2 rounded-lg text-red-500 hover:bg-red-50"><Trash2 size={15} /></button>
-                          </div>
-                        </div>
-                      ))}
-                      {components.filter(c => c.kind === kind).length === 0 && (
-                        <p className="text-sm text-gray-400 py-2">No {kind}s defined.</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <StructuresTab
+                components={components}
+                search={compSearch}
+                onSearch={setCompSearch}
+                onAdd={kind => setCompModal({ name: '', amount: '', kind })}
+                onEdit={c => setCompModal({ id: c.id, name: c.name, amount: String(c.amount), kind: c.kind })}
+                onRemove={id => setComponents(prev => prev.filter(c => c.id !== id))}
+              />
             )}
 
-            {/* ==================== MONTHLY LEAVES (separate tab) ==================== */}
             {activeTab === 'emp-rules' && isAdmin && (
-              <div className="space-y-4 max-w-3xl">
-                <div>
-                  <h3 className="text-base font-semibold text-[#17324D]">Monthly Leaves</h3>
-                  <p className="text-xs text-gray-500">Paid leave days per employee per month — fresh every month. Approved days within it are fully paid; extra days are automatically unpaid in the payslip.</p>
-                </div>
-
-                <div className="flex flex-col sm:flex-row sm:items-end gap-3 rounded-xl border border-[#D6E4E8] bg-[#EAF2F4]/40 p-4">
-                  <div className="sm:w-64">
-                    <label className="block text-sm font-medium text-[#263238] mb-1.5">Company default (days/month)</label>
-                    <NumberField
-                      value={monthlyDefault}
-                      step="0.5"
-                      onCommit={n => setMonthlyDefault(Math.max(0, Math.round(n * 100) / 100))}
-                      className="w-full rounded-lg border border-[#D6E4E8] bg-white px-4 py-2.5 text-sm focus:border-[#0F8B8D] focus:outline-none"
-                    />
-                  </div>
-                  <div className="sm:w-64">
-                    <label className="block text-sm font-medium text-[#263238] mb-1.5">Company default fine ($)</label>
-                    <NumberField
-                      value={fineDefault}
-                      step="10"
-                      onCommit={n => setFineDefault(Math.max(0, Math.round(n)))}
-                      className="w-full rounded-lg border border-[#D6E4E8] bg-white px-4 py-2.5 text-sm focus:border-[#0F8B8D] focus:outline-none"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 sm:pb-2.5">Applies to everyone without a custom value below.</p>
-                </div>
-
-                <div className="rounded-xl border border-[#D6E4E8] bg-[#EAF2F4]/40 p-5 space-y-4">
-
-                  {Object.keys(empMonthly).length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {Object.keys(empMonthly).map(empId => {
-                        const emp = mockEmployees.find(e => e.id === empId);
-                        if (!emp) return null;
-                        return (
-                          <span
-                            key={empId}
-                            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${overrideEmpId === empId ? 'bg-[#0F8B8D] text-white' : 'bg-white text-[#17324D] border border-[#D6E4E8]'}`}
-                          >
-                            <button onClick={() => setOverrideEmpId(empId)} className="hover:underline">
-                              {emp.firstName} {emp.lastName} · {empMonthly[empId]}d/mo
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEmpMonthly(prev => {
-                                  const next = { ...prev };
-                                  delete next[empId];
-                                  return next;
-                                });
-                                if (overrideEmpId === empId) setOverrideEmpId('');
-                              }}
-                              title="Remove override (back to company default)"
-                              className="font-bold hover:text-red-500"
-                            >
-                              ×
-                            </button>
-                          </span>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  <div className="sm:w-80">
-                    <Select
-                      label="Edit monthly leaves for"
-                      value={overrideEmpId}
-                      onChange={e => setOverrideEmpId(e.target.value)}
-                      options={[
-                        { value: '', label: 'Select employee…' },
-                        ...mockEmployees.map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName} — ${e.designation}` })),
-                      ]}
-                    />
-                  </div>
-
-                  {overrideEmpId && (() => {
-                    const emp = mockEmployees.find(e => e.id === overrideEmpId);
-                    if (!emp) return null;
-                    const isCustom = empMonthly[overrideEmpId] !== undefined;
-                    const effective = resolveMonthlyLeaves(overrideEmpId, monthlyDefault, empMonthly);
-                    return (
-                        <div className="space-y-3 rounded-lg bg-white border border-[#D6E4E8] p-4">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-[#17324D]">{emp.firstName} {emp.lastName}</p>
-                          {isCustom
-                            ? <Badge variant="info">Custom: {effective} days/mo</Badge>
-                            : <Badge variant="neutral">Company default: {effective} days/mo</Badge>}
-                          {isCustom && (
-                            <button
-                              onClick={() => {
-                                setEmpMonthly(prev => {
-                                  const next = { ...prev };
-                                  delete next[overrideEmpId];
-                                  return next;
-                                });
-                              }}
-                              className="text-xs font-semibold text-red-600 hover:underline"
-                            >
-                              Reset to company
-                            </button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-[96px_130px_60px] items-center justify-start gap-2">
-                          <label className="text-[13px] text-gray-500 whitespace-nowrap">Paid leaves</label>
-                          <NumberField
-                            key={`leaves-${overrideEmpId}`}
-                            value={effective}
-                            step="0.5"
-                            onCommit={n => setEmpMonthly(prev => ({
-                              ...prev,
-                              [overrideEmpId]: Math.max(0, Math.round(n * 100) / 100),
-                            }))}
-                            className="h-9 w-full min-w-0 rounded-lg border border-[#D6E4E8] px-3 text-sm text-center tabular-nums focus:border-[#0F8B8D] focus:outline-none"
-                          />
-                          <span className="text-[13px] text-gray-500 whitespace-nowrap">days/mo</span>
-                        </div>
-                        <div className="grid grid-cols-[96px_130px_60px] items-center justify-start gap-2">
-                          <label className="text-[13px] text-gray-500 whitespace-nowrap">Manual fine</label>
-                          <NumberField
-                            key={`fine-${overrideEmpId}`}
-                            value={empFines[overrideEmpId] ?? fineDefault}
-                            step="10"
-                            onCommit={n => setEmpFines(prev => ({
-                              ...prev,
-                              [overrideEmpId]: Math.max(0, Math.round(n)),
-                            }))}
-                            className="h-9 w-full min-w-0 rounded-lg border border-[#D6E4E8] px-3 text-sm text-center tabular-nums focus:border-[#0F8B8D] focus:outline-none"
-                          />
-                          <span className="text-[13px] text-gray-500 whitespace-nowrap">$</span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
+              <MonthlyLeavesTab
+                employees={mockEmployees}
+                monthlyDefault={monthlyDefault}
+                fineDefault={fineDefault}
+                empMonthly={empMonthly}
+                empFines={empFines}
+                overrideEmpId={overrideEmpId}
+                onMonthlyDefault={setMonthlyDefault}
+                onFineDefault={setFineDefault}
+                onEmpMonthly={(empId, n) => {
+                  if (n === null) {
+                    setEmpMonthly(prev => {
+                      const next = { ...prev };
+                      delete next[empId];
+                      return next;
+                    });
+                  } else {
+                    setEmpMonthly(prev => ({ ...prev, [empId]: n }));
+                  }
+                }}
+                onEmpFine={(empId, n) => setEmpFines(prev => ({ ...prev, [empId]: n }))}
+                onOverrideEmp={setOverrideEmpId}
+                onRemoveOverride={empId => {
+                  setEmpMonthly(prev => {
+                    const next = { ...prev };
+                    delete next[empId];
+                    return next;
+                  });
+                  if (overrideEmpId === empId) setOverrideEmpId('');
+                }}
+              />
             )}
           </div>
         </Card>
       </div>
 
-      {/* ============ Payslip view modal ============ */}
-      <Modal isOpen={!!viewSlip} onClose={() => setViewSlip(null)} title={viewSlip ? `Payslip — ${viewSlip.month} ${viewSlip.year}` : 'Payslip'} size="lg">
-        {viewSlip && (
-          <div className="space-y-4 text-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-base font-bold text-[#17324D]">{viewSlip.employeeName}</p>
-                <p className="text-xs text-gray-500">Generated {viewSlip.generatedOn}</p>
-              </div>
-              <Badge variant={viewSlip.status === 'Finalized' ? 'success' : 'info'}>{viewSlip.status}</Badge>
-            </div>
-            <div className="rounded-xl border border-[#D6E4E8] overflow-hidden">
-              <div className="flex justify-between bg-[#EAF2F4]/60 px-4 py-2.5 font-semibold text-[#17324D]">
-                <span>Earnings</span><span>Amount</span>
-              </div>
-              <div className="flex justify-between px-4 py-2 border-t border-[#D6E4E8]"><span>Basic Salary</span><span className="font-medium">{money(viewSlip.basicSalary)}</span></div>
-              {viewSlip.allowances.map(a => (
-                <div key={a.name} className="flex justify-between px-4 py-2 border-t border-[#D6E4E8] text-gray-600"><span>{a.name}</span><span>+{money(a.amount)}</span></div>
-              ))}
-              <div className="flex justify-between bg-[#EAF2F4]/40 px-4 py-2.5 border-t border-[#D6E4E8] font-bold text-[#17324D]"><span>Gross Salary</span><span>{money(viewSlip.grossSalary)}</span></div>
-            </div>
-            <div className="rounded-xl border border-[#D6E4E8] overflow-hidden">
-              <div className="flex justify-between bg-red-50 px-4 py-2.5 font-semibold text-red-800">
-                <span>Deductions</span><span>Amount</span>
-              </div>
-              {viewSlip.deductions.map(d => (
-                <div key={d.name} className="flex justify-between px-4 py-2 border-t border-[#D6E4E8] text-gray-600"><span>{d.name}</span><span>-{money(d.amount)}</span></div>
-              ))}
-              <div className="flex justify-between bg-[#17324D] px-4 py-3 font-bold text-white"><span>Net Salary</span><span>{money(viewSlip.netSalary)}</span></div>
-            </div>
-            <div className="flex justify-end">
-              <Button variant="outline" size="sm" onClick={() => downloadSlip(viewSlip)}><Download size={14} /> Download</Button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* ============ Line edit modal (allowances & deductions) ============ */}
-      <Modal isOpen={!!editingLine} onClose={() => setEditingLine(null)} title={editingLine ? `Adjust — ${editingLine.employeeName}` : 'Adjust'} size="lg">
-        {editingLine && (
-          <LineEditor
-            key={editingLine.employeeId}
-            line={editingLine}
-            onSave={saveEditedLine}
-            onCancel={() => setEditingLine(null)}
-          />
-        )}
-      </Modal>
-
-      {/* ============ Finalize confirmation ============ */}
-      <Modal isOpen={showFinalize} onClose={() => !busy && setShowFinalize(false)} title="Finalize Payroll" size="sm">
-        {selectedRun && (
-          <div className="space-y-4 text-sm">
-            <p className="text-gray-600">
-              Finalize <span className="font-semibold text-[#17324D]">{selectedRun.month} {selectedRun.year}</span>?
-              This will <span className="font-semibold">lock the run</span> and generate{' '}
-              <span className="font-semibold">{selectedRun.items.length} payslips</span>.
-            </p>
-            <div className="rounded-xl bg-[#EAF2F4]/60 p-4 space-y-1.5">
-              <div className="flex justify-between"><span className="text-gray-500">Total Gross</span><span className="font-bold">{money(selectedRun.totalGross)}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Total Deductions</span><span className="font-bold text-red-600">{money(selectedRun.totalDeductions)}</span></div>
-              <div className="flex justify-between border-t border-[#D6E4E8] pt-1.5"><span className="text-gray-500">Total Net Payable</span><span className="font-bold text-[#17324D]">{money(selectedRun.totalNet)}</span></div>
-            </div>
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setShowFinalize(false)} disabled={busy}>Cancel</Button>
-              <Button variant="primary" onClick={finalizeRun} loading={busy}><Lock size={16} /> Finalize & Lock</Button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* ============ Component add/edit modal ============ */}
-      <Modal isOpen={!!compModal} onClose={() => setCompModal(null)} title={compModal?.id ? 'Edit Component' : 'Add Component'} size="sm">
-        {compModal && (
-          <div className="space-y-4">
-            <Input
-              label="Component Name"
-              placeholder="e.g. Overtime, Provident Fund"
-              value={compModal.name}
-              onChange={e => setCompModal({ ...compModal, name: e.target.value })}
-            />
-            <Select
-              label="Type"
-              value={compModal.kind}
-              onChange={e => setCompModal({ ...compModal, kind: e.target.value as 'allowance' | 'deduction' })}
-              options={[
-                { value: 'allowance', label: 'Allowance (+)' },
-                { value: 'deduction', label: 'Deduction (−)' },
-              ]}
-            />
-            <Input
-              label="Monthly Amount ($)"
-              type="number"
-              min={0}
-              placeholder="0"
-              value={compModal.amount}
-              onChange={e => setCompModal({ ...compModal, amount: e.target.value })}
-            />
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setCompModal(null)}>Cancel</Button>
-              <Button variant="primary" onClick={saveComponent} disabled={!compModal.name.trim()}>Save</Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      <PayslipViewModal slip={viewSlip} onClose={() => setViewSlip(null)} onDownload={downloadSlip} />
+      <LineEditorModal line={editingLine} onClose={() => setEditingLine(null)} onSave={saveEditedLine} />
+      <FinalizeModal run={selectedRun} open={showFinalize} busy={busy} onClose={() => setShowFinalize(false)} onConfirm={finalizeRun} />
+      <ComponentModal draft={compModal} onChange={setCompModal} onClose={() => setCompModal(null)} onSave={saveComponent} />
     </DashboardLayout>
-  );
-}
-
-/* ---------- Professional numeric input: backspace clears, type fresh ---------- */
-function NumberField({ value, onCommit, step = 'any', min = 0, className = '', placeholder }: {
-  value: number;
-  onCommit: (n: number) => void;
-  step?: string;
-  min?: number;
-  className?: string;
-  placeholder?: string;
-}) {
-  const [draft, setDraft] = React.useState<string | null>(null);
-  const display = draft ?? String(value ?? 0);
-
-  return (
-    <input
-      type="number"
-      min={min}
-      step={step}
-      value={display}
-      placeholder={placeholder}
-      onFocus={e => e.target.select()}
-      onChange={e => {
-        const raw = e.target.value;
-        setDraft(raw);
-        if (raw === '') return; // let user clear with backspace, commit on blur / next type
-        const n = Number(raw);
-        if (!Number.isNaN(n)) onCommit(n);
-      }}
-      onBlur={() => {
-        if (draft !== null) {
-          if (draft === '' || Number.isNaN(Number(draft))) onCommit(0);
-          setDraft(null);
-        }
-      }}
-      className={className}
-    />
-  );
-}
-
-/* ---------- Inline line-item editor (draft runs only) ---------- */
-function LineEditor({ line, onSave, onCancel }: {
-  line: PayrollLineItem;
-  onSave: (line: PayrollLineItem) => void;
-  onCancel: () => void;
-}) {
-  const [allowances, setAllowances] = useState(line.allowances.map(a => ({ ...a })));
-  const [deductions, setDeductions] = useState(line.deductions.map(d => ({ ...d })));
-
-  const preview = recalcLine({ ...line, allowances, deductions });
-
-  const editRow = (
-    list: { name: string; amount: number }[],
-    setList: (v: { name: string; amount: number }[]) => void,
-    idx: number,
-    field: 'name' | 'amount',
-    value: string,
-  ) => {
-    setList(list.map((row, i) => (i === idx ? { ...row, [field]: field === 'amount' ? Math.max(0, Math.round(Number(value) || 0)) : value } : row)));
-  };
-
-  const renderRows = (
-    title: string,
-    list: { name: string; amount: number }[],
-    setList: (v: { name: string; amount: number }[]) => void,
-  ) => (
-    <div>
-      <p className="text-sm font-semibold text-[#17324D] mb-2">{title}</p>
-      <div className="space-y-2">
-        {list.map((row, i) => (
-          <div key={i} className="flex gap-2">
-            <input
-              value={row.name}
-              onChange={e => editRow(list, setList, i, 'name', e.target.value)}
-              className="flex-1 rounded-lg border border-[#D6E4E8] px-3 py-2 text-sm focus:border-[#0F8B8D] focus:outline-none"
-              placeholder="Name"
-            />
-            <NumberField
-              value={row.amount}
-              step="10"
-              onCommit={v => editRow(list, setList, i, 'amount', String(v))}
-              className="w-28 rounded-lg border border-[#D6E4E8] px-3 py-2 text-sm focus:border-[#0F8B8D] focus:outline-none"
-              placeholder="0"
-            />
-            <button
-              onClick={() => setList(list.filter((_, j) => j !== i))}
-              title="Remove"
-              className="p-2 rounded-lg text-red-500 hover:bg-red-50"
-            >
-              <Trash2 size={15} />
-            </button>
-          </div>
-        ))}
-        <button
-          onClick={() => setList([...list, { name: '', amount: 0 }])}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0F8B8D] hover:underline"
-        >
-          <Plus size={13} /> Add row
-        </button>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="space-y-5">
-      <div className="rounded-xl bg-[#EAF2F4]/60 p-3 text-xs text-gray-600">
-        Basic {money(line.basicSalary)} · Paid leave {line.paidLeaveDays}d ·
-        Unpaid {(line.unpaidLeaveDays + line.absentDays)}d (−{money(line.leaveDeduction)}, auto from attendance & leave — not editable here)
-      </div>
-      {renderRows('Allowances', allowances, setAllowances)}
-      {renderRows('Deductions', deductions, setDeductions)}
-      <div className="flex items-center justify-between rounded-xl bg-[#17324D] px-4 py-3 text-sm font-bold text-white">
-        <span>Gross {money(preview.grossSalary)}</span>
-        <span>Net {money(preview.netSalary)}</span>
-      </div>
-      <div className="flex justify-end gap-3">
-        <Button variant="outline" onClick={onCancel}>Cancel</Button>
-        <Button variant="primary" onClick={() => onSave({ ...line, allowances, deductions })}>Save Changes</Button>
-      </div>
-    </div>
   );
 }

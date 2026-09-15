@@ -2,21 +2,19 @@
 
 import React, { useMemo, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import Card from '../../components/ui/Card';
 import PageHeader from '../../components/ui/PageHeader';
-import Badge from '../../components/ui/Badge';
-import Avatar from '../../components/ui/Avatar';
 import Button from '../../components/ui/Button';
-import EmptyState from '../../components/ui/EmptyState';
-import Modal from '../../components/ui/Modal';
-import Input from '../../components/ui/Input';
-import Select from '../../components/ui/Select';
-import { Plus, DollarSign, CheckCircle2, XCircle, Send, Trash2, Pencil, Paperclip, X, ZoomIn, ZoomOut, RotateCcw, Eye } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { mockEmployees } from '../../lib/mock-data';
-import { EXPENSE_CATEGORIES } from '../../lib/constants';
 import { useAuth } from '../../contexts/AuthContext';
+import { useRequireAuth, AuthLoadingFallback } from '../../components/auth/RequireAuth';
 import { useExpense } from '../../contexts/ExpenseContext';
 import type { ExpenseClaim } from '../../lib/types';
+import ExpenseStats from '../../components/expenses/ExpenseStats';
+import ExpenseTable from '../../components/expenses/ExpenseTable';
+import ClaimFormModal from '../../components/expenses/ClaimFormModal';
+import ReceiptViewerModal from '../../components/expenses/ReceiptViewerModal';
+import ExpenseConfirmModals from '../../components/expenses/ExpenseConfirmModals';
 
 export default function ExpensesPage() {
   const { user } = useAuth();
@@ -39,22 +37,22 @@ export default function ExpensesPage() {
   const [confirmApproveExp, setConfirmApproveExp] = useState<ExpenseClaim | null>(null);
   const [confirmRejectExp, setConfirmRejectExp] = useState<ExpenseClaim | null>(null);
   const [confirmDeleteExp, setConfirmDeleteExp] = useState<ExpenseClaim | null>(null);
-  const [zoom, setZoom] = useState(0.5);
+  const [zoom, setZoom] = useState(1);
 
   const openReceipt = (exp: ExpenseClaim) => {
     setViewingExp(exp);
     setViewingReceipt(exp.receipt ?? null);
-    setZoom(0.5);
+    setZoom(1);
   };
 
   const closeReceipt = () => {
     setViewingExp(null);
     setViewingReceipt(null);
-    setZoom(0.5);
+    setZoom(1);
   };
 
-  const zoomIn = () => setZoom((z) => Math.min(3, Math.round((z + 0.1) * 100) / 100));
-  const zoomOut = () => setZoom((z) => Math.max(0.1, Math.round((z - 0.25) * 100) / 100));
+  const zoomIn = () => setZoom((z) => Math.min(3, Math.round((z + 0.25) * 100) / 100));
+  const zoomOut = () => setZoom((z) => Math.max(0.25, Math.round((z - 0.25) * 100) / 100));
 
   // Resolve the logged-in user to an employee record (same matching as profile page)
   const employee = useMemo(() => {
@@ -74,14 +72,8 @@ export default function ExpensesPage() {
     );
   }, [isEmployee, expenses, employee, user]);
 
-  if (!user) return null;
-
-  const statusBadge = (status: string) => {
-    const map: Record<string, 'warning' | 'success' | 'danger' | 'info'> = {
-      Pending: 'warning', Approved: 'success', Rejected: 'danger', Reimbursed: 'info',
-    };
-    return <Badge variant={map[status] || 'neutral'}>{status}</Badge>;
-  };
+  useRequireAuth();
+  if (!user) return <AuthLoadingFallback />;
 
   const totalPending = visibleExpenses.filter(e => e.status === 'Pending').reduce((s, e) => s + e.amount, 0);
 
@@ -185,291 +177,65 @@ export default function ExpensesPage() {
           }
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card padding="sm">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] p-2 rounded-lg shadow-md ring-1 ring-black/5"><DollarSign size={18} strokeWidth={1.6} className="text-[#024fa7]" /></div>
-              <div><p className="text-lg font-bold text-[#17324D]">${totalPending.toLocaleString()}</p><p className="text-xs text-gray-500">Pending Amount</p></div>
-            </div>
-          </Card>
-          <Card padding="sm">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] p-2 rounded-lg shadow-md ring-1 ring-black/5"><CheckCircle2 size={18} strokeWidth={1.6} className="text-[#024fa7]" /></div>
-              <div><p className="text-lg font-bold text-[#17324D]">{visibleExpenses.filter(e => e.status === 'Approved').length}</p><p className="text-xs text-gray-500">Approved</p></div>
-            </div>
-          </Card>
-          <Card padding="sm">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] p-2 rounded-lg shadow-md ring-1 ring-black/5"><DollarSign size={18} strokeWidth={1.6} className="text-[#024fa7]" /></div>
-              <div><p className="text-lg font-bold text-[#17324D]">{visibleExpenses.filter(e => e.status === 'Reimbursed').length}</p><p className="text-xs text-gray-500">Reimbursed</p></div>
-            </div>
-          </Card>
-        </div>
+        <ExpenseStats
+          totalPending={totalPending}
+          approvedCount={visibleExpenses.filter(e => e.status === 'Approved').length}
+          reimbursedCount={visibleExpenses.filter(e => e.status === 'Reimbursed').length}
+        />
 
-        <Card padding="none">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead><tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
-                {!isEmployee && <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Employee</th>}
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Actions</th>
-              </tr></thead>
-              <tbody className="divide-y divide-[#D6E4E8]">
-                {visibleExpenses.map(exp => (
-                  <tr key={exp.id} className="hover:bg-[#EAF2F4]/50">
-                    {!isEmployee && (
-                      <td className="px-6 py-4"><div className="flex items-center gap-3"><Avatar name={exp.employeeName} size="sm" /><div><p className="text-sm font-medium">{exp.employeeName}</p><p className="text-xs text-gray-500">{exp.description}</p></div></div></td>
-                    )}
-                    {isEmployee && (
-                      <td className="px-6 py-4"><div><p className="text-sm font-medium">{exp.category}</p><p className="text-xs text-gray-500">{exp.description}</p></div></td>
-                    )}
-                    {!isEmployee && <td className="px-6 py-4 text-sm">{exp.category}</td>}
-                    <td className="px-6 py-4 text-sm font-semibold text-[#17324D]">${exp.amount.toLocaleString()}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{exp.date}</td>
-                    <td className="px-6 py-4">{statusBadge(exp.status)}</td>
-                    {!isEmployee && <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {exp.status === 'Pending' && <>
-                          <button title="Approve" onClick={() => setConfirmApproveExp(exp)} className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 cursor-pointer"><CheckCircle2 size={16} /></button>
-                          <button title="Reject" onClick={() => setConfirmRejectExp(exp)} className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 cursor-pointer"><XCircle size={16} /></button>
-                        </>}
-                        <button title="Delete" onClick={() => setConfirmDeleteExp(exp)} className="p-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 cursor-pointer"><Trash2 size={16} /></button>
-                        <button
-                          type="button"
-                          title="View Receipt"
-                          onClick={() => openReceipt(exp)}
-                          className="p-1.5 rounded-lg bg-[#EAF2F4] text-[#0F8B8D] hover:bg-[#D6E4E8] cursor-pointer"
-                        >
-                          <Eye size={16} />
-                        </button>
-                      </div>
-                    </td>}
-                    {isEmployee && <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {exp.status === 'Pending' && (
-                          <button title="Edit" onClick={() => openEdit(exp)} className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer"><Pencil size={16} /></button>
-                        )}
-                        <button title="Delete" onClick={() => setConfirmDeleteExp(exp)} className="p-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 cursor-pointer"><Trash2 size={16} /></button>
-                        <button
-                          type="button"
-                          title="View Receipt"
-                          onClick={() => openReceipt(exp)}
-                          className="p-1.5 rounded-lg bg-[#EAF2F4] text-[#0F8B8D] hover:bg-[#D6E4E8] cursor-pointer"
-                        >
-                          <Eye size={16} />
-                        </button>
-                      </div>
-                    </td>}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {visibleExpenses.length === 0 && (
-              <EmptyState
-                title="No expenses"
-                description="You have no expense claims yet. Click “New Claim” to submit one."
-              />
-            )}
-          </div>
-        </Card>
+        <ExpenseTable
+          visibleExpenses={visibleExpenses}
+          isEmployee={isEmployee}
+          onApprove={(exp) => setConfirmApproveExp(exp)}
+          onReject={(exp) => setConfirmRejectExp(exp)}
+          onDelete={(exp) => setConfirmDeleteExp(exp)}
+          onViewReceipt={openReceipt}
+        />
       </div>
 
-      <Modal isOpen={showModal} onClose={() => { setShowModal(false); resetForm(); }} title={editingId ? 'Edit Expense Claim' : 'New Expense Claim'}>
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <Select
-            label="Category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            error={errors.category}
-            options={[{ value: '', label: 'Select Category' }, ...EXPENSE_CATEGORIES.map((c) => ({ value: c, label: c }))]}
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="Amount ($)" type="number" min="0" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} error={errors.amount} />
-            <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} error={errors.date} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#263238] mb-1.5">Description</label>
-            <textarea
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What was this expense for?"
-              className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-[#263238] placeholder-gray-400 focus:ring-2 focus:outline-none ${errors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-[#D6E4E8] focus:border-[#024fa7] focus:ring-[#024fa7]/20'}`}
-            />
-            {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#263238] mb-1.5">Payslip / Receipt (optional)</label>
-            <input
-              key={fileKey}
-              type="file"
-              accept="image/*,.pdf"
-              onChange={handleFileChange}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#EAF2F4] file:text-[#17324D] hover:file:bg-[#D6E4E8]"
-            />
-            {errors.receipt && <p className="mt-1 text-sm text-red-500">{errors.receipt}</p>}
-            {receiptName && (
-              <div className="mt-2 flex items-center gap-2 text-sm text-[#263238] bg-[#EAF2F4]/60 border border-[#D6E4E8] rounded-lg px-3 py-2">
-                <Paperclip size={14} className="text-[#024fa7] flex-shrink-0" />
-                <span className="truncate flex-1">{receiptName}</span>
-                <button
-                  type="button"
-                  title="Remove file"
-                  onClick={() => { setReceiptData(''); setReceiptName(''); setFileKey((k) => k + 1); }}
-                  className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            )}
-          </div>
-          <p className="text-xs text-gray-500">Your claim will be submitted with <span className="font-medium">Pending</span> status until it is approved or rejected.</p>
-          <div className="flex justify-end gap-3 pt-4 border-t border-[#D6E4E8]">
-            <Button variant="outline" type="button" onClick={() => { setShowModal(false); resetForm(); }}>Cancel</Button>
-            <Button variant="primary" type="submit" disabled={submitting}>
-              <Send size={16} /> {submitting ? (editingId ? 'Saving...' : 'Submitting...') : (editingId ? 'Save Changes' : 'Submit Claim')}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+      <ClaimFormModal
+        isOpen={showModal}
+        editingId={editingId}
+        category={category}
+        amount={amount}
+        date={date}
+        description={description}
+        errors={errors}
+        submitting={submitting}
+        receiptName={receiptName}
+        fileKey={fileKey}
+        onClose={() => { setShowModal(false); resetForm(); }}
+        onSubmit={handleSubmit}
+        onCategoryChange={setCategory}
+        onAmountChange={setAmount}
+        onDateChange={setDate}
+        onDescriptionChange={setDescription}
+        onFileChange={handleFileChange}
+        onRemoveReceipt={() => { setReceiptData(''); setReceiptName(''); setFileKey((k) => k + 1); }}
+        onCancel={() => { setShowModal(false); resetForm(); }}
+      />
 
-      <Modal isOpen={!!viewingExp} onClose={closeReceipt} title="Expense Details — View Receipt" size="lg">
-        {viewingExp && (
-          <div className="space-y-5">
-            <div className="flex items-start gap-3">
-              <Avatar name={viewingExp.employeeName} size="sm" />
-              <div className="flex-1">
-                <p className="text-base font-semibold text-[#17324D]">{viewingExp.employeeName}</p>
-                <p className="text-xs text-gray-500">{viewingExp.description}</p>
-              </div>
-              {statusBadge(viewingExp.status)}
-            </div>
+      <ReceiptViewerModal
+        viewingExp={viewingExp}
+        viewingReceipt={viewingReceipt}
+        zoom={zoom}
+        onClose={closeReceipt}
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
+        onResetZoom={() => setZoom(1)}
+      />
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-xl bg-[#EAF2F4]/60 border border-[#D6E4E8] p-4">
-              <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Category</p><p className="text-sm font-semibold text-[#17324D]">{viewingExp.category}</p></div>
-              <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Amount</p><p className="text-sm font-semibold text-[#17324D]">${viewingExp.amount.toLocaleString()}</p></div>
-              <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Date</p><p className="text-sm font-semibold text-[#17324D]">{viewingExp.date}</p></div>
-              <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Submitted</p><p className="text-sm font-semibold text-[#17324D]">{viewingExp.submittedOn}</p></div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-semibold text-[#17324D]">Receipt</p>
-                {viewingReceipt && (
-                  <div className="flex items-center gap-2">
-                    <button type="button" title="Zoom out" onClick={zoomOut} disabled={zoom <= 0.1} className="p-1.5 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8] disabled:opacity-40 disabled:cursor-not-allowed"><ZoomOut size={14} /></button>
-                    <span className="text-xs font-medium text-[#263238] w-12 text-center">{Math.round(zoom * 100)}%</span>
-                    <button type="button" title="Zoom in" onClick={zoomIn} disabled={zoom >= 3} className="p-1.5 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8] disabled:opacity-40 disabled:cursor-not-allowed"><ZoomIn size={14} /></button>
-                    <button type="button" title="Reset zoom" onClick={() => setZoom(0.5)} className="p-1.5 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8]"><RotateCcw size={14} /></button>
-                  </div>
-                )}
-              </div>
-              <div className="overflow-auto max-h-[55vh] rounded-xl border border-[#D6E4E8] bg-[#EAF2F4]/40 min-h-[180px] flex items-center justify-center">
-                {viewingReceipt?.startsWith('data:application/pdf') ? (
-                  <iframe src={viewingReceipt} title="Receipt" className="w-full h-[55vh] origin-top" style={{ transform: `scale(${zoom})` }} />
-                ) : viewingReceipt ? (
-                  <img src={viewingReceipt} alt="Expense receipt" className="block mx-auto max-w-none origin-top" style={{ transform: `scale(${zoom})` }} />
-                ) : (
-                  <div className="flex flex-col items-center gap-2 py-10 text-center">
-                    <div className="p-3 rounded-full bg-white border border-[#D6E4E8]"><Paperclip size={20} className="text-gray-400" /></div>
-                    <p className="text-sm font-medium text-[#17324D]">No receipt attached</p>
-                    <p className="text-xs text-gray-500">Employee did not upload a receipt for this claim.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      <Modal isOpen={!!confirmApproveExp} onClose={() => setConfirmApproveExp(null)} title="Approve Expense?" size="sm">
-        {confirmApproveExp && (
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 rounded-xl bg-green-50 border border-green-200 p-4">
-              <div className="p-2 rounded-full bg-white border border-green-200">
-                <CheckCircle2 size={20} className="text-green-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-600">
-                  Approve <span className="font-semibold text-[#17324D]">${confirmApproveExp.amount.toLocaleString()}</span> for{' '}
-                  <span className="font-semibold text-[#17324D]">{confirmApproveExp.employeeName}</span>?
-                </p>
-                <p className="text-xs text-gray-500 mt-1">{confirmApproveExp.category} · {confirmApproveExp.date} · {confirmApproveExp.description}</p>
-              </div>
-            </div>
-            <p className="text-xs text-gray-500">This will mark the claim as <span className="font-semibold text-green-700">Approved</span>. You can still reimburse or delete it later.</p>
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setConfirmApproveExp(null)}>Cancel</Button>
-              <Button
-                variant="primary"
-                onClick={() => { updateExpenseStatus(confirmApproveExp.id, 'Approved'); setConfirmApproveExp(null); }}
-              >
-                <CheckCircle2 size={16} /> Confirm Approve
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      <Modal isOpen={!!confirmRejectExp} onClose={() => setConfirmRejectExp(null)} title="Reject Expense?" size="sm">
-        {confirmRejectExp && (
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 rounded-xl bg-red-50 border border-red-200 p-4">
-              <div className="p-2 rounded-full bg-white border border-red-200">
-                <XCircle size={20} className="text-red-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-600">
-                  Reject <span className="font-semibold text-[#17324D]">${confirmRejectExp.amount.toLocaleString()}</span> for{' '}
-                  <span className="font-semibold text-[#17324D]">{confirmRejectExp.employeeName}</span>?
-                </p>
-                <p className="text-xs text-gray-500 mt-1">{confirmRejectExp.category} · {confirmRejectExp.date} · {confirmRejectExp.description}</p>
-              </div>
-            </div>
-            <p className="text-xs text-gray-500">This will mark the claim as <span className="font-semibold text-red-600">Rejected</span>. The employee will be able to see this status.</p>
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setConfirmRejectExp(null)}>Cancel</Button>
-              <Button
-                variant="danger"
-                onClick={() => { updateExpenseStatus(confirmRejectExp.id, 'Rejected'); setConfirmRejectExp(null); }}
-              >
-                <XCircle size={16} /> Confirm Reject
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      <Modal isOpen={!!confirmDeleteExp} onClose={() => setConfirmDeleteExp(null)} title="Delete Expense?" size="sm">
-        {confirmDeleteExp && (
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 rounded-xl bg-gray-50 border border-[#D6E4E8] p-4">
-              <div className="p-2 rounded-full bg-white border border-[#D6E4E8]">
-                <Trash2 size={20} className="text-red-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-600">
-                  Delete <span className="font-semibold text-[#17324D]">${confirmDeleteExp.amount.toLocaleString()}</span> — {confirmDeleteExp.category}?
-                </p>
-                <p className="text-xs text-gray-500 mt-1">{confirmDeleteExp.employeeName} · {confirmDeleteExp.date} · {confirmDeleteExp.description}</p>
-              </div>
-            </div>
-            <p className="text-xs text-gray-500">This action <span className="font-semibold">cannot be undone</span>. The claim will be permanently removed.</p>
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setConfirmDeleteExp(null)}>Cancel</Button>
-              <Button
-                variant="danger"
-                onClick={() => { deleteExpenseClaim(confirmDeleteExp.id); setConfirmDeleteExp(null); }}
-              >
-                <Trash2 size={16} /> Delete
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      <ExpenseConfirmModals
+        confirmApproveExp={confirmApproveExp}
+        confirmRejectExp={confirmRejectExp}
+        confirmDeleteExp={confirmDeleteExp}
+        onCloseApprove={() => setConfirmApproveExp(null)}
+        onCloseReject={() => setConfirmRejectExp(null)}
+        onCloseDelete={() => setConfirmDeleteExp(null)}
+        onConfirmApprove={() => { if (confirmApproveExp) { updateExpenseStatus(confirmApproveExp.id, 'Approved'); setConfirmApproveExp(null); } }}
+        onConfirmReject={() => { if (confirmRejectExp) { updateExpenseStatus(confirmRejectExp.id, 'Rejected'); setConfirmRejectExp(null); } }}
+        onConfirmDelete={() => { if (confirmDeleteExp) { deleteExpenseClaim(confirmDeleteExp.id); setConfirmDeleteExp(null); } }}
+      />
     </DashboardLayout>
   );
 }

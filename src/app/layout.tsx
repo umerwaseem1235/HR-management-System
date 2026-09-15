@@ -9,7 +9,7 @@ import { RemoteProvider } from '../contexts/RemoteContext';
 import { ProgressProvider } from '../contexts/ProgressContext';
 
 export const metadata: Metadata = {
-  title: 'CodeQor HRMS',
+  title: 'CodQor HRMS',
   description: 'Human Resource Management System',
 };
 

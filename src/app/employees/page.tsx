@@ -2,17 +2,14 @@
 
 import React, { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import Card from '../../components/ui/Card';
 import PageHeader from '../../components/ui/PageHeader';
 import Button from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
-import Avatar from '../../components/ui/Avatar';
-import SearchBar from '../../components/ui/SearchBar';
-import Select from '../../components/ui/Select';
 import AddEmployeeModal from '../../components/employees/AddEmployeeModal';
-import { UserPlus, Mail, Phone, Pencil } from 'lucide-react';
+import EmployeeFilters from '../../components/employees/EmployeeFilters';
+import EmployeeTable from '../../components/employees/EmployeeTable';
+import { UserPlus } from 'lucide-react';
 import { mockEmployees } from '../../lib/mock-data';
-import { BRANCHES, DEPARTMENTS, SHIFTS } from '../../lib/constants';
+import { BRANCHES, SHIFTS } from '../../lib/constants';
 import { Employee } from '../../lib/types';
 
 export default function EmployeesPage() {
@@ -31,13 +28,6 @@ export default function EmployeesPage() {
     const matchStatus = !statusFilter || emp.status === statusFilter;
     return matchSearch && matchDept && matchStatus;
   });
-
-  const statusBadge = (status: string) => {
-    const map: Record<string, 'success' | 'danger' | 'warning' | 'info'> = {
-      Active: 'success', Inactive: 'danger', 'On Notice': 'warning', Probation: 'info',
-    };
-    return <Badge variant={map[status] || 'neutral'}>{status}</Badge>;
-  };
 
   const handleAddEmployee = (values: Record<string, string>, photo: string | null) => {
     const newEmployee: Employee = {
@@ -116,119 +106,20 @@ export default function EmployeesPage() {
           }
         />
 
-        <Card padding="sm">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => { if (!search.trim()) setSearchFocused(false); }}
-              placeholder="Search by name or ID"
-              className="flex-1 transition-all duration-300"
-              size="lg"
-            />
-            {searchFocused && (
-              <button
-                type="button"
-                onMouseDown={e => e.preventDefault()}
-                onClick={() => { setSearch(''); setSearchFocused(false); }}
-                title="Show filters"
-                className="shrink-0 rounded-xl border border-[#D6E4E8] px-4 py-3.5 text-sm font-medium text-[#024fa7] hover:bg-[#EAF2F4] cursor-pointer whitespace-nowrap"
-              >
-                Show filters
-              </button>
-            )}
-            <div className={`grid gap-3 transition-all duration-300 overflow-hidden ${searchFocused ? 'grid-rows-[0fr] opacity-0 sm:hidden' : 'grid-rows-[1fr] opacity-100'}`}>
-              <div className="flex flex-col sm:flex-row gap-3 min-h-0">
-                <div className="sm:w-52">
-                  <Select
-                    value={deptFilter}
-                    onChange={(e) => setDeptFilter(e.target.value)}
-                    options={[
-                      { value: '', label: 'All Departments' },
-                      ...DEPARTMENTS.map(d => ({ value: d, label: d })),
-                    ]}
-                  />
-                </div>
-                <div className="sm:w-44">
-                  <Select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    options={[
-                      { value: '', label: 'All Status' },
-                      { value: 'Active', label: 'Active' },
-                      { value: 'Inactive', label: 'Inactive' },
-                      { value: 'Probation', label: 'Probation' },
-                      { value: 'On Notice', label: 'On Notice' },
-                    ]}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
+        <EmployeeFilters
+          search={search}
+          searchFocused={searchFocused}
+          deptFilter={deptFilter}
+          statusFilter={statusFilter}
+          onSearchChange={setSearch}
+          onSearchFocus={() => setSearchFocused(true)}
+          onSearchBlur={() => { if (!search.trim()) setSearchFocused(false); }}
+          onClearSearch={() => { setSearch(''); setSearchFocused(false); }}
+          onDeptChange={setDeptFilter}
+          onStatusChange={setStatusFilter}
+        />
 
-        <Card padding="none">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Employee</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Department</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Designation</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Branch</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Joined</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Contact</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#D6E4E8]">
-                {filtered.map(emp => (
-                  <tr key={emp.id} className="hover:bg-[#EAF2F4]/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar name={`${emp.firstName} ${emp.lastName}`} src={emp.avatar} size="sm" />
-                        <div>
-                          <p className="text-sm font-medium text-[#263238]">{emp.firstName} {emp.lastName}</p>
-                          <p className="text-xs text-gray-500">{emp.employeeCode}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-[#263238]">{emp.department}</td>
-                    <td className="px-6 py-4 text-sm text-[#263238]">{emp.designation}</td>
-                    <td className="px-6 py-4 text-sm text-[#263238]">{emp.branch}</td>
-                    <td className="px-6 py-4">{statusBadge(emp.status)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{emp.joiningDate}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <button className="p-1 rounded text-gray-400 hover:text-[#024fa7] hover:bg-[#EAF2F4]" title={emp.email}>
-                          <Mail size={14} />
-                        </button>
-                        <button className="p-1 rounded text-gray-400 hover:text-[#024fa7] hover:bg-[#EAF2F4]" title={emp.phone}>
-                          <Phone size={14} />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        type="button"
-                        onClick={() => setEditingEmployee(emp)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#D6E4E8] px-3 py-1.5 text-sm font-medium text-[#024fa7] hover:bg-[#EAF2F4] transition-colors"
-                        aria-label={`Edit ${emp.firstName} ${emp.lastName}`}
-                      >
-                        <Pencil size={14} /> Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {filtered.length === 0 && (
-            <div className="p-12 text-center text-gray-500">No employees found matching your criteria.</div>
-          )}
-        </Card>
+        <EmployeeTable employees={filtered} onEdit={setEditingEmployee} />
 
         <AddEmployeeModal isOpen={isAddEmployeeOpen} onClose={() => setIsAddEmployeeOpen(false)} onSave={handleAddEmployee} />
         {editingEmployee && (

@@ -6,34 +6,21 @@ import DashboardLayout from "../../components/layout/DashboardLayout";
 import Card from "../../components/ui/Card";
 import PageHeader from "../../components/ui/PageHeader";
 import Tabs from "../../components/ui/Tabs";
-import Badge from "../../components/ui/Badge";
-import Avatar from "../../components/ui/Avatar";
 import Button from "../../components/ui/Button";
-import EmptyState from "../../components/ui/EmptyState";
-import Modal from "../../components/ui/Modal";
-import Input from "../../components/ui/Input";
-import Select from "../../components/ui/Select";
-import {
-  Plus,
-  CheckCircle2,
-  XCircle,
-  Pencil,
-  Trash2,
-  Send,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 import { mockEmployees } from "../../lib/mock-data";
-import { LEAVE_TYPES } from "../../lib/constants";
 import { useAuth } from "../../contexts/AuthContext";
+import { useRequireAuth, AuthLoadingFallback } from "../../components/auth/RequireAuth";
 import { useLeave } from "../../contexts/LeaveContext";
-import { LeaveRequest } from "../../lib/types";
-
-function diffInDaysInclusive(start: string, end: string): number | null {
-  if (!start || !end) return null;
-  const s = new Date(start);
-  const e = new Date(end);
-  if (isNaN(s.getTime()) || isNaN(e.getTime()) || e < s) return null;
-  return Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
-}
+import { LeaveRequest, LeaveBalance } from "../../lib/types";
+import RequestList from "../../components/leave/RequestList";
+import BalanceGrid from "../../components/leave/BalanceGrid";
+import {
+  EditLeaveModal,
+  EditBalanceModal,
+  BalanceDetailModal,
+} from "../../components/leave/LeaveModals";
+import { diffInDaysInclusive } from "../../components/leave/leave-utils";
 
 export default function LeavePage() {
   const { user } = useAuth();
@@ -105,7 +92,8 @@ export default function LeavePage() {
     [leaveBalances],
   );
 
-  if (!user) return null;
+  useRequireAuth();
+  if (!user) return <AuthLoadingFallback />;
 
   const tabs = [
     {
@@ -115,16 +103,6 @@ export default function LeavePage() {
     },
     { id: "balances", label: "Leave Balances" },
   ];
-
-  const statusBadge = (status: string) => {
-    const map: Record<string, "success" | "danger" | "warning" | "neutral"> = {
-      Pending: "warning",
-      Approved: "success",
-      Rejected: "danger",
-      Cancelled: "neutral",
-    };
-    return <Badge variant={map[status] || "neutral"}>{status}</Badge>;
-  };
 
   const openEdit = (leave: LeaveRequest) => {
     setEditingId(leave.id);
@@ -196,6 +174,30 @@ export default function LeavePage() {
     closeBalanceModal();
   };
 
+  const handleApprove = (id: string) => {
+    updateLeaveStatus(id, "Approved", user.name);
+  };
+
+  const handleReject = (id: string) => {
+    updateLeaveStatus(id, "Rejected", user.name);
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm("Delete this leave request?"))
+      deleteLeaveRequest(id);
+  };
+
+  const handleSelectRequest = (leave: LeaveRequest) => {
+    setBalanceRequest(leave);
+  };
+
+  const handleOpenBalanceEdit = (bal: LeaveBalance) => {
+    setBalanceType(bal.leaveType);
+    setBalanceTotal(String(bal.total));
+    setBalanceErrors({});
+    setShowBalanceModal(true);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -219,363 +221,57 @@ export default function LeavePage() {
           </div>
           <div className="p-6">
             {activeTab === "requests" && (
-              <div className="space-y-3">
-                {visibleRequests.length === 0 ? (
-                  <EmptyState
-                    title="No leave requests"
-                    description={
-                      isEmployee
-                        ? 'You have no leave requests yet. Click "Request Leave" to submit one.'
-                        : "No leave requests found."
-                    }
-                  />
-                ) : (
-                  visibleRequests.map((leave) => (
-                    <div
-                      key={leave.id}
-                      onClick={() => {
-                        if (!isEmployee) setBalanceRequest(leave);
-                      }}
-                      title={
-                        !isEmployee ? "View employee leave balances" : undefined
-                      }
-                      className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg bg-blue-gray/50 border border-medium-gray gap-4 ${!isEmployee ? "cursor-pointer hover:border-teal/40 hover:bg-blue-gray" : ""}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Avatar name={leave.employeeName} size="sm" />
-                        <div>
-                          <p className="text-sm font-medium text-[#263238]">
-                            {leave.employeeName}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {leave.leaveType} · {leave.startDate} to{" "}
-                            {leave.endDate} · {leave.days} day
-                            {leave.days > 1 ? "s" : ""}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            Reason: {leave.reason}
-                          </p>
-                          <p className="text-[10px] text-gray-400 mt-0.5">
-                            Applied on {leave.appliedOn}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {statusBadge(leave.status)}
-                        {!isEmployee && leave.status === "Pending" && (
-                          <div
-                            className="flex gap-2"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              title="Approve"
-                              onClick={() =>
-                                updateLeaveStatus(
-                                  leave.id,
-                                  "Approved",
-                                  user.name,
-                                )
-                              }
-                              className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-200"
-                            >
-                              <CheckCircle2 size={18} />
-                            </button>
-                            <button
-                              title="Reject"
-                              onClick={() =>
-                                updateLeaveStatus(
-                                  leave.id,
-                                  "Rejected",
-                                  user.name,
-                                )
-                              }
-                              className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200"
-                            >
-                              <XCircle size={18} />
-                            </button>
-                          </div>
-                        )}
-                        {isEmployee && leave.status === "Pending" && (
-                          <div className="flex gap-2">
-                            <button
-                              title="Edit"
-                              onClick={() => openEdit(leave)}
-                              className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
-                            >
-                              <Pencil size={18} />
-                            </button>
-                            <button
-                              title="Delete"
-                              onClick={() => {
-                                if (
-                                  window.confirm("Delete this leave request?")
-                                )
-                                  deleteLeaveRequest(leave.id);
-                              }}
-                              className="p-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+              <RequestList
+                requests={visibleRequests}
+                isEmployee={isEmployee}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                onEdit={openEdit}
+                onDelete={handleDelete}
+                onSelect={handleSelectRequest}
+              />
             )}
             {activeTab === "balances" && (
-              <div className="space-y-4">
-                <div className="rounded-lg border border-teal/20 bg-teal/5 px-4 py-3 text-xs leading-relaxed text-gray-600">
-                  <span className="font-semibold text-primary">Monthly Leave</span> gives{" "}
-                  <span className="font-semibold">2 paid days every calendar month</span> — it
-                  resets on the 1st and does not carry forward. Any approved days beyond the
-                  monthly quota are automatically treated as unpaid in payroll.
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {visibleBalances.map((bal) => {
-                    const meta = LEAVE_TYPES.find((t) => t.name === bal.leaveType);
-                    const isMonthly = bal.leaveType === "Monthly Leave";
-                    const pct = bal.total > 0 ? Math.min(100, (bal.used / bal.total) * 100) : 0;
-                    const unit = isMonthly ? "days / month" : "days / year";
-                    return (
-                      <div
-                        key={bal.leaveType}
-                        className="p-4 rounded-lg border border-medium-gray bg-white"
-                        style={{ borderTop: `3px solid ${meta?.color ?? "#0d9488"}` }}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="text-sm font-semibold text-primary">
-                            {bal.leaveType}
-                          </h4>
-                          {isSuperAdmin && (
-                            <button
-                              title="Edit balance"
-                              onClick={() => {
-                                setBalanceType(bal.leaveType);
-                                setBalanceTotal(String(bal.total));
-                                setBalanceErrors({});
-                                setShowBalanceModal(true);
-                              }}
-                              className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
-                            >
-                              <Pencil size={14} />
-                            </button>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <span
-                            className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-                            style={{
-                              backgroundColor: `${meta?.color ?? "#0d9488"}14`,
-                              color: meta?.color ?? "#0d9488",
-                            }}
-                          >
-                            {isMonthly ? "Resets monthly" : meta?.carryForward ? "Carry forward" : "Annual quota"}
-                          </span>
-                          {bal.pending > 0 && (
-                            <span className="text-[10px] font-medium text-amber-600">
-                              {bal.pending} pending
-                            </span>
-                          )}
-                        </div>
-                        {isSuperAdmin ? (
-                          <div>
-                            <div className="flex items-end gap-2">
-                              <span className="text-3xl font-bold text-teal">
-                                {bal.total}
-                              </span>
-                              <span className="text-sm text-gray-500 mb-1">
-                                {unit}
-                              </span>
-                            </div>
-                            <p className="mt-1 text-[11px] text-gray-500">
-                              {meta?.description ?? "Company leave quota"}
-                            </p>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="flex items-end gap-2 mb-3">
-                              <span className="text-3xl font-bold text-teal">
-                                {bal.remaining}
-                              </span>
-                              <span className="text-sm text-gray-500 mb-1">
-                                / {bal.total} {isMonthly ? "days this month" : "days"}
-                              </span>
-                            </div>
-                            <div className="w-full bg-medium-gray rounded-full h-2 mb-2">
-                              <div
-                                className="h-2 rounded-full"
-                                style={{
-                                  width: `${pct}%`,
-                                  backgroundColor: meta?.color ?? "#0d9488",
-                                }}
-                              />
-                            </div>
-                            <div className="flex justify-between text-xs text-gray-500">
-                              <span>Used: {bal.used}</span>
-                              <span>Remaining: {bal.remaining}</span>
-                            </div>
-                            {isMonthly && (
-                              <p className="mt-2 text-[11px] text-gray-500">
-                                Fresh quota every month · no carry forward
-                              </p>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <BalanceGrid
+                balances={visibleBalances}
+                isSuperAdmin={isSuperAdmin}
+                onEditBalance={handleOpenBalanceEdit}
+              />
             )}
           </div>
         </Card>
       </div>
 
-      <Modal
+      <EditLeaveModal
         isOpen={showEditModal}
+        editType={editType}
+        editStart={editStart}
+        editEnd={editEnd}
+        editReason={editReason}
+        errors={editErrors}
+        onEditTypeChange={setEditType}
+        onEditStartChange={setEditStart}
+        onEditEndChange={setEditEnd}
+        onEditReasonChange={setEditReason}
         onClose={closeEdit}
-        title="Edit Leave Request"
-      >
-        <form onSubmit={handleEditSubmit} className="space-y-5">
-          <Select
-            label="Leave Type"
-            value={editType}
-            onChange={(e) => setEditType(e.target.value)}
-            error={editErrors.editType}
-            options={[
-              { value: "", label: "Select Leave Type" },
-              ...LEAVE_TYPES.map((lt) => ({ value: lt.name, label: lt.name })),
-            ]}
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Start Date"
-              type="date"
-              value={editStart}
-              onChange={(e) => setEditStart(e.target.value)}
-              error={editErrors.editStart}
-            />
-            <Input
-              label="End Date"
-              type="date"
-              value={editEnd}
-              onChange={(e) => setEditEnd(e.target.value)}
-              error={editErrors.editEnd}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#263238] mb-1.5">
-              Reason
-            </label>
-            <textarea
-              rows={4}
-              value={editReason}
-              onChange={(e) => setEditReason(e.target.value)}
-              placeholder="Enter reason for leave..."
-              className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-[#263238] placeholder-gray-400 focus:ring-2 focus:outline-none ${editErrors.editReason ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-medium-gray focus:border-teal focus:ring-teal/20"}`}
-            />
-            {editErrors.editReason && (
-              <p className="mt-1 text-sm text-red-500">
-                {editErrors.editReason}
-              </p>
-            )}
-          </div>
-          <p className="text-xs text-gray-500">
-            Your request will remain{" "}
-            <span className="font-medium">Pending</span> until it is approved or
-            rejected.
-          </p>
-          <div className="flex justify-end gap-3 pt-4 border-t border-medium-gray">
-            <Button variant="outline" type="button" onClick={closeEdit}>
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit">
-              <Send size={16} /> Save Changes
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        onSubmit={handleEditSubmit}
+      />
 
-      <Modal
+      <EditBalanceModal
         isOpen={showBalanceModal}
+        balanceType={balanceType}
+        balanceTotal={balanceTotal}
+        errors={balanceErrors}
+        onBalanceTotalChange={setBalanceTotal}
         onClose={closeBalanceModal}
-        title={`Edit Balance — ${balanceType}`}
-      >
-        <form onSubmit={handleBalanceSubmit} className="space-y-5">
-          <Input
-            label="Total Days"
-            type="number"
-            min="0"
-            step="1"
-            value={balanceTotal}
-            onChange={(e) => setBalanceTotal(e.target.value)}
-            error={balanceErrors.balanceTotal}
-          />
-          <p className="text-xs text-gray-500">
-            Remaining days are recalculated automatically (total − used).
-          </p>
-          <div className="flex justify-end gap-3 pt-4 border-t border-medium-gray">
-            <Button variant="outline" type="button" onClick={closeBalanceModal}>
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit">
-              <Send size={16} /> Save Changes
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        onSubmit={handleBalanceSubmit}
+      />
 
-      <Modal
-        isOpen={!!balanceRequest}
+      <BalanceDetailModal
+        balanceRequest={balanceRequest}
+        balances={visibleBalances}
         onClose={() => setBalanceRequest(null)}
-        title={
-          balanceRequest
-            ? `Leave Balances — ${balanceRequest.employeeName}`
-            : "Leave Balances"
-        }
-      >
-        {balanceRequest && (
-          <div className="space-y-3">
-            <p className="text-xs text-gray-500">
-              Remaining balances for{" "}
-              <span className="font-medium text-[#263238]">
-                {balanceRequest.employeeName}
-              </span>{" "}
-              ({balanceRequest.leaveType} · {balanceRequest.startDate} to{" "}
-              {balanceRequest.endDate})
-            </p>
-            {visibleBalances.map((bal) => (
-              <div
-                key={bal.leaveType}
-                className="p-4 rounded-lg bg-blue-gray/50 border border-medium-gray"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-[#263238]">
-                    {bal.leaveType}
-                  </span>
-                  <span className="text-sm font-bold text-primary">
-                    {bal.remaining}/{bal.total} remaining
-                  </span>
-                </div>
-                <div className="w-full bg-medium-gray rounded-full h-2">
-                  <div
-                    className="bg-teal h-2 rounded-full"
-                    style={{
-                      width: `${bal.total > 0 ? (bal.used / bal.total) * 100 : 0}%`,
-                    }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs text-gray-500 mt-1.5">
-                  <span>Used: {bal.used}</span>
-                  <span>Total: {bal.total}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Modal>
+      />
     </DashboardLayout>
   );
 }

@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/ui/Card';
 import PageHeader from '../../components/ui/PageHeader';
-import Tabs from '../../components/ui/Tabs';
-import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
-import EmptyState from '../../components/ui/EmptyState';
-import { Bell, CheckCheck, ArrowLeft } from 'lucide-react';
+import { CheckCheck, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useRequireAuth, AuthLoadingFallback } from '../../components/auth/RequireAuth';
 import { useNotifications } from '../../contexts/NotificationContext';
+import NotificationList from '../../components/notifications/NotificationList';
+import NotificationFilters from '../../components/notifications/NotificationFilters';
 
 export default function NotificationsPage() {
   const { user } = useAuth();
@@ -19,7 +19,8 @@ export default function NotificationsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('all');
 
-  if (!user) return null;
+  useRequireAuth();
+  if (!user) return <AuthLoadingFallback />;
 
   const tabs = [
     { id: 'all', label: 'All', count: notifications.length },
@@ -27,15 +28,6 @@ export default function NotificationsPage() {
   ];
 
   const visible = activeTab === 'unread' ? notifications.filter((n) => !n.read) : notifications;
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'success': return 'bg-green-100 text-green-600';
-      case 'warning': return 'bg-yellow-100 text-yellow-600';
-      case 'error': return 'bg-red-100 text-red-600';
-      default: return 'bg-blue-100 text-blue-600';
-    }
-  };
 
   const handleOpen = (id: string, link?: string) => {
     markAsRead(id);
@@ -61,42 +53,9 @@ export default function NotificationsPage() {
         />
 
         <Card padding="none">
-          <div className="px-6 pt-4">
-            <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-          </div>
+          <NotificationFilters tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
           <div className="p-6">
-            {visible.length === 0 ? (
-              <EmptyState
-                title={activeTab === 'unread' ? 'No unread notifications' : 'No notifications'}
-                description={activeTab === 'unread' ? 'You are all caught up.' : 'Notifications will appear here.'}
-              />
-            ) : (
-              <div className="space-y-3">
-                {visible.map((notif) => (
-                  <button
-                    key={notif.id}
-                    onClick={() => handleOpen(notif.id, notif.link)}
-                    className={`w-full text-left p-4 rounded-lg border border-[#D6E4E8] hover:bg-[#EAF2F4]/50 transition-colors ${!notif.read ? 'bg-[#EAF2F4]/30' : 'bg-white'}`}
-                  >
-                    <div className="flex gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getNotificationIcon(notif.type)}`}>
-                        <Bell size={16} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-[#263238]">{notif.title}</p>
-                          {!notif.read && <Badge variant="info" size="sm">New</Badge>}
-                        </div>
-                        <p className="text-sm text-gray-500 mt-0.5">{notif.message}</p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {new Date(notif.createdAt).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+            <NotificationList notifications={visible} activeTab={activeTab} onOpen={handleOpen} />
           </div>
         </Card>
       </div>

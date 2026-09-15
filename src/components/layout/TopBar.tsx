@@ -1,11 +1,15 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, Bell, ChevronDown, User, Settings, LogOut, CheckCheck } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { ROLE_LABELS } from '../../lib/constants';
+import type { Notification } from '../../lib/types';
+import { NotificationBell } from './topbar/NotificationBell';
+import { NotificationDropdown } from './topbar/NotificationDropdown';
+import { UserMenu } from './topbar/UserMenu';
+import { useClickOutside } from '../../hooks/useClickOutside';
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -23,24 +27,20 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setShowNotifications(false);
-      if (userRef.current && !userRef.current.contains(e.target as Node)) setShowUserMenu(false);
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  const handleLogout = () => {
+    logout();
+    router.replace('/login');
+  };
+
+  useClickOutside(notifRef, () => setShowNotifications(false));
+  useClickOutside(userRef, () => setShowUserMenu(false));
 
   if (!user) return null;
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'success': return 'bg-green-100 text-green-600';
-      case 'warning': return 'bg-yellow-100 text-yellow-600';
-      case 'error': return 'bg-red-100 text-red-600';
-      default: return 'bg-blue-100 text-blue-600';
-    }
+  const handleSelectNotification = (notif: Notification) => {
+    markAsRead(notif.id);
+    setShowNotifications(false);
+    if (notif.link) router.push(notif.link);
   };
 
   return (
@@ -66,72 +66,20 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
         <div className="flex items-center gap-1.5">
           {/* Notifications */}
           <div ref={notifRef} className="relative">
-            <button
-              onClick={() => { setShowNotifications(!showNotifications); setShowUserMenu(false); }}
-              className={`relative rounded-xl p-2.5 transition-all active:scale-95 ${showNotifications ? 'bg-[#EAF2F4] text-[#024fa7]' : 'text-[#263238] hover:bg-[#EAF2F4] hover:text-[#024fa7]'}`}
-              aria-label="Notifications"
-            >
-              <Bell size={20} />
-              {unreadCount > 0 && (
-                <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center px-1">
-                  <span className="animate-ping-soft absolute inline-flex h-full w-full rounded-full bg-red-400" />
-                  <span className="relative inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-600 px-1 text-[10px] font-bold text-white shadow-sm">
-                    {unreadCount}
-                  </span>
-                </span>
-              )}
-            </button>
+            <NotificationBell
+              unreadCount={unreadCount}
+              open={showNotifications}
+              onToggle={() => { setShowNotifications(!showNotifications); setShowUserMenu(false); }}
+            />
 
             {showNotifications && (
-              <div className="animate-dropdown-in absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-[#D6E4E8] bg-white shadow-2xl shadow-[#17324D]/15">
-                <div className="bg-gradient-to-r from-[#17324D] to-[#024fa7] px-4 py-3.5">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-white">Notifications</h3>
-                    <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white">
-                      {unreadCount} unread
-                    </span>
-                  </div>
-                </div>
-                <div className="max-h-80 overflow-y-auto">
-                  {notifications.slice(0, 5).map(notif => (
-                    <div
-                      key={notif.id}
-                      onClick={() => { markAsRead(notif.id); setShowNotifications(false); if (notif.link) router.push(notif.link); }}
-                      className={`cursor-pointer border-b border-[#D6E4E8]/60 p-4 transition-colors last:border-0 hover:bg-[#EAF2F4]/60 ${!notif.read ? 'bg-[#EAF2F4]/40' : ''}`}
-                    >
-                      <div className="flex gap-3">
-                        <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl shadow-sm ${getNotificationIcon(notif.type)}`}>
-                          <Bell size={15} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm font-semibold text-[#263238]">{notif.title}</p>
-                            {!notif.read && <span className="h-2 w-2 flex-shrink-0 rounded-full bg-[#024fa7]" />}
-                          </div>
-                          <p className="mt-0.5 line-clamp-2 text-xs text-gray-500">{notif.message}</p>
-                          <p className="mt-1 text-[10px] text-gray-400">{new Date(notif.createdAt).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2 border-t border-[#D6E4E8]/60 bg-[#F8FBFC] p-2.5">
-                  <button
-                    onClick={() => { setShowNotifications(false); router.push('/notifications'); }}
-                    className="flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-[#024fa7] transition-colors hover:bg-[#EAF2F4]"
-                  >
-                    View All
-                  </button>
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={() => notifications.filter(n => !n.read).forEach(n => markAsRead(n.id))}
-                      className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-[#EAF2F4] hover:text-[#263238]"
-                    >
-                      <CheckCheck size={14} /> Mark read
-                    </button>
-                  )}
-                </div>
-              </div>
+              <NotificationDropdown
+                notifications={notifications}
+                unreadCount={unreadCount}
+                onSelect={handleSelectNotification}
+                onViewAll={() => { setShowNotifications(false); router.push('/notifications'); }}
+                onMarkAllRead={() => notifications.filter(n => !n.read).forEach(n => markAsRead(n.id))}
+              />
             )}
           </div>
 
@@ -139,59 +87,13 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
 
           {/* User Menu */}
           <div ref={userRef} className="relative">
-            <button
-              onClick={() => { setShowUserMenu(!showUserMenu); setShowNotifications(false); }}
-              className={`flex items-center gap-2.5 rounded-xl p-1.5 pr-2.5 transition-all active:scale-[0.98] sm:pr-3 ${showUserMenu ? 'bg-[#EAF2F4]' : 'hover:bg-[#EAF2F4]'}`}
-            >
-              <span className="relative">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#024fa7] to-[#17324D] text-xs font-bold text-white shadow-md shadow-[#024fa7]/30 ring-2 ring-white">
-                  {user.avatar || user.name.split(' ').map(n => n[0]).join('')}
-                </span>
-                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
-              </span>
-              <span className="hidden text-left sm:block">
-                <p className="text-sm font-semibold leading-tight text-[#263238]">{user.name}</p>
-                <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{ROLE_LABELS[user.role]}</p>
-              </span>
-              <ChevronDown size={15} className={`hidden text-gray-400 transition-transform duration-200 sm:block ${showUserMenu ? 'rotate-180' : ''}`} />
-            </button>
-
-            {showUserMenu && (
-              <div className="animate-dropdown-in absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-[#D6E4E8] bg-white p-1.5 shadow-2xl shadow-[#17324D]/15">
-                <div className="rounded-xl bg-[#F8FBFC] px-3.5 py-3">
-                  <p className="truncate text-sm font-semibold text-[#263238]">{user.name}</p>
-                  <p className="text-xs text-gray-500">{ROLE_LABELS[user.role]}</p>
-                </div>
-                <button
-                  onClick={() => { setShowUserMenu(false); router.push('/profile'); }}
-                  className="mt-1 flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-[#263238] transition-colors hover:bg-[#EAF2F4]"
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EAF2F4] text-[#024fa7]">
-                    <User size={15} />
-                  </span>
-                  My Profile
-                </button>
-                <button
-                  onClick={() => { setShowUserMenu(false); router.push('/settings'); }}
-                  className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-[#263238] transition-colors hover:bg-[#EAF2F4]"
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
-                    <Settings size={15} />
-                  </span>
-                  Settings
-                </button>
-                <div className="my-1.5 border-t border-[#D6E4E8]/60" />
-                <button
-                  onClick={logout}
-                  className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-600">
-                    <LogOut size={15} />
-                  </span>
-                  Sign Out
-                </button>
-              </div>
-            )}
+            <UserMenu
+              user={user}
+              open={showUserMenu}
+              onToggle={() => { setShowUserMenu(!showUserMenu); setShowNotifications(false); }}
+              onNavigate={(path) => { setShowUserMenu(false); router.push(path); }}
+              onLogout={handleLogout}
+            />
           </div>
         </div>
       </div>

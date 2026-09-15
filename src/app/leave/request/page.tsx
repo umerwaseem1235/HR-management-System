@@ -3,17 +3,14 @@
 import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '../../../components/layout/DashboardLayout';
-import Card from '../../../components/ui/Card';
 import PageHeader from '../../../components/ui/PageHeader';
-import Input from '../../../components/ui/Input';
-import Select from '../../../components/ui/Select';
-import Button from '../../../components/ui/Button';
-import { ArrowLeft, Send } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { LEAVE_TYPES } from '../../../lib/constants';
 import { mockEmployees } from '../../../lib/mock-data';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useRequireAuth, AuthLoadingFallback } from '../../../components/auth/RequireAuth';
 import { useLeave } from '../../../contexts/LeaveContext';
+import LeaveRequestForm from '../../../components/leave/LeaveRequestForm';
 
 function diffInDaysInclusive(start: string, end: string): number | null {
   if (!start || !end) return null;
@@ -37,7 +34,8 @@ export default function LeaveRequestPage() {
 
   const days = useMemo(() => diffInDaysInclusive(startDate, endDate), [startDate, endDate]);
 
-  if (!user) return null;
+  useRequireAuth();
+  if (!user) return <AuthLoadingFallback />;
 
   const employee =
     mockEmployees.find((e) => e.email.toLowerCase() === user.email.toLowerCase()) ||
@@ -78,53 +76,21 @@ export default function LeaveRequestPage() {
         <PageHeader
           title="Request Leave"
         />
-        <Card>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <Select
-              label="Leave Type"
-              value={leaveType}
-              onChange={(e) => setLeaveType(e.target.value)}
-              error={errors.leaveType}
-              options={[
-                { value: '', label: 'Select Leave Type' },
-                ...LEAVE_TYPES.map((lt) => ({ value: lt.name, label: lt.name })),
-              ]}
-            />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Start Date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} error={errors.startDate} />
-              <Input label="End Date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} error={errors.endDate} />
-            </div>
-            {leaveType === 'Monthly Leave' && (
-              <p className="text-xs leading-relaxed text-teal-800 bg-teal-50 border border-teal-100 rounded-lg px-4 py-2.5">
-                <span className="font-semibold">Monthly Leave — 2 paid days per calendar month.</span>{' '}
-                Quota resets on the 1st and doesn&apos;t carry forward. Days beyond the monthly quota are auto-deducted in payroll.
-              </p>
-            )}
-            {days !== null && (
-              <p className="text-sm text-[#17324D] bg-[#EAF2F4]/60 border border-[#D6E4E8] rounded-lg px-4 py-2.5">
-                Duration: <span className="font-semibold">{days} day{days > 1 ? 's' : ''}</span>
-              </p>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-[#263238] mb-1.5">Reason</label>
-              <textarea
-                rows={4}
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Enter reason for leave..."
-                className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-[#263238] placeholder-gray-400 focus:ring-2 focus:outline-none ${errors.reason ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-[#D6E4E8] focus:border-[#024fa7] focus:ring-[#024fa7]/20'}`}
-              />
-              {errors.reason && <p className="mt-1 text-sm text-red-500">{errors.reason}</p>}
-            </div>
-            <p className="text-xs text-gray-500">Your request will be submitted with <span className="font-medium">Pending</span> status until it is approved or rejected.</p>
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#D6E4E8]">
-              <Button variant="outline" type="button" onClick={() => router.push('/leave')}>Cancel</Button>
-              <Button variant="primary" type="submit" disabled={submitting}>
-                <Send size={16} /> {submitting ? 'Submitting...' : 'Submit Request'}
-              </Button>
-            </div>
-          </form>
-        </Card>
+        <LeaveRequestForm
+          leaveType={leaveType}
+          startDate={startDate}
+          endDate={endDate}
+          reason={reason}
+          errors={errors}
+          days={days}
+          submitting={submitting}
+          onLeaveTypeChange={setLeaveType}
+          onStartDateChange={setStartDate}
+          onEndDateChange={setEndDate}
+          onReasonChange={setReason}
+          onSubmit={handleSubmit}
+          onCancel={() => router.push('/leave')}
+        />
       </div>
     </DashboardLayout>
   );

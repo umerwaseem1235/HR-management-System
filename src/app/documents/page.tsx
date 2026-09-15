@@ -1,20 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import Card from '../../components/ui/Card';
 import PageHeader from '../../components/ui/PageHeader';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
-import SearchBar from '../../components/ui/SearchBar';
 import Modal from '../../components/ui/Modal';
-import Input from '../../components/ui/Input';
-import Select from '../../components/ui/Select';
-import { Upload, FileText, File, FolderOpen, Download, Eye, Clock, Paperclip, X } from 'lucide-react';
+import { Upload, FileText } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { mockEmployees } from '../../lib/mock-data';
+import DocumentFilters from '../../components/documents/DocumentFilters';
+import DocumentTable, { DocumentItem } from '../../components/documents/DocumentTable';
+import UploadModal from '../../components/documents/UploadModal';
+import { Download } from 'lucide-react';
 
-const mockDocuments = [
+const mockDocuments: DocumentItem[] = [
   { id: '1', name: 'Employment Contract', type: 'Contract', employee: 'Michael Chen', uploadedDate: '2022-03-01', expiryDate: null, status: 'Active' },
   { id: '2', name: 'NDA Agreement', type: 'Legal', employee: 'All Employees', uploadedDate: '2024-01-01', expiryDate: '2025-01-01', status: 'Active' },
   { id: '3', name: 'Health Insurance Card', type: 'ID', employee: 'Sarah Williams', uploadedDate: '2023-06-15', expiryDate: '2024-06-15', status: 'Expiring Soon' },
@@ -30,9 +30,9 @@ export default function DocumentsPage() {
   const isEmployee = user?.role === 'employee';
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
-  const [docs, setDocs] = useState<(typeof mockDocuments[number] & { fileData?: string; fileName?: string })[]>(mockDocuments);
+  const [docs, setDocs] = useState<DocumentItem[]>(mockDocuments);
   const [showUpload, setShowUpload] = useState(false);
-  const [viewDoc, setViewDoc] = useState<(typeof docs[number]) | null>(null);
+  const [viewDoc, setViewDoc] = useState<DocumentItem | null>(null);
   const [docName, setDocName] = useState('');
   const [docEmployee, setDocEmployee] = useState('');
   const [docType, setDocType] = useState('Contract');
@@ -41,7 +41,21 @@ export default function DocumentsPage() {
   const [docFileData, setDocFileData] = useState('');
   const [docError, setDocError] = useState('');
 
+  // Resolve the logged-in user to an employee record (same matching as other pages)
+  const employee = useMemo(() => {
+    if (!user) return undefined;
+    return (
+      mockEmployees.find((e) => e.email.toLowerCase() === user.email.toLowerCase()) ||
+      mockEmployees.find((e) => `${e.firstName} ${e.lastName}`.toLowerCase() === user.name.toLowerCase())
+    );
+  }, [user]);
+
+  const myName = employee ? `${employee.firstName} ${employee.lastName}` : user?.name ?? '';
+
   const filtered = docs.filter(doc => {
+    // Employees see only their own documents (+ company-wide ones), never other employees' files.
+    // Upload is manager-only (Upload button is hidden for employees), so this list is view-only for them.
+    if (isEmployee && doc.employee !== 'All Employees' && doc.employee !== myName) return false;
     const matchSearch = !search || doc.name.toLowerCase().includes(search.toLowerCase()) || doc.employee.toLowerCase().includes(search.toLowerCase());
     const matchCat = category === 'All' || doc.type === category;
     return matchSearch && matchCat;
@@ -75,7 +89,7 @@ export default function DocumentsPage() {
     resetUpload();
   };
 
-  const downloadDoc = (doc: (typeof docs)[number]) => {
+  const downloadDoc = (doc: DocumentItem) => {
     if (doc.fileData) {
       const a = document.createElement('a');
       a.href = doc.fileData;
@@ -101,76 +115,39 @@ export default function DocumentsPage() {
           actions={!isEmployee && <Button variant="primary" onClick={() => { resetUpload(); setShowUpload(true); }} className="cursor-pointer whitespace-nowrap"><Upload size={16} /> Upload</Button>}
         />
 
-        <Card padding="sm">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <SearchBar value={search} onChange={setSearch} placeholder="Search documents..." className="flex-1" />
-            <div className="flex gap-2 flex-wrap">
-              {categories.map(cat => (
-                <button key={cat} onClick={() => setCategory(cat)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${category === cat ? 'bg-[#024fa7] text-white' : 'bg-[#EAF2F4] text-[#263238] hover:bg-[#D6E4E8]'}`}>
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-        </Card>
+        <DocumentFilters
+          search={search}
+          category={category}
+          categories={categories}
+          onSearchChange={setSearch}
+          onCategoryChange={setCategory}
+        />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(doc => (
-            <Card key={doc.id} hover>
-              <div className="flex items-start gap-3">
-                <div className="bg-[#EAF2F4] p-3 rounded-lg"><FileText size={24} className="text-[#024fa7]" /></div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-semibold text-[#17324D] truncate">{doc.name}</h4>
-                  <p className="text-xs text-gray-500 mt-0.5">{doc.employee}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{doc.type} · Uploaded {doc.uploadedDate}</p>
-                  <div className="flex items-center justify-between mt-3">
-                    <Badge variant={doc.status === 'Active' ? 'success' : 'warning'} size="sm">
-                      {doc.status === 'Expiring Soon' && <Clock size={10} className="mr-1" />}
-                      {doc.status}
-                    </Badge>
-                    <div className="flex gap-1">
-                      <button title="View document" onClick={() => setViewDoc(doc)} className="p-1.5 rounded text-gray-400 hover:text-[#024fa7] hover:bg-[#EAF2F4] cursor-pointer"><Eye size={14} /></button>
-                      <button title="Download document" onClick={() => downloadDoc(doc)} className="p-1.5 rounded text-gray-400 hover:text-[#024fa7] hover:bg-[#EAF2F4] cursor-pointer"><Download size={14} /></button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+        <DocumentTable
+          documents={filtered}
+          isEmployee={!!isEmployee}
+          onView={setViewDoc}
+          onDownload={downloadDoc}
+        />
       </div>
 
-      <Modal isOpen={showUpload} onClose={() => { setShowUpload(false); resetUpload(); }} title="Upload Document" size="sm">
-        <form onSubmit={handleUpload} className="space-y-4">
-          <Input label="Document Name" placeholder="e.g. Employment Contract" value={docName} onChange={e => setDocName(e.target.value)} required />
-          <Select label="Employee" value={docEmployee} onChange={e => setDocEmployee(e.target.value)}
-            options={[{ value: '', label: 'Select employee…' }, { value: 'All Employees', label: 'All Employees' }, ...mockEmployees.map(e => ({ value: `${e.firstName} ${e.lastName}`, label: `${e.firstName} ${e.lastName} — ${e.designation}` }))]} required />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Select label="Document Type" value={docType} onChange={e => setDocType(e.target.value)}
-              options={['Contract', 'ID', 'Legal', 'Policy', 'Certificate'].map(t => ({ value: t, label: t }))} required />
-            <Input label="Expiry Date (optional)" type="date" value={docExpiry} onChange={e => setDocExpiry(e.target.value)} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#263238] mb-1.5">Attach Document</label>
-            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-[#B9D0D6] bg-[#F8FBFC] px-4 py-3 hover:border-[#024fa7] hover:bg-[#EAF2F4]/50 transition-colors">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EAF2F4] text-[#024fa7]"><Upload size={17} /></span>
-              <span className="flex-1 min-w-0">
-                <span className="block text-sm font-medium text-[#263238] truncate">{docFile || 'Choose file'}</span>
-                <span className="block text-xs text-gray-500 mt-0.5">PDF, DOC, JPG or PNG up to 10 MB</span>
-              </span>
-              {docFile && <button type="button" title="Remove file" onClick={e => { e.preventDefault(); setDocFile(''); setDocFileData(''); }} className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"><X size={14} /></button>}
-              <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className="sr-only"
-                onChange={e => handleFilePick(e.target.files?.[0])} />
-            </label>
-            {docFile && <p className="mt-2 flex items-center gap-2 text-xs text-gray-600 rounded-lg bg-[#EAF2F4]/60 border border-[#D6E4E8] px-3 py-2"><Paperclip size={12} className="text-[#024fa7]" /><span className="truncate flex-1">{docFile}</span></p>}
-          </div>
-          {docError && <p className="text-sm text-red-500">{docError}</p>}
-          <div className="flex justify-end gap-3 pt-2 border-t border-[#D6E4E8]">
-            <Button variant="outline" type="button" onClick={() => { setShowUpload(false); resetUpload(); }}>Cancel</Button>
-            <Button variant="primary" type="submit"><Upload size={16} /> Upload</Button>
-          </div>
-        </form>
-      </Modal>
+      <UploadModal
+        isOpen={showUpload}
+        docName={docName}
+        docEmployee={docEmployee}
+        docType={docType}
+        docExpiry={docExpiry}
+        docFile={docFile}
+        docError={docError}
+        onDocNameChange={setDocName}
+        onDocEmployeeChange={setDocEmployee}
+        onDocTypeChange={setDocType}
+        onDocExpiryChange={setDocExpiry}
+        onFilePick={handleFilePick}
+        onClearFile={() => { setDocFile(''); setDocFileData(''); }}
+        onClose={() => { setShowUpload(false); resetUpload(); }}
+        onSubmit={handleUpload}
+      />
 
       <Modal isOpen={!!viewDoc} onClose={() => setViewDoc(null)} title="Document Details" size="lg">
         {viewDoc && (
