@@ -29,28 +29,42 @@ const ProgressContext = createContext<ProgressContextType | undefined>(undefined
 const STORAGE_KEY = 'hrms_progress_entries';
 
 const SEED: ProgressEntry[] = [
-  { id: 'pg-1', projectName: 'BIG Team Progress', description: 'Sprint execution update, blockers cleared and milestones tracked for the BIG team.', submissionDate: '2026-09-01', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-01' },
-  { id: 'pg-2', projectName: 'BIG Team Progress', description: 'Daily delivery sync — completed modules reviewed and next-day plan aligned.', submissionDate: '2026-09-02', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-02' },
-  { id: 'pg-3', projectName: 'BIG Team Progress', description: 'QA pass on released features with regression notes shared with stakeholders.', submissionDate: '2026-09-03', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-03' },
-  { id: 'pg-4', projectName: 'BIG Team Progress', description: 'Backend API progress — endpoints optimized and integration tests updated.', submissionDate: '2026-09-04', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-04' },
-  { id: 'pg-5', projectName: 'BIG Team Progress', description: 'Frontend milestone — dashboard widgets completed and pending design review.', submissionDate: '2026-09-05', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-05' },
-  { id: 'pg-6', projectName: 'BIG Team Progress', description: 'Weekend handover notes — open items documented for Monday kickoff.', submissionDate: '2026-09-07', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-07' },
-  { id: 'pg-7', projectName: 'BIG Team Progress', description: 'Client demo preparation — walkthrough script and release notes finalized.', submissionDate: '2026-09-08', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-08' },
-  { id: 'pg-8', projectName: 'BIG Team Progress', description: 'Deployment progress — staging verified and production checklist updated.', submissionDate: '2026-09-09', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-09' },
-  { id: 'pg-9', projectName: 'BIG Team Progress', description: 'Sprint retrospective inputs — velocity, risks and next-sprint scope drafted.', submissionDate: '2026-09-10', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-10' },
-  { id: 'pg-10', projectName: 'BIG Team Progress', description: 'Weekly consolidation — accomplishments, pending work and support needs.', submissionDate: '2026-09-11', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-11' },
+  { id: 'pg-1', projectName: 'CodeQor HRMS Portal', description: 'Sprint execution update — leave and attendance modules completed, blockers cleared and milestones tracked.', submissionDate: '2026-09-01', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-01' },
+  { id: 'pg-2', projectName: 'E-Commerce Storefront', description: 'Daily delivery sync — product listing and checkout modules reviewed, next-day plan aligned.', submissionDate: '2026-09-02', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-02' },
+  { id: 'pg-3', projectName: 'Healthcare CRM System', description: 'QA pass on patient records and appointment features with regression notes shared with stakeholders.', submissionDate: '2026-09-03', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-03' },
+  { id: 'pg-4', projectName: 'FinTech Analytics Dashboard', description: 'Backend API progress — payment endpoints optimized and integration tests updated.', submissionDate: '2026-09-04', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-04' },
+  { id: 'pg-5', projectName: 'Logistics Tracking App', description: 'Frontend milestone — live tracking widgets completed and pending design review.', submissionDate: '2026-09-05', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-05' },
+  { id: 'pg-6', projectName: 'EduLearn Mobile App', description: 'Weekend handover notes — course player fixes documented for Monday kickoff.', submissionDate: '2026-09-07', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-07' },
+  { id: 'pg-7', projectName: 'Real Estate Listing Portal', description: 'Client demo preparation — property search walkthrough and release notes finalized.', submissionDate: '2026-09-08', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-08' },
+  { id: 'pg-8', projectName: 'Restaurant POS System', description: 'Deployment progress — billing flow verified on staging and production checklist updated.', submissionDate: '2026-09-09', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-09' },
+  { id: 'pg-9', projectName: 'Travel Booking Engine', description: 'Sprint retrospective inputs — booking velocity, risks and next-sprint scope drafted.', submissionDate: '2026-09-10', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-10' },
+  { id: 'pg-10', projectName: 'Inventory Management System', description: 'Weekly consolidation — stock alerts, pending work and support needs summarized.', submissionDate: '2026-09-11', employeeId: '1', employeeName: 'Michael Chen', createdOn: '2026-09-11' },
 ];
+
+const LEGACY_PROJECT_NAME = 'BIG Team Progress';
 
 export function ProgressProvider({ children }: { children: ReactNode }) {
   const [entries, setEntries] = useState<ProgressEntry[]>(SEED);
   const [hydrated, setHydrated] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- localStorage hydration on mount is intentional (SSR-safe) */
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) setEntries(parsed);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // One-time migration: drop the old generic "BIG Team Progress" seed
+          // so existing browsers pick up the new professional project names.
+          const isLegacySeed = parsed.every(
+            (e) => e && e.projectName === LEGACY_PROJECT_NAME,
+          );
+          if (isLegacySeed) {
+            setEntries(SEED);
+          } else {
+            setEntries(parsed);
+          }
+        }
       }
     } catch {
       // Corrupt storage — keep seed
@@ -58,6 +72,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       setHydrated(true);
     }
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!hydrated) return;

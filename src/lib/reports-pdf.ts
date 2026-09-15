@@ -163,7 +163,7 @@ function ensureSpace(doc: jsPDF, y: number, needed: number): number {
   return y;
 }
 
-interface Col {
+export interface Col {
   label: string;
   width: number;
   align: 'left' | 'right' | 'center';
@@ -272,16 +272,16 @@ interface ProgressRow {
 }
 
 const PROGRESS_SEED: ProgressRow[] = [
-  { projectName: 'BIG Team Progress', description: 'Sprint execution update, blockers cleared and milestones tracked for the BIG team.', submissionDate: '2026-09-01', employeeName: 'Michael Chen' },
-  { projectName: 'BIG Team Progress', description: 'Daily delivery sync — completed modules reviewed and next-day plan aligned.', submissionDate: '2026-09-02', employeeName: 'Michael Chen' },
-  { projectName: 'BIG Team Progress', description: 'QA pass on released features with regression notes shared with stakeholders.', submissionDate: '2026-09-03', employeeName: 'Michael Chen' },
-  { projectName: 'BIG Team Progress', description: 'Backend API progress — endpoints optimized and integration tests updated.', submissionDate: '2026-09-04', employeeName: 'Michael Chen' },
-  { projectName: 'BIG Team Progress', description: 'Frontend milestone — dashboard widgets completed and pending design review.', submissionDate: '2026-09-05', employeeName: 'Michael Chen' },
-  { projectName: 'BIG Team Progress', description: 'Weekend handover notes — open items documented for Monday kickoff.', submissionDate: '2026-09-07', employeeName: 'Michael Chen' },
-  { projectName: 'BIG Team Progress', description: 'Client demo preparation — walkthrough script and release notes finalized.', submissionDate: '2026-09-08', employeeName: 'Michael Chen' },
-  { projectName: 'BIG Team Progress', description: 'Deployment progress — staging verified and production checklist updated.', submissionDate: '2026-09-09', employeeName: 'Michael Chen' },
-  { projectName: 'BIG Team Progress', description: 'Sprint retrospective inputs — velocity, risks and next-sprint scope drafted.', submissionDate: '2026-09-10', employeeName: 'Michael Chen' },
-  { projectName: 'BIG Team Progress', description: 'Weekly consolidation — accomplishments, pending work and support needs.', submissionDate: '2026-09-11', employeeName: 'Michael Chen' },
+  { projectName: 'CodeQor HRMS Portal', description: 'Sprint execution update — leave and attendance modules completed, blockers cleared and milestones tracked.', submissionDate: '2026-09-01', employeeName: 'Michael Chen' },
+  { projectName: 'E-Commerce Storefront', description: 'Daily delivery sync — product listing and checkout modules reviewed, next-day plan aligned.', submissionDate: '2026-09-02', employeeName: 'Michael Chen' },
+  { projectName: 'Healthcare CRM System', description: 'QA pass on patient records and appointment features with regression notes shared with stakeholders.', submissionDate: '2026-09-03', employeeName: 'Michael Chen' },
+  { projectName: 'FinTech Analytics Dashboard', description: 'Backend API progress — payment endpoints optimized and integration tests updated.', submissionDate: '2026-09-04', employeeName: 'Michael Chen' },
+  { projectName: 'Logistics Tracking App', description: 'Frontend milestone — live tracking widgets completed and pending design review.', submissionDate: '2026-09-05', employeeName: 'Michael Chen' },
+  { projectName: 'EduLearn Mobile App', description: 'Weekend handover notes — course player fixes documented for Monday kickoff.', submissionDate: '2026-09-07', employeeName: 'Michael Chen' },
+  { projectName: 'Real Estate Listing Portal', description: 'Client demo preparation — property search walkthrough and release notes finalized.', submissionDate: '2026-09-08', employeeName: 'Michael Chen' },
+  { projectName: 'Restaurant POS System', description: 'Deployment progress — billing flow verified on staging and production checklist updated.', submissionDate: '2026-09-09', employeeName: 'Michael Chen' },
+  { projectName: 'Travel Booking Engine', description: 'Sprint retrospective inputs — booking velocity, risks and next-sprint scope drafted.', submissionDate: '2026-09-10', employeeName: 'Michael Chen' },
+  { projectName: 'Inventory Management System', description: 'Weekly consolidation — stock alerts, pending work and support needs summarized.', submissionDate: '2026-09-11', employeeName: 'Michael Chen' },
 ];
 
 /** Live progress entries (same storage key as the Progress module), seed fallback. */
@@ -291,6 +291,9 @@ function readProgressEntries(): ProgressRow[] {
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        // Drop the old generic seed so reports also show the new project names.
+        const isLegacySeed = parsed.every((e) => e && e.projectName === 'BIG Team Progress');
+        if (isLegacySeed) return PROGRESS_SEED;
         return parsed
           .filter((e) => e && typeof e.projectName === 'string')
           .map((e) => ({
@@ -690,8 +693,7 @@ export function downloadReport(id: ReportId): void {
 }
 
 /** One combined, professionally paginated pack with the library reports. */
-export function downloadAllReportsPack(): void {
-  const doc = new jsPDF();
+export function downloadAllReportsPack(): void {  const doc = new jsPDF();
   const ids = LIBRARY_REPORT_IDS;
 
   header(doc, `Complete pack · ${todayLabel()}`, 'HR Reports Pack');
@@ -727,4 +729,36 @@ export function downloadAllReportsPack(): void {
 
   footer(doc);
   downloadBlob(`hr-reports-pack-${todayLabel()}.pdf`, doc.output('blob'));
+}
+
+export interface TabReportSpec {
+  fileSlug: string;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  meta: string;
+  kpis: { label: string; value: string }[];
+  sectionTitle: string;
+  cols: Col[];
+  rows: string[][];
+}
+
+/** Download a PDF of the currently visible report tab (respects filters). */
+export function downloadTabReport(spec: TabReportSpec): void {
+  const doc = new jsPDF();
+  header(doc, spec.eyebrow, spec.title);
+  let y = 40;
+  y = titleBlock(doc, y, spec.title, spec.subtitle, spec.meta);
+  if (spec.kpis.length > 0) y = kpiStrip(doc, y, spec.kpis);
+  y = sectionBar(doc, y, spec.sectionTitle);
+  y = drawTable(doc, y, spec.cols, spec.rows);
+
+  y = ensureSpace(doc, y, 12);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(7.5);
+  doc.setTextColor(...GRAY);
+  doc.text('This is a system-generated report from CodeQor HRMS and does not require a signature.', MARGIN, y);
+
+  footer(doc);
+  downloadBlob(`${spec.fileSlug}-${todayLabel()}.pdf`, doc.output('blob'));
 }

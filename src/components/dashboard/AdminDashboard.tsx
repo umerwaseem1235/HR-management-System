@@ -7,15 +7,26 @@ import Card from '../ui/Card';
 import StatCard from '../ui/StatCard';
 import Badge from '../ui/Badge';
 import Avatar from '../ui/Avatar';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import AttendanceChart, { TrendPoint } from './AttendanceChart';
 import { useAuth } from '../../contexts/AuthContext';
-import { mockDashboardStats, mockLeaveRequests, mockNotifications, mockEmployees, mockAttendance } from '../../lib/mock-data';
+import { useLeave } from '../../contexts/LeaveContext';
+import type { LeaveRequest } from '../../lib/types';
+import type { PayrollRun } from '../../lib/payroll';
+import { getPayrollStatus, loadPayrollRuns, seedDecember2023Run } from '../../lib/payroll';
+import { mockDashboardStats, mockNotifications, mockEmployees, mockAttendance, mockPayslips } from '../../lib/mock-data';
 
 export default function AdminDashboard() {
   const router = useRouter();
   const { user } = useAuth();
+  const { leaveRequests, updateLeaveStatus } = useLeave();
   const stats = mockDashboardStats;
-  const pendingLeaves = mockLeaveRequests.filter(l => l.status === 'Pending');
+  const pendingLeaves = leaveRequests.filter(l => l.status === 'Pending');
+  // Same live payroll status as the payroll page (persisted runs, newest first)
+  const [payrollRuns] = useState<PayrollRun[]>(() => loadPayrollRuns(() => [seedDecember2023Run(mockPayslips)]));
+  const payrollStatusValue = getPayrollStatus(payrollRuns);
+  const [confirmApproveLeave, setConfirmApproveLeave] = useState<LeaveRequest | null>(null);
+  const [confirmRejectLeave, setConfirmRejectLeave] = useState<LeaveRequest | null>(null);
 
   // Attendance trend data (mock 7 days)
   const attendanceTrend = [
@@ -194,7 +205,7 @@ export default function AdminDashboard() {
               <DollarSign size={18} className="text-[#024fa7]" />
             </div>
             <div className="min-w-0">
-              <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{stats.payrollStatus}</p>
+              <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{payrollStatusValue}</p>
               <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500">Payroll Status</p>
             </div>
           </div>
@@ -260,10 +271,18 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition-colors">
+                    <button
+                      title="Approve"
+                      onClick={() => setConfirmApproveLeave(leave)}
+                      className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition-colors cursor-pointer"
+                    >
                       <CheckCircle2 size={18} />
                     </button>
-                    <button className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors">
+                    <button
+                      title="Reject"
+                      onClick={() => setConfirmRejectLeave(leave)}
+                      className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors cursor-pointer"
+                    >
                       <XCircle size={18} />
                     </button>
                   </div>
@@ -319,6 +338,56 @@ export default function AdminDashboard() {
           </div>
         </Card>
       </div>
+
+      <ConfirmDialog
+        isOpen={!!confirmApproveLeave}
+        onClose={() => setConfirmApproveLeave(null)}
+        title="Approve Leave?"
+        variant="approve"
+        headline={
+          <>
+            Approve <span className="font-semibold text-[#17324D]">{confirmApproveLeave?.days} day{(confirmApproveLeave?.days ?? 1) > 1 ? 's' : ''} — {confirmApproveLeave?.leaveType}</span> for{' '}
+            <span className="font-semibold text-[#17324D]">{confirmApproveLeave?.employeeName}</span>?
+          </>
+        }
+        subline={confirmApproveLeave ? `${confirmApproveLeave.startDate} to ${confirmApproveLeave.endDate} · ${confirmApproveLeave.reason}` : undefined}
+        note={
+          <>
+            This will mark the request as <span className="font-semibold text-green-700">Approved</span>. The employee&apos;s leave balance will be updated.
+          </>
+        }
+        confirmLabel="Confirm Approve"
+        confirmIcon={<CheckCircle2 size={16} />}
+        onConfirm={() => {
+          if (confirmApproveLeave) updateLeaveStatus(confirmApproveLeave.id, 'Approved', user?.name);
+          setConfirmApproveLeave(null);
+        }}
+      />
+
+      <ConfirmDialog
+        isOpen={!!confirmRejectLeave}
+        onClose={() => setConfirmRejectLeave(null)}
+        title="Reject Leave?"
+        variant="reject"
+        headline={
+          <>
+            Reject <span className="font-semibold text-[#17324D]">{confirmRejectLeave?.days} day{(confirmRejectLeave?.days ?? 1) > 1 ? 's' : ''} — {confirmRejectLeave?.leaveType}</span> for{' '}
+            <span className="font-semibold text-[#17324D]">{confirmRejectLeave?.employeeName}</span>?
+          </>
+        }
+        subline={confirmRejectLeave ? `${confirmRejectLeave.startDate} to ${confirmRejectLeave.endDate} · ${confirmRejectLeave.reason}` : undefined}
+        note={
+          <>
+            This will mark the request as <span className="font-semibold text-red-600">Rejected</span>. The employee will be able to see this status.
+          </>
+        }
+        confirmLabel="Confirm Reject"
+        confirmIcon={<XCircle size={16} />}
+        onConfirm={() => {
+          if (confirmRejectLeave) updateLeaveStatus(confirmRejectLeave.id, 'Rejected', user?.name);
+          setConfirmRejectLeave(null);
+        }}
+      />
 
     </div>
   );

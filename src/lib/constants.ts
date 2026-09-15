@@ -79,7 +79,7 @@ export const SHIFTS = [
 ];
 
 export const LEAVE_TYPES = [
-  { id: '1', name: 'Monthly Leave', daysAllowed: 2, carryForward: false, color: '#0d9488', period: 'month' as const, description: 'Paid short leaves · resets every month' },
+  { id: '1', name: 'Monthly Leave', daysAllowed: 2, carryForward: false, color: '#024fa7', period: 'month' as const, description: 'Paid short leaves · resets every month' },
   { id: '2', name: 'Annual Leave', daysAllowed: 20, carryForward: true, color: '#024fa7', period: 'year' as const, description: 'Planned vacations & long leaves' },
   { id: '3', name: 'Maternity Leave', daysAllowed: 90, carryForward: false, color: '#ec4899', period: 'year' as const, description: 'Statutory maternity benefit' },
   { id: '4', name: 'Paternity Leave', daysAllowed: 15, carryForward: false, color: '#8b5cf6', period: 'year' as const, description: 'Statutory paternity benefit' },

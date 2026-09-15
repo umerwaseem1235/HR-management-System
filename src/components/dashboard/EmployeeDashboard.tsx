@@ -97,7 +97,7 @@ export default function EmployeeDashboard() {
               const meta = LEAVE_TYPES.find((t) => t.name === balance.leaveType);
               const isMonthly = balance.leaveType === 'Monthly Leave';
               return (
-                <div key={balance.leaveType} className="p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]" style={{ borderTop: `3px solid ${meta?.color ?? '#0d9488'}` }}>
+                <div key={balance.leaveType} className="p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]" style={{ borderTop: `3px solid ${meta?.color ?? '#024fa7'}` }}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium text-[#263238]">{balance.leaveType}</span>
                     <Badge variant={balance.remaining > 5 ? 'success' : balance.remaining > 0 ? 'warning' : 'danger'} size="sm">

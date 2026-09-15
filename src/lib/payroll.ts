@@ -276,9 +276,9 @@ export function runToPayslips(run: PayrollRun, generatedOn: string): Payslip[] {
 export function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
-
 /** Seed history: December 2023 run matching the existing mock payslips. */
 export function seedDecember2023Run(payslips: Payslip[]): PayrollRun {
+
   const items: PayrollLineItem[] = payslips
     .filter(p => p.month === 'December' && p.year === 2023)
     .map(p =>
@@ -312,4 +312,42 @@ export function seedDecember2023Run(payslips: Payslip[]): PayrollRun {
     finalizedOn: '2024-01-01',
     finalizedBy: 'Sarah Williams',
   };
+}
+
+/* ================= Shared payroll-run status (payroll page + dashboard) ================= */
+
+const PAYROLL_RUNS_STORAGE_KEY = 'hrms_payroll_runs';
+
+export type PayrollStatusLabel = 'Pending' | 'In Process' | 'Finalized';
+
+/** Status card value, driven by the latest run (newest first). */
+export function getPayrollStatus(runs: PayrollRun[]): PayrollStatusLabel {
+  const latest = runs[0] ?? null;
+  if (!latest) return 'Pending';
+  return latest.status === 'Finalized' ? 'Finalized' : 'In Process';
+}
+
+/** Load persisted runs (SSR-safe); falls back to the seed history. */
+export function loadPayrollRuns(fallback: () => PayrollRun[]): PayrollRun[] {
+  try {
+    if (typeof localStorage === 'undefined') return fallback();
+    const stored = localStorage.getItem(PAYROLL_RUNS_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed as PayrollRun[];
+    }
+  } catch {
+    // Corrupt storage — use fallback
+  }
+  return fallback();
+}
+
+/** Persist runs so payroll and dashboard stay in sync (SSR-safe). */
+export function savePayrollRuns(runs: PayrollRun[]): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(PAYROLL_RUNS_STORAGE_KEY, JSON.stringify(runs));
+  } catch {
+    // Storage unavailable — ignore
+  }
 }
