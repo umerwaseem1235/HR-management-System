@@ -123,7 +123,7 @@ export default function EmployeesPage() {
               onChange={setSearch}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => { if (!search.trim()) setSearchFocused(false); }}
-              placeholder="Search by name or ID... (click to expand)"
+              placeholder="Search by name or ID"
               className="flex-1 transition-all duration-300"
               size="lg"
             />

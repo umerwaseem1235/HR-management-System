@@ -12,6 +12,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/recruitment': 'Recruitment',
   '/attendance': 'Attendance',
   '/leave': 'Leave Management',
+  '/remote': 'Remote Work',
   '/payroll': 'Payroll',
   '/performance': 'Performance',
   '/expenses': 'Expenses',

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, Search, Bell, ChevronDown, User, Settings, LogOut, CheckCheck } from 'lucide-react';
+import { Menu, Bell, ChevronDown, User, Settings, LogOut, CheckCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { ROLE_LABELS } from '../../lib/constants';
@@ -18,7 +18,6 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
   const router = useRouter();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const notifRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
 
@@ -61,20 +60,6 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
               <h2 className="truncate text-lg font-bold tracking-tight text-[#17324D]">{title}</h2>
             </div>
           )}
-        </div>
-
-        {/* Center: Search */}
-        <div className="hidden max-w-md flex-1 md:block">
-          <div className="group relative transition-all focus-within:-translate-y-px">
-            <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-[#024fa7]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search employees, documents..."
-              className="w-full rounded-xl border border-transparent bg-[#EAF2F4]/70 py-2.5 pl-10 pr-4 text-sm text-[#263238] placeholder-gray-400 shadow-inner outline-none transition-all focus:border-[#024fa7]/40 focus:bg-white focus:shadow-[0_0_0_4px_rgba(2,79,167,0.12)]"
-            />
-          </div>
         </div>
 
         {/* Right: Notifications + User */}

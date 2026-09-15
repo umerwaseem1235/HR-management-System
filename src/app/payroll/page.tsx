@@ -13,7 +13,7 @@ import Select from '../../components/ui/Select';
 import Input from '../../components/ui/Input';
 import SearchBar from '../../components/ui/SearchBar';
 import {
-  DollarSign, FileText, Calculator, Download, Eye, Plus, Pencil,
+  Calculator, Download, Eye, Plus, Pencil,
   Trash2, Lock, ArrowLeft, CheckCircle2, AlertTriangle, CalendarDays,
 } from 'lucide-react';
 import type { Payslip } from '../../lib/types';
@@ -227,9 +227,9 @@ export default function PayrollPage() {
 
         {isAdmin && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard title="Monthly Payroll" value={money(totalPayroll / 12)} icon={<DollarSign size={22} className="text-green-600" />} iconBg="bg-green-50" />
-            <StatCard title="Total Employees" value={mockEmployees.length} icon={<FileText size={22} className="text-[#0F8B8D]" />} iconBg="bg-[#EAF2F4]" />
-            <StatCard title="Payroll Status" value={payrollStatus} icon={<Calculator size={22} className="text-purple-600" />} iconBg="bg-purple-50" />
+            <StatCard title="Monthly Payroll" value={money(totalPayroll / 12)} iconName="payroll" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+            <StatCard title="Total Employees" value={mockEmployees.length} iconName="totalEmployees" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+            <StatCard title="Payroll Status" value={payrollStatus} iconName="payrollStatus" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
           </div>
         )}
 
@@ -397,9 +397,9 @@ export default function PayrollPage() {
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <StatCard title="Total Gross" value={money(selectedRun.totalGross)} icon={<DollarSign size={22} className="text-green-600" />} iconBg="bg-green-50" />
-                  <StatCard title="Total Deductions" value={money(selectedRun.totalDeductions)} icon={<FileText size={22} className="text-red-500" />} iconBg="bg-red-50" />
-                  <StatCard title="Total Net Payable" value={money(selectedRun.totalNet)} icon={<Calculator size={22} className="text-[#0F8B8D]" />} iconBg="bg-[#EAF2F4]" />
+                  <StatCard title="Total Gross" value={money(selectedRun.totalGross)} iconName="growth" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+                  <StatCard title="Total Deductions" value={money(selectedRun.totalDeductions)} iconName="decline" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+                  <StatCard title="Total Net Payable" value={money(selectedRun.totalNet)} iconName="payrollStatus" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
                 </div>
 
                 <div className="overflow-x-auto rounded-xl border border-[#D6E4E8]">

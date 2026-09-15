@@ -258,7 +258,6 @@ export interface DashboardStats {
 }
 
 export type DailyWorkStatus = 'Submitted' | 'Approved' | 'Needs Revision';
-
 export interface DailyWork {
   id: string;
   employeeId: string;
@@ -271,4 +270,21 @@ export interface DailyWork {
   link?: string;
   status: DailyWorkStatus;
   submittedOn: string;
+}
+
+export type RemoteRequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Cancelled';
+
+export interface RemoteRequest {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  fromDate: string;
+  toDate: string;
+  days: number;
+  reason: string;
+  workPlan?: string;
+  status: RemoteRequestStatus;
+  requestedOn: string;
+  reviewedBy?: string;
+  reviewComments?: string;
 }

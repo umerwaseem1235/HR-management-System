@@ -104,8 +104,8 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Stat Cards - fluid single row: always 5 in one line, shrink to fit, no scroll, no wrap */}
-      <div className="grid grid-cols-5 gap-3 2xl:gap-4">
+      {/* Stat Cards - responsive: wraps when sidebar is open / narrow screens */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 2xl:gap-4">
         <div className="min-w-0">
           <StatCard
             title="Total Employees"
@@ -153,8 +153,8 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Quick Stats Row - fluid single row: always 5 in one line, shrink to fit, no scroll, no wrap */}
-      <div className="grid grid-cols-5 gap-3 2xl:gap-4">
+      {/* Quick Stats Row - responsive: wraps when sidebar is open / narrow screens */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 2xl:gap-4">
         <Card padding="none" hover className="min-w-0 overflow-hidden p-3 xl:p-4">
           <div className="flex items-center gap-2 xl:gap-3">
             <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
@@ -162,7 +162,7 @@ export default function AdminDashboard() {
             </div>
             <div className="min-w-0">
               <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{stats.openVacancies}</p>
-              <p className="truncate whitespace-nowrap text-[11px] xl:text-xs text-gray-500">Open Vacancies</p>
+              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500">Open Vacancies</p>
             </div>
           </div>
         </Card>
@@ -173,7 +173,7 @@ export default function AdminDashboard() {
             </div>
             <div className="min-w-0">
               <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{stats.newJoinersThisMonth}</p>
-              <p className="truncate whitespace-nowrap text-[11px] xl:text-xs text-gray-500">New Joiners</p>
+              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500">New Joiners</p>
             </div>
           </div>
         </Card>
@@ -184,7 +184,7 @@ export default function AdminDashboard() {
             </div>
             <div className="min-w-0">
               <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{stats.lateToday}</p>
-              <p className="truncate whitespace-nowrap text-[11px] xl:text-xs text-gray-500">Late Today</p>
+              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500">Late Today</p>
             </div>
           </div>
         </Card>
@@ -195,7 +195,7 @@ export default function AdminDashboard() {
             </div>
             <div className="min-w-0">
               <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{stats.payrollStatus}</p>
-              <p className="truncate whitespace-nowrap text-[11px] xl:text-xs text-gray-500">Payroll Status</p>
+              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500">Payroll Status</p>
             </div>
           </div>
         </Card>
@@ -206,7 +206,7 @@ export default function AdminDashboard() {
             </div>
             <div className="min-w-0">
               <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{stats.attendanceRate}%</p>
-              <p className="truncate whitespace-nowrap text-[11px] xl:text-xs text-gray-500">Attendance Rate</p>
+              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500">Attendance Rate</p>
             </div>
           </div>
         </Card>

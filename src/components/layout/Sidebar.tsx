@@ -17,6 +17,7 @@ import {
   Settings,
   LogOut,
   Menu,
+  Wifi,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { NAVIGATION, ROLE_LABELS } from "../../lib/constants";
@@ -33,6 +34,7 @@ const iconMap: Record<string, React.ElementType> = {
   FileText,
   BarChart3,
   Settings,
+  Wifi,
 };
 
 interface SidebarProps {

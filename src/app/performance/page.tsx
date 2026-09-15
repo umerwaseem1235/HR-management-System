@@ -275,7 +275,7 @@ export default function PerformancePage() {
             <Card padding="sm">
               <div className="flex items-center gap-3">
                 <div className="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] p-2 rounded-lg shadow-md ring-1 ring-black/5"><AlertCircle size={18} strokeWidth={1.6} className="text-[#024fa7]" /></div>
-                <div><p className="text-lg font-bold text-[#17324D]">{revisionCount}</p><p className="text-xs text-gray-500">Needs Revision</p></div>
+                <div><p className="text-lg font-bold text-[#17324D]">{revisionCount}</p><p className="text-xs text-gray-500">Needs Modification</p></div>
               </div>
             </Card>
           </div>

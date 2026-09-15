@@ -13,7 +13,7 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Modal from '../../components/ui/Modal';
 import EmptyState from '../../components/ui/EmptyState';
-import { Briefcase, Users, UserCheck, UserPlus, Star, Upload, Pencil, Trash2, Eye, CalendarDays, FileText, ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
+import { Briefcase, UserPlus, Star, Upload, Pencil, Trash2, Eye, CalendarDays, FileText, ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
 import { mockJobs, mockCandidates, mockEmployees } from '../../lib/mock-data';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { DEPARTMENTS, BRANCHES, DESIGNATIONS } from '../../lib/constants';
@@ -207,10 +207,10 @@ export default function RecruitmentPage() {
         {success && <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"><CheckCircle2 size={16} /><span className="flex-1">{success}</span><button onClick={() => setSuccess('')} className="font-semibold hover:underline cursor-pointer">Dismiss</button></div>}
 
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <StatCard title="Free Positions" value={jobs.filter(j => j.status === 'Open').reduce((s, j) => s + j.vacancies, 0)} icon={<Briefcase size={22} className="text-[#024fa7]" />} iconBg="bg-[#EAF2F4]" />
-          <StatCard title="Candidates Noted" value={candidates.length} icon={<Users size={22} className="text-blue-600" />} iconBg="bg-blue-50" />
-          <StatCard title="Reminders Left" value={interviews.filter(i => i.status === 'Scheduled').length} icon={<CalendarDays size={22} className="text-orange-600" />} iconBg="bg-orange-50" />
-          <StatCard title="Hired" value={analytics.hired} change={`${analytics.conv}% hired`} icon={<UserCheck size={22} className="text-green-600" />} iconBg="bg-green-50" />
+          <StatCard title="Free Positions" value={jobs.filter(j => j.status === 'Open').reduce((s, j) => s + j.vacancies, 0)} iconName="openVacancies" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+          <StatCard title="Candidates Noted" value={candidates.length} iconName="totalEmployees" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+          <StatCard title="Reminders Left" value={interviews.filter(i => i.status === 'Scheduled').length} iconName="onLeaveToday" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+          <StatCard title="Hired" value={analytics.hired} change={`${analytics.conv}% hired`} iconName="presentToday" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
         </div>
 
         <Card padding="none">
