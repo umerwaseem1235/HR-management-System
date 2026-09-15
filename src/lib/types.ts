@@ -79,6 +79,8 @@ export interface LeaveType {
   daysAllowed: number;
   carryForward: boolean;
   color: string;
+  period?: 'month' | 'year';
+  description?: string;
 }
 
 export interface LeaveBalance {
@@ -183,6 +185,17 @@ export interface PerformanceReview {
   managerRating?: number;
   status: 'Pending Self Review' | 'Pending Manager Review' | 'Completed';
   comments?: string;
+}
+
+export interface ProgressEntry {
+  id: string;
+  projectName: string;
+  description: string;
+  /** ISO date (YYYY-MM-DD) shown as submission date */
+  submissionDate: string;
+  employeeId: string;
+  employeeName: string;
+  createdOn: string;
 }
 
 export interface ExpenseClaim {

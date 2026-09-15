@@ -94,6 +94,12 @@ export default function LeaveRequestPage() {
               <Input label="Start Date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} error={errors.startDate} />
               <Input label="End Date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} error={errors.endDate} />
             </div>
+            {leaveType === 'Monthly Leave' && (
+              <p className="text-xs leading-relaxed text-teal-800 bg-teal-50 border border-teal-100 rounded-lg px-4 py-2.5">
+                <span className="font-semibold">Monthly Leave — 2 paid days per calendar month.</span>{' '}
+                Quota resets on the 1st and doesn&apos;t carry forward. Days beyond the monthly quota are auto-deducted in payroll.
+              </p>
+            )}
             {days !== null && (
               <p className="text-sm text-[#17324D] bg-[#EAF2F4]/60 border border-[#D6E4E8] rounded-lg px-4 py-2.5">
                 Duration: <span className="font-semibold">{days} day{days > 1 ? 's' : ''}</span>
