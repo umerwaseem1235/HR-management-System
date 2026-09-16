@@ -104,14 +104,10 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="mt-1.5 text-2xl font-bold leading-tight tracking-tight text-[#17324D]">
-            Welcome back, {welcomeName}!
-          </h1>
-        </div>
-        <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#D6E4E8]/70 bg-white px-4 py-2 shadow-[0_1px_2px_rgba(23,50,77,0.05),0_10px_30px_-14px_rgba(23,50,77,0.18)]">
-          <span className="text-[13px] font-semibold text-[#17324D]">{todayLabel}</span>
+          <p className="text-sm text-gray-500">Welcome back, <span className="font-semibold text-[#17324D]">{welcomeName}</span></p>
+          <p className="text-base font-medium text-[#17324D]">{todayLabel}</p>
         </div>
       </div>
 
@@ -229,19 +225,18 @@ export default function AdminDashboard() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-[#17324D]">Attendance Trend</h3>
-            <div className="relative">
+            <div className="flex items-center gap-2">
               <select
                 value={trendRange}
                 onChange={(e) => setTrendRange(e.target.value as 'week' | 'month')}
-                className="appearance-none rounded-full border border-[#D6E4E8] bg-white pl-3.5 pr-9 py-1.5 text-xs font-semibold text-[#263238] focus:border-[#024fa7] focus:outline-none cursor-pointer"
+                className="px-3 py-1.5 text-sm border border-[#D6E4E8] rounded-lg focus:border-[#024fa7] focus:ring-2 focus:ring-[#024fa7]/20 focus:outline-none"
               >
                 <option value="week">Week</option>
                 <option value="month">Month</option>
               </select>
-              <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
             </div>
           </div>
-          <AttendanceChart key={trendRange} data={trendData} />
+          <AttendanceChart data={trendData} />
         </Card>
 
         {/* Pending Leave Approvals */}
@@ -296,22 +291,23 @@ export default function AdminDashboard() {
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Department Headcount */}
-        <Card className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-6">
+        <Card>
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-[#17324D]">Department Headcount</h3>
-            <Badge variant="default">{stats.totalEmployees} Total</Badge>
+            <p className="text-sm text-gray-500">Total: {stats.totalEmployees}</p>
           </div>
-          <div className="space-y-4">
-            {deptCounts.slice(0, 6).map(dept => (
+          <div className="space-y-3">
+            {deptCounts.map(dept => (
               <div key={dept.name} className="flex items-center gap-3">
-                <span className="text-[13px] font-medium text-[#263238] w-32 truncate">{dept.name}</span>
-                <div className="flex-1 bg-[#EAF2F4] rounded-full h-2.5 overflow-hidden">
+                <div className={`w-3 h-3 rounded-full ${dept.color}`} />
+                <span className="text-sm font-medium text-[#263238]">{dept.name}</span>
+                <div className="flex-1 h-2 bg-[#EAF2F4] rounded-full overflow-hidden">
                   <div
-                    className={`${dept.color} h-full rounded-full transition-all duration-500`}
-                    style={{ width: `${(dept.count / maxDeptCount) * 100}%`, minWidth: '8px' }}
+                    className="h-full bg-[#024fa7] rounded-full transition-all duration-500"
+                    style={{ width: `${(dept.count / maxDeptCount) * 100}%` }}
                   />
                 </div>
-                <span className="w-6 text-right text-xs font-semibold tabular-nums text-[#17324D]">{dept.count}</span>
+                <span className="text-sm text-gray-500 w-12 text-right">{dept.count}</span>
               </div>
             ))}
           </div>
@@ -322,17 +318,15 @@ export default function AdminDashboard() {
           <h3 className="text-base font-semibold text-[#17324D] mb-4">Upcoming Events</h3>
           <div className="space-y-3">
             {upcomingEvents.map((event, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#EAF2F4]/50 transition-colors">
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                  event.type === 'birthday' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 text-blue-600'
-                }`}>
-                  <event.icon size={18} />
+              <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
+                <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
+                  <event.icon size={18} className="text-[#024fa7]" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#263238] truncate">{event.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{event.type === 'birthday' ? '🎂 Birthday' : event.type === 'anniversary' ? '🎉 Anniversary' : '📋 Probation End'}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-[#263238]">{event.name}</p>
+                  <p className="text-xs text-gray-500 capitalize">{event.type}</p>
                 </div>
-                <span className="text-xs text-gray-500 whitespace-nowrap">{event.date}</span>
+                <span className="text-xs text-gray-400 ml-auto">{event.date}</span>
               </div>
             ))}
           </div>

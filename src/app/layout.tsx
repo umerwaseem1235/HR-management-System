@@ -3,7 +3,7 @@ import './globals.css';
 import { AppProviders } from '@/providers';
 
 export const metadata: Metadata = {
-  title: 'CodeQor HRMS',
+  title: 'CodQor HRMS',
   description: 'Human Resource Management System',
 };
 

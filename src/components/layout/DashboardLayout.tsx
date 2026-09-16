@@ -1,51 +1,21 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import React, { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
-import { useAuth } from '../../contexts/AuthContext';
-
-const PAGE_TITLES: Record<string, string> = {
-  '/dashboard': 'Dashboard',
-  '/employees': 'Employees',
-  '/recruitment': 'Recruitment',
-  '/attendance': 'Attendance',
-  '/leave': 'Leave Management',
-  '/remote': 'Remote Work',
-  '/payroll': 'Payroll',
-  '/progress': 'Progress',
-  '/performance': 'Progress',
-  '/expenses': 'Expenses',
-  '/documents': 'Documents',
-  '/reports': 'Reports',
-  '/settings': 'Settings',
-  '/profile': 'My Profile',
-  '/notifications': 'Notifications',
-};
+import { AuthLoadingView } from './AuthLoadingView';
+import { useAuthRedirect } from './useAuthRedirect';
+import { PAGE_TITLES } from './page-titles';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuthRedirect();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace('/login');
-    }
-  }, [isAuthenticated, isLoading, router]);
-
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#EAF2F4]">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#024fa7] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-[#17324D] font-medium">Loading...</p>
-        </div>
-      </div>
-    );
+    return <AuthLoadingView />;
   }
 
   if (!isAuthenticated) return null;

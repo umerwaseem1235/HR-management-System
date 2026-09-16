@@ -18,7 +18,7 @@ function pdfHeader(doc: jsPDF, title: string, subtitle: string): void {
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
-  doc.text('CodeQor HRMS', 14, 13);
+  doc.text('CodQor HRMS', 14, 13);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.text('Human Resource Management', 14, 20);

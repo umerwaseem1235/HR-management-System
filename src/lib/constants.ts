@@ -1,6 +1,6 @@
 import { NavItem, UserRole } from './types';
 
-export const APP_NAME = 'CodeQor HRMS';
+export const APP_NAME = 'CodQor HRMS';
 export const APP_DESCRIPTION = 'Human Resource Management System';
 
 export const NAVIGATION: NavItem[] = [
@@ -90,7 +90,7 @@ export const EXPENSE_CATEGORIES = [
 ];
 
 export const MOCK_USERS: Array<{ email: string; password: string; name: string; role: UserRole; avatar: string }> = [
-  { email: 'admin@codeqor.com', password: 'admin123', name: 'Alex Johnson', role: 'super_admin', avatar: 'AJ' },
-  { email: 'hr@codeqor.com', password: 'hr123', name: 'Sarah Williams', role: 'hr_manager', avatar: 'SW' },
-  { email: 'employee@codeqor.com', password: 'emp123', name: 'Michael Chen', role: 'employee', avatar: 'MC' },
+  { email: 'admin@codqor.com', password: 'admin123', name: 'Alex Johnson', role: 'super_admin', avatar: 'AJ' },
+  { email: 'hr@codqor.com', password: 'hr123', name: 'Sarah Williams', role: 'hr_manager', avatar: 'SW' },
+  { email: 'employee@codqor.com', password: 'emp123', name: 'Michael Chen', role: 'employee', avatar: 'MC' },
 ];
