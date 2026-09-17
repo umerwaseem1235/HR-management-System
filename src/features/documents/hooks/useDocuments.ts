@@ -1,10 +1,17 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { resolveEmployeeForUser } from '@/hooks/useEmployee';
 import { DocumentItem, SEED_DOCUMENTS } from '../types';
 
 export function useDocuments() {
   const { user } = useAuth();
   const isEmployee = user?.role === 'employee';
+  // Resolve the logged-in employee's full name (email first, then name).
+  // Employees must only see their own documents — never other employees'.
+  const employeeName = useMemo(() => {
+    const match = resolveEmployeeForUser(user ?? null);
+    return match ? `${match.firstName} ${match.lastName}` : (user?.name ?? '');
+  }, [user]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [docs, setDocs] = useState<DocumentItem[]>(SEED_DOCUMENTS);
@@ -19,6 +26,15 @@ export function useDocuments() {
   const [docError, setDocError] = useState('');
 
   const filtered = docs.filter(doc => {
+    // Employees see only their own documents plus company-wide shared ones.
+    // Admin/HR see everything.
+    if (isEmployee) {
+      const owner = doc.employee.trim().toLowerCase();
+      const mine = employeeName.trim().toLowerCase();
+      const isMine = owner === mine;
+      const isShared = owner === 'all employees';
+      if (!isMine && !isShared) return false;
+    }
     const matchSearch = !search || doc.name.toLowerCase().includes(search.toLowerCase()) || doc.employee.toLowerCase().includes(search.toLowerCase());
     const matchCat = category === 'All' || doc.type === category;
     return matchSearch && matchCat;

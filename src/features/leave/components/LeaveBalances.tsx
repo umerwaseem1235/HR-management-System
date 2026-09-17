@@ -30,15 +30,8 @@ export default function LeaveBalances({
           return (
             <div
               key={bal.leaveType}
-              className="card-hover relative overflow-hidden rounded-xl border border-medium-gray bg-white p-5"
-              style={{ borderTop: `3px solid ${accent}` }}
+              className="card-hover relative rounded-xl border border-medium-gray bg-white p-5"
             >
-              <div
-                className="pointer-events-none absolute inset-x-0 top-0 h-16"
-                style={{
-                  background: `linear-gradient(180deg, ${accent}0F, transparent)`,
-                }}
-              />
               <div className="relative flex items-start justify-between gap-3">
                 <h4 className="text-[15px] font-semibold tracking-tight text-primary">{bal.leaveType}</h4>
                 {isSuperAdmin && (

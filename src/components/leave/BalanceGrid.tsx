@@ -35,7 +35,6 @@ export default function BalanceGrid({
             <div
               key={bal.leaveType}
               className="p-4 rounded-lg border border-medium-gray bg-white"
-              style={{ borderTop: `3px solid ${meta?.color ?? "#0d9488"}` }}
             >
               <div className="flex items-center justify-between mb-1">
                 <h4 className="text-sm font-semibold text-primary">

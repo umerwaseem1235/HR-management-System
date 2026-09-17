@@ -55,23 +55,23 @@ export default function ReceiptViewerModal({
                 </div>
               )}
             </div>
-            <div className="overflow-auto max-h-[42vh] rounded-xl border border-[#D6E4E8] bg-[#EAF2F4]/40 p-3">
+            <div className="overflow-auto max-h-[55vh] min-h-[240px] rounded-xl border border-[#D6E4E8] bg-[#EAF2F4]/40 p-3">
               {viewingReceipt?.startsWith('data:application/pdf') ? (
                 <iframe
                   src={viewingReceipt}
                   title="Receipt"
-                  className="mx-auto rounded-lg bg-white border border-[#D6E4E8]"
-                  style={{ width: zoom > 1 ? `${Math.round(zoom * 100)}%` : '100%', maxWidth: zoom > 1 ? 'none' : '100%', height: '42vh' }}
+                  className="mx-auto block rounded-lg bg-white border border-[#D6E4E8]"
+                  style={{ width: zoom > 1 ? `${Math.round(zoom * 100)}%` : '100%', maxWidth: zoom > 1 ? 'none' : '100%', height: '50vh' }}
                 />
               ) : viewingReceipt ? (
                 <img
                   src={viewingReceipt}
                   alt="Expense receipt"
-                  className="mx-auto h-auto rounded-lg border border-[#D6E4E8] bg-white shadow-sm"
+                  className="mx-auto block h-auto rounded-lg border border-[#D6E4E8] bg-white shadow-sm object-contain"
                   style={{ width: `${Math.round(zoom * 100)}%`, maxWidth: zoom > 1 ? 'none' : '100%' }}
                 />
               ) : (
-                <div className="flex flex-col items-center gap-2 py-10 text-center">
+                <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 py-10 text-center">
                   <div className="p-3 rounded-full bg-white border border-[#D6E4E8]"><Paperclip size={20} className="text-gray-400" /></div>
                   <p className="text-sm font-medium text-[#17324D]">No receipt attached</p>
                   <p className="text-xs text-gray-500">Employee did not upload a receipt for this claim.</p>

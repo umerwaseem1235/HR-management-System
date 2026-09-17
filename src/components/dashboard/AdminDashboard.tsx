@@ -77,16 +77,16 @@ export default function AdminDashboard() {
 
   // Department headcount
   const deptCounts = [
-    { name: 'Engineering', count: 5, color: 'bg-[#2563eb]' },
-    { name: 'Human Resources', count: 2, color: 'bg-[#2378bd]' },
-    { name: 'Marketing', count: 1, color: 'bg-[#3ecf8e]' },
-    { name: 'Sales', count: 1, color: 'bg-[#8b5cf6]' },
-    { name: 'Finance', count: 1, color: 'bg-[#6f8ff5]' },
-    { name: 'Design', count: 1, color: 'bg-[#dd6bab]' },
-    { name: 'Product', count: 1, color: 'bg-indigo-500' },
-    { name: 'Customer Support', count: 1, color: 'bg-yellow-500' },
-    { name: 'Operations', count: 1, color: 'bg-emerald-500' },
-    { name: 'Legal', count: 1, color: 'bg-red-500' },
+    { name: 'Engineering', count: 5, color: 'bg-[#2563eb]', fill: 'linear-gradient(90deg, #2E7CCB 0%, #0B4EA2 100%)' },
+    { name: 'Human Resources', count: 2, color: 'bg-[#2378bd]', fill: 'linear-gradient(90deg, #3494CB 0%, #1B66AC 100%)' },
+    { name: 'Marketing', count: 1, color: 'bg-[#3ecf8e]', fill: 'linear-gradient(90deg, #62D89B 0%, #38BC7E 100%)' },
+    { name: 'Sales', count: 1, color: 'bg-[#8b5cf6]', fill: 'linear-gradient(90deg, #9B7BFF 0%, #7B4DFF 100%)' },
+    { name: 'Finance', count: 1, color: 'bg-[#6f8ff5]', fill: 'linear-gradient(90deg, #6E92D7 0%, #4E6FC2 100%)' },
+    { name: 'Design', count: 1, color: 'bg-[#dd6bab]', fill: 'linear-gradient(90deg, #DE7EB3 0%, #C65B9A 100%)' },
+    { name: 'Product', count: 1, color: 'bg-indigo-500', fill: 'linear-gradient(90deg, #818CF8 0%, #6366F1 100%)' },
+    { name: 'Customer Support', count: 1, color: 'bg-yellow-500', fill: 'linear-gradient(90deg, #FBBF24 0%, #F59E0B 100%)' },
+    { name: 'Operations', count: 1, color: 'bg-emerald-500', fill: 'linear-gradient(90deg, #34D399 0%, #059669 100%)' },
+    { name: 'Legal', count: 1, color: 'bg-red-500', fill: 'linear-gradient(90deg, #F87171 0%, #EF4444 100%)' },
   ];
   const maxDeptCount = Math.max(...deptCounts.map(d => d.count));
 
@@ -289,34 +289,42 @@ export default function AdminDashboard() {
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
         {/* Department Headcount */}
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-[#17324D]">Department Headcount</h3>
-            <p className="text-sm text-gray-500">Total: {stats.totalEmployees}</p>
+        <Card className="lg:col-span-2 !rounded-2xl !p-5 h-full flex flex-col">
+          <div className="flex items-center justify-between pb-3 mb-2 border-b border-[#EDF2FA]">
+            <div className="flex items-center gap-2">
+              <span className="w-1 h-6 rounded-full bg-[#0B5CAD]" />
+              <h3 className="text-[17px] font-bold text-[#0B5CAD] tracking-tight">Department Headcount</h3>
+            </div>
+            <span className="rounded-full bg-[#E8F1FC] px-3 py-1 text-[13px] font-bold text-[#1A64B4] whitespace-nowrap">
+              {stats.totalEmployees} Total
+            </span>
           </div>
-          <div className="space-y-3">
-            {deptCounts.map(dept => (
-              <div key={dept.name} className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${dept.color}`} />
-                <span className="text-sm font-medium text-[#263238]">{dept.name}</span>
-                <div className="flex-1 h-2 bg-[#EAF2F4] rounded-full overflow-hidden">
+          <div className="flex-1 flex flex-col justify-evenly">
+            {deptCounts.slice(0, 6).map(dept => (
+              <div key={dept.name} className="flex items-center gap-3 py-[7px] px-2 -mx-2 rounded-lg hover:bg-[#F5F9FD] transition-colors">
+                <span className="w-28 sm:w-36 shrink-0 truncate text-[13px] font-medium text-[#3B4E64]">{dept.name}</span>
+                <div className="flex-1 h-2 rounded-full bg-[#EDF2FA] overflow-hidden">
                   <div
-                    className="h-full bg-[#024fa7] rounded-full transition-all duration-500"
-                    style={{ width: `${(dept.count / maxDeptCount) * 100}%` }}
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${(dept.count / maxDeptCount) * 100}%`,
+                      minWidth: '8px',
+                      background: dept.fill,
+                    }}
                   />
                 </div>
-                <span className="text-sm text-gray-500 w-12 text-right">{dept.count}</span>
+                <span className="w-6 text-right text-[13px] font-bold tabular-nums text-[#17324D]">{dept.count}</span>
               </div>
             ))}
           </div>
         </Card>
 
         {/* Upcoming Events */}
-        <Card>
-          <h3 className="text-base font-semibold text-[#17324D] mb-4">Upcoming Events</h3>
-          <div className="space-y-3">
+        <Card className="h-full flex flex-col">
+          <h3 className="text-base font-semibold text-[#17324D] pb-3 mb-2 border-b border-[#EDF2FA]">Upcoming Events</h3>
+          <div className="flex-1 flex flex-col justify-evenly space-y-2">
             {upcomingEvents.map((event, i) => (
               <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
                 <div className="shrink-0 bg-blue-50 p-2 rounded-lg">

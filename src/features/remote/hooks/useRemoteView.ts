@@ -3,7 +3,15 @@ import { mockEmployees } from '@/lib/mock-data';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRemote } from '@/contexts/RemoteContext';
 import { useNotifications } from '@/contexts/NotificationContext';
+import { todayStr } from '@/utils/date';
 import type { RemoteRequest } from '@/types';
+
+export const PAST_DATE_ERROR = 'Please choose a date from today onward.';
+
+export function isPastDate(dateValue: string): boolean {
+  if (!dateValue) return false;
+  return dateValue < todayStr();
+}
 
 export function diffInDaysInclusive(start: string, end: string): number | null {
   if (!start || !end) return null;
@@ -98,6 +106,11 @@ export function useRemoteView() {
   const rangeStart = filtered.length === 0 ? 0 : (safePage - 1) * perPage + 1;
   const rangeEnd = Math.min(safePage * perPage, filtered.length);
 
+  const today = todayStr();
+  const todaysRemote = useMemo(() => (
+    visibleRequests.filter((r) => r.status === 'Approved' && r.fromDate <= today && today <= r.toDate)
+  ), [visibleRequests, today]);
+
   const resetForm = () => {
     setFromDate('');
     setToDate('');
@@ -111,14 +124,44 @@ export function useRemoteView() {
     setShowRequestModal(true);
   };
 
+  const todayMin = todayStr();
+
+  const handleFromDateChange = (value: string) => {
+    setFromDate(value);
+    setFormErrors((prev) => {
+      if (isPastDate(value)) return { ...prev, fromDate: PAST_DATE_ERROR };
+      if (prev.fromDate === PAST_DATE_ERROR) {
+        const next = { ...prev };
+        delete next.fromDate;
+        return next;
+      }
+      return prev;
+    });
+  };
+
+  const handleToDateChange = (value: string) => {
+    setToDate(value);
+    setFormErrors((prev) => {
+      if (isPastDate(value)) return { ...prev, toDate: PAST_DATE_ERROR };
+      if (prev.toDate === PAST_DATE_ERROR) {
+        const next = { ...prev };
+        delete next.toDate;
+        return next;
+      }
+      return prev;
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     const errors: Record<string, string> = {};
     if (!fromDate) errors.fromDate = 'Start date is required.';
+    else if (isPastDate(fromDate)) errors.fromDate = PAST_DATE_ERROR;
     if (!toDate) errors.toDate = 'End date is required.';
+    else if (isPastDate(toDate)) errors.toDate = PAST_DATE_ERROR;
     const days = diffInDaysInclusive(fromDate, toDate);
-    if (fromDate && toDate && days === null) errors.toDate = 'End date cannot be before start date.';
+    if (fromDate && toDate && days === null && !errors.toDate) errors.toDate = 'End date cannot be before start date.';
     if (!reason.trim()) errors.reason = 'Please enter a reason for remote work.';
     if (days !== null && days > 30) errors.toDate = 'Remote request cannot exceed 30 days.';
     // Overlap guard against own active requests
@@ -184,10 +227,12 @@ export function useRemoteView() {
     page, setPage, perPage, setPerPage,
     showRequestModal, setShowRequestModal, openRequestModal,
     fromDate, setFromDate, toDate, setToDate,
+    handleFromDateChange, handleToDateChange, todayMin,
     reason, setReason, workPlan, setWorkPlan, formErrors,
     detail, setDetail, review, setReview,
     confirmCancelReq, setConfirmCancelReq,
     counts, filtered, totalPages, safePage, paged, rangeStart, rangeEnd,
+    todaysRemote, today,
     resetForm, handleSubmit, handleReview, confirmCancel,
     requestedDays,
   };

@@ -19,6 +19,7 @@ interface RemoteRequestModalProps {
   onFromDateChange: (value: string) => void;
   toDate: string;
   onToDateChange: (value: string) => void;
+  todayMin: string;
   reason: string;
   onReasonChange: (value: string) => void;
   workPlan: string;
@@ -42,7 +43,7 @@ interface RemoteRequestModalProps {
 export default function RemoteRequestModal(props: RemoteRequestModalProps) {
   const {
     showRequestModal, onCloseRequestModal, onSubmit,
-    fromDate, onFromDateChange, toDate, onToDateChange,
+    fromDate, onFromDateChange, toDate, onToDateChange, todayMin,
     reason, onReasonChange, workPlan, onWorkPlanChange,
     formErrors, requestedDays,
     detail, onCloseDetail, isEmployee, onApproveFromDetail, onRejectFromDetail,
@@ -62,8 +63,8 @@ export default function RemoteRequestModal(props: RemoteRequestModalProps) {
             <p className="text-xs text-gray-500">Requests are reviewed by your manager. Approved remote days count as present.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="From Date" type="date" value={fromDate} onChange={(e) => onFromDateChange(e.target.value)} error={formErrors.fromDate} required />
-            <Input label="To Date" type="date" value={toDate} onChange={(e) => onToDateChange(e.target.value)} error={formErrors.toDate} required />
+            <Input label="From Date" type="date" value={fromDate} min={todayMin} onChange={(e) => onFromDateChange(e.target.value)} error={formErrors.fromDate} required />
+            <Input label="To Date" type="date" value={toDate} min={todayMin} onChange={(e) => onToDateChange(e.target.value)} error={formErrors.toDate} required />
           </div>
           {requestedDays !== null && (
             <p className="text-xs font-medium text-[#024fa7] bg-[#EAF2F4]/60 border border-[#D6E4E8] rounded-lg px-3 py-2">
