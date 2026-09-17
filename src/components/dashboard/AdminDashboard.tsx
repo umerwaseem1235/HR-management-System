@@ -9,6 +9,7 @@ import Badge from '../ui/Badge';
 import Avatar from '../ui/Avatar';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AttendanceChart, { TrendPoint } from './AttendanceChart';
+import AdminHeader from './admin/AdminHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLeave } from '../../contexts/LeaveContext';
 import type { LeaveRequest } from '../../lib/types';
@@ -104,12 +105,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-500">Welcome back, <span className="font-semibold text-[#17324D]">{welcomeName}</span></p>
-          <p className="text-base font-medium text-[#17324D]">{todayLabel}</p>
-        </div>
-      </div>
+      <AdminHeader welcomeName={welcomeName} todayLabel={todayLabel} />
 
       {/* Stat Cards - responsive: wraps when sidebar is open / narrow screens */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 2xl:gap-4">

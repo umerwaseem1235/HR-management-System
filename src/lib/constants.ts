@@ -66,9 +66,7 @@ export const DESIGNATIONS = [
 ];
 
 export const BRANCHES = [
-  { id: '1', name: 'Headquarters', city: 'New York' },
-  { id: '2', name: 'West Coast Office', city: 'San Francisco' },
-  { id: '3', name: 'South Office', city: 'Austin' },
+  { id: '1', name: 'Mumtaz Market', city: 'Gujranwala' },
 ];
 
 export const SHIFTS = [

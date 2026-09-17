@@ -122,7 +122,7 @@ export function initialHolidays(): Holiday[] {
     { id: 'h1', name: "New Year's Day", date: '2026-01-01', type: 'Public' },
     { id: 'h2', name: 'Republic Day', date: '2026-01-26', type: 'Public' },
     { id: 'h3', name: 'Independence Day', date: '2026-08-15', type: 'Public' },
-    { id: 'h4', name: 'Diwali', date: '2026-11-08', type: 'Company' },
-    { id: 'h5', name: 'Christmas', date: '2026-12-25', type: 'Public' },
+    { id: 'h4', name: 'Bakra Eid', date: '2026-11-08', type: 'Company' },
+    { id: 'h5', name: 'Eid-ul-fitar', date: '2026-12-25', type: 'Public' },
   ];
 }

@@ -1,61 +1,115 @@
 'use client';
 
 import React from 'react';
-import { Building2 } from 'lucide-react';
+import { Building2, Check, ShieldCheck, Lock, Award } from 'lucide-react';
+
+const HIGHLIGHTS = [
+  'End-to-end employee lifecycle',
+  'Automated payroll & compliance',
+  'Real-time attendance insights',
+  'Enterprise-grade security',
+];
+
+const STATS = [
+  { value: '500+', label: 'Companies' },
+  { value: '50K+', label: 'Employees managed' },
+  { value: '99.9%', label: 'Uptime SLA' },
+];
 
 export default function BrandPanel() {
   return (
-    <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#0265cc] via-[#024fa7] to-[#013a7c] relative overflow-hidden">
-      {/* Animated ambient orbs */}
-      <div className="absolute -top-24 -left-24 w-80 h-80 bg-white/10 rounded-full blur-2xl login-float-a" />
-      <div className="absolute -bottom-28 right-0 w-[28rem] h-[28rem] bg-white/10 rounded-full blur-2xl login-float-b" />
-      <div className="absolute top-1/3 left-1/4 w-56 h-56 bg-white/5 rounded-full blur-3xl login-float-a" />
-
-      {/* Slow rotating ring accent */}
-      <div className="absolute -right-32 top-1/2 -translate-y-1/2 w-[30rem] h-[30rem] rounded-full border border-white/10 login-spin-slow">
-        <div className="absolute top-6 left-1/2 w-3 h-3 -ml-1.5 rounded-full bg-white/40" />
-        <div className="absolute bottom-10 right-10 w-2 h-2 rounded-full bg-white/30" />
-      </div>
-
-      {/* Subtle dot grid */}
+    <div className="hidden lg:flex lg:w-[52%] relative overflow-hidden bg-[#17324D]">
+      {/* Base — project theme: primary navy to brand blue */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#17324D] via-[#1e3f5f] to-[#024fa7]" />
+      {/* Soft brand glows — restrained, on-theme */}
+      <div className="absolute -top-40 -right-40 w-[560px] h-[560px] rounded-full bg-[#0265cc]/25 blur-[140px]" />
+      <div className="absolute -bottom-48 -left-32 w-[480px] h-[480px] rounded-full bg-[#17324D]/70 blur-[120px]" />
+      {/* Fine grid — enterprise texture */}
       <div
-        className="absolute inset-0 opacity-[0.15]"
-        style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '26px 26px' }}
+        className="absolute inset-0 opacity-[0.1]"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(234,242,244,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(234,242,244,0.4) 1px, transparent 1px)',
+          backgroundSize: '48px 48px',
+          maskImage: 'radial-gradient(ellipse 90% 80% at 30% 20%, black 30%, transparent 75%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 90% 80% at 30% 20%, black 30%, transparent 75%)',
+        }}
       />
+      {/* Hairline frame */}
+      <div className="absolute inset-4 rounded-2xl border border-white/[0.08] pointer-events-none" />
+      {/* Top premium accent line — project blue scale */}
+      <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-[#0265cc] via-[#D6E4E8] to-[#024fa7]" />
 
-      {/* Light shimmer sweep */}
-      <div className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent login-shimmer" />
-
-      <div className="relative z-10 flex flex-col justify-center px-16">
-        <div className="flex items-center gap-4 mb-8 login-fade-up" style={{ animationDelay: '0.05s' }}>
-          <div className="w-14 h-14 bg-white/15 backdrop-blur rounded-xl flex items-center justify-center ring-1 ring-white/25 login-glow">
-            <Building2 size={32} className="text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-white">CodQor</h1>
-            <p className="text-white/70 text-sm">HRMS Platform</p>
+      <div className="relative z-10 flex flex-col justify-between w-full px-14 py-10 min-h-screen">
+        {/* Header — brand lockup */}
+        <div className="flex items-center justify-between login-fade-up" style={{ animationDelay: '0.05s' }}>
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 bg-[#EAF2F4] rounded-[12px] flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.25)]">
+              <Building2 size={24} className="text-[#17324D]" strokeWidth={2.2} />
+            </div>
+            <div>
+              <h1 className="text-[22px] font-semibold tracking-tight text-white leading-none">CodQor</h1>
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#D6E4E8] mt-1.5">
+                HRMS Platform
+              </p>
+            </div>
           </div>
         </div>
 
-        <h2 className="text-4xl font-bold text-white mb-4 leading-tight login-fade-up" style={{ animationDelay: '0.18s' }}>
-          Manage Your<br />Workforce<br />Efficiently
-        </h2>
-        <p className="text-white/75 text-lg max-w-md leading-relaxed login-fade-up" style={{ animationDelay: '0.3s' }}>
-          Streamline HR operations with our comprehensive human resource management system. From recruitment to retirement.
-        </p>
+        {/* Middle — value proposition */}
+        <div className="py-5">
 
-        <div className="mt-12 flex gap-8 login-fade-up" style={{ animationDelay: '0.42s' }}>
-          <div>
-            <p className="text-3xl font-bold text-white">500+</p>
-            <p className="text-white/65 text-sm">Companies</p>
+          <h2
+            className="text-[52px] font-semibold text-white leading-[1.04] tracking-[-0.02em] login-fade-up"
+            style={{ animationDelay: '0.22s' }}
+          >
+            Manage your
+            <br />
+            workforce with
+            <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#EAF2F4] to-[#D6E4E8]">
+              confidence.
+            </span>
+          </h2>
+
+          <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-3.5 max-w-[460px] login-fade-up" style={{ animationDelay: '0.4s' }}>
+            {HIGHLIGHTS.map(item => (
+              <div key={item} className="flex items-center gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-[#024fa7] border border-white/20 flex items-center justify-center flex-shrink-0">
+                  <Check size={12} className="text-white" strokeWidth={3} />
+                </span>
+                <span className="text-[13.5px] font-medium text-white/85">{item}</span>
+              </div>
+            ))}
           </div>
-          <div className="border-l border-white/15 pl-8">
-            <p className="text-3xl font-bold text-white">50K+</p>
-            <p className="text-white/65 text-sm">Employees</p>
+        </div>
+
+        {/* Bottom — proof + compliance */}
+        <div className="login-fade-up" style={{ animationDelay: '0.48s' }}>
+          <div className="rounded-2xl border border-white/10 bg-[#17324D]/40 backdrop-blur-md px-7 py-6">
+            <div className="grid grid-cols-3 divide-x divide-white/10">
+              {STATS.map((s, i) => (
+                <div key={s.label} className={i === 0 ? 'pr-6' : 'px-6'}>
+                  <p className="text-[28px] font-semibold tracking-tight text-white leading-none">{s.value}</p>
+                  <p className="text-[12px] font-medium tracking-wide text-[#D6E4E8]/80 mt-2 uppercase">{s.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="border-l border-white/15 pl-8">
-            <p className="text-3xl font-bold text-white">99.9%</p>
-            <p className="text-white/65 text-sm">Uptime</p>
+
+          <div className="mt-5 flex items-center justify-between">
+            <div className="flex items-center gap-5 text-[#D6E4E8]/80">
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase">
+                <Lock size={12} /> SOC 2
+              </span>
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase">
+                <ShieldCheck size={12} /> GDPR
+              </span>
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase">
+                <Award size={12} /> ISO 27001
+              </span>
+            </div>
+            <p className="text-[11px] text-[#D6E4E8]/60 font-medium">© 2026 CodQor Technologies</p>
           </div>
         </div>
       </div>

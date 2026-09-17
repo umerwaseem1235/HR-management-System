@@ -1,5 +1,7 @@
 'use client';
 
+import { CalendarDays } from 'lucide-react';
+
 interface AdminHeaderProps {
   welcomeName: string;
   todayLabel: string;
@@ -7,15 +9,14 @@ interface AdminHeaderProps {
 
 export default function AdminHeader({ welcomeName, todayLabel }: AdminHeaderProps) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div>
-        <h1 className="mt-1.5 text-2xl font-bold leading-tight tracking-tight text-[#17324D]">
-          Welcome back, {welcomeName}!
-        </h1>
-      </div>
-      <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#D6E4E8]/70 bg-white px-4 py-2 shadow-[0_1px_2px_rgba(23,50,77,0.05),0_10px_30px_-14px_rgba(23,50,77,0.18)]">
-        <span className="text-[13px] font-semibold text-[#17324D]">{todayLabel}</span>
-      </div>
+    <div className="flex flex-col gap-1">
+      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">
+        <CalendarDays size={14} className="text-[#024fa7]" aria-hidden="true" />
+        {todayLabel}
+      </p>
+      <h1 className="text-xl font-bold leading-tight tracking-tight text-[#17324D] sm:text-2xl">
+        Welcome back, {welcomeName}!
+      </h1>
     </div>
   );
 }

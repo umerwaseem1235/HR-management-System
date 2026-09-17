@@ -1,15 +1,8 @@
 'use client';
 
-import React from 'react';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, type LucideIcon } from 'lucide-react';
-
-export interface QuickLoginOption {
-  label: string;
-  icon: LucideIcon;
-  email: string;
-  password: string;
-  color: string;
-}
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 
 interface LoginFormProps {
   email: string;
@@ -18,13 +11,11 @@ interface LoginFormProps {
   error: string;
   loading: boolean;
   rememberMe: boolean;
-  quickLoginOptions: QuickLoginOption[];
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onToggleShowPassword: () => void;
   onRememberMeChange: (value: boolean) => void;
   onSubmit: (e: React.FormEvent) => void;
-  onQuickLogin: (email: string, password: string) => void;
 }
 
 export default function LoginForm({
@@ -34,122 +25,178 @@ export default function LoginForm({
   error,
   loading,
   rememberMe,
-  quickLoginOptions,
   onEmailChange,
   onPasswordChange,
   onToggleShowPassword,
   onRememberMeChange,
   onSubmit,
-  onQuickLogin,
 }: LoginFormProps) {
+  const router = useRouter();
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+
   return (
     <>
+      {/* Error message */}
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-red-500 text-xs font-bold">!</span>
-          </div>
+        <div className="login-fade-up mb-5 rounded-xl border border-red-100 bg-red-50/90 px-4 py-3 text-[13px] text-red-600 backdrop-blur-sm">
           {error}
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="space-y-5">
+      <form onSubmit={onSubmit} className="space-y-6">
+        {/* Email field */}
         <div>
-          <label className="block text-sm font-medium text-[#263238] mb-1.5">Email Address</label>
-          <div className="relative">
-            <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <div
+            className={`flex items-center gap-3 border-b-2 px-1 pb-3 transition-all duration-300 ${
+              emailFocused
+                ? 'border-[#1565D8]'
+                : 'border-[#E5E7EB] hover:border-[#D1D5DB]'
+            }`}
+          >
+            <div
+              className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg transition-all duration-300 ${
+                emailFocused
+                  ? 'bg-[#1565D8]/10 text-[#1565D8] scale-110'
+                  : 'bg-[#F3F4F6] text-[#9CA3AF]'
+              }`}
+            >
+              <Mail size={18} />
+            </div>
             <input
               type="email"
               value={email}
               onChange={(e) => onEmailChange(e.target.value)}
-              placeholder="you@company.com"
+              onFocus={() => setEmailFocused(true)}
+              onBlur={() => setEmailFocused(false)}
+              placeholder="Email Address"
               required
-              className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#D6E4E8] text-sm text-[#263238] placeholder-gray-400 focus:border-[#024fa7] focus:ring-2 focus:ring-[#024fa7]/20 focus:outline-none"
+              autoComplete="email"
+              className="w-full bg-transparent text-[15px] text-[#1a1a2e] placeholder-[#9CA3AF] outline-none"
             />
           </div>
         </div>
 
+        {/* Password field */}
         <div>
-          <label className="block text-sm font-medium text-[#263238] mb-1.5">Password</label>
-          <div className="relative">
-            <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <div
+            className={`flex items-center gap-3 border-b-2 px-1 pb-3 transition-all duration-300 ${
+              passwordFocused
+                ? 'border-[#1565D8]'
+                : 'border-[#E5E7EB] hover:border-[#D1D5DB]'
+            }`}
+          >
+            <div
+              className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg transition-all duration-300 ${
+                passwordFocused
+                  ? 'bg-[#1565D8]/10 text-[#1565D8] scale-110'
+                  : 'bg-[#F3F4F6] text-[#9CA3AF]'
+              }`}
+            >
+              <Lock size={18} />
+            </div>
             <input
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => onPasswordChange(e.target.value)}
-              placeholder="Enter your password"
+              onFocus={() => setPasswordFocused(true)}
+              onBlur={() => setPasswordFocused(false)}
+              placeholder="Password"
               required
-              className="w-full pl-10 pr-12 py-3 rounded-lg border border-[#D6E4E8] text-sm text-[#263238] placeholder-gray-400 focus:border-[#024fa7] focus:ring-2 focus:ring-[#024fa7]/20 focus:outline-none"
+              autoComplete="current-password"
+              className="w-full bg-transparent text-[15px] text-[#1a1a2e] placeholder-[#9CA3AF] outline-none"
             />
             <button
               type="button"
               onClick={onToggleShowPassword}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              className="flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg text-[#9CA3AF] transition-all duration-200 hover:bg-[#F3F4F6] hover:text-[#1565D8]"
             >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
             </button>
           </div>
         </div>
 
+        {/* Remember me + Forgot password row */}
         <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => onRememberMeChange(e.target.checked)}
-              className="w-4 h-4 rounded border-[#D6E4E8] text-[#024fa7] focus:ring-[#024fa7]"
-            />
-            <span className="text-sm text-gray-600">Remember me</span>
+          <label className="group flex cursor-pointer items-center gap-2.5">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => onRememberMeChange(e.target.checked)}
+                className="peer sr-only"
+              />
+              <div className="flex h-[18px] w-[18px] items-center justify-center rounded-[5px] border-2 border-[#D1D5DB] transition-all duration-200 peer-checked:border-[#1565D8] peer-checked:bg-[#1565D8] group-hover:border-[#1565D8]/60">
+                <svg
+                  className={`h-3 w-3 text-white transition-all duration-200 ${
+                    rememberMe
+                      ? 'scale-100 opacity-100'
+                      : 'scale-0 opacity-0'
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={3}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+            </div>
+            <span className="select-none text-[13px] text-[#6B7280] transition-colors group-hover:text-[#4B5563]">
+              Remember me
+            </span>
           </label>
-          <button type="button" className="text-sm text-[#024fa7] hover:underline font-medium">
-            Forgot password?
+          <button
+            type="button"
+            className="cursor-pointer text-[13px] font-semibold text-[#1565D8] transition-colors hover:text-[#0D47A1]"
+          >
+            Forgot Password?
           </button>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[#024fa7] hover:bg-[#013a7c] text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? (
-            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-          ) : (
-            <>
-              Sign In
-              <ArrowRight size={18} />
-            </>
-          )}
-        </button>
+        {/* Sign In button */}
+        <div className="pt-1">
+          <button
+            type="submit"
+            disabled={loading}
+            className="group relative w-full cursor-pointer overflow-hidden rounded-full bg-gradient-to-r from-[#1565D8] to-[#1E88E5] px-6 py-3.5 text-[15px] font-semibold text-white shadow-[0_8px_30px_-6px_rgba(21,101,216,0.55)] transition-all duration-300 hover:shadow-[0_12px_40px_-6px_rgba(21,101,216,0.65)] hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[#1565D8]/40 focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-none disabled:hover:brightness-100"
+          >
+            {/* Shimmer sweep on hover */}
+            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.15] to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+            <span className="relative flex items-center justify-center gap-2">
+              {loading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign In'
+              )}
+            </span>
+          </button>
+        </div>
+
+        {/* Sign up link */}
+        <div className="pt-1 text-center text-[13.5px] leading-relaxed">
+          <span className="text-[#6B7280]">New to CodQor HRMS? </span>
+          <button
+            type="button"
+            onClick={() => router.push('/signup')}
+            className="group relative inline-flex cursor-pointer items-center gap-1 font-semibold text-[#1565D8] transition-colors duration-200 after:absolute after:-bottom-0.5 after:left-0 after:h-[1.5px] after:w-0 after:rounded-full after:bg-current after:transition-all after:duration-300 hover:text-[#0D47A1] hover:after:w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1565D8]/40 focus-visible:ring-offset-2"
+          >
+            Create an account
+            <ArrowRight
+              size={15}
+              className="transition-transform duration-300 group-hover:translate-x-0.5"
+            />
+          </button>
+        </div>
       </form>
-
-      {/* Quick Login */}
-      <div className="mt-8">
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[#D6E4E8]" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="px-3 bg-white text-gray-500">Quick Demo Login</span>
-          </div>
-        </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          {quickLoginOptions.map(option => (
-            <button
-              key={option.label}
-              onClick={() => onQuickLogin(option.email, option.password)}
-              disabled={loading}
-              className={`flex flex-col items-center gap-2 p-3 rounded-lg border text-xs font-medium transition-colors ${option.color}`}
-            >
-              <option.icon size={20} />
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
     </>
   );
 }
