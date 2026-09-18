@@ -44,9 +44,11 @@ export default function RemoteFilters({
     <Card padding="sm">
       {isEmployee ? (
         <div className="flex flex-col lg:flex-row gap-3 lg:items-end">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1">
+          <div className="grid grid-cols-2 gap-3 flex-1">
             <Input label="From" type="date" value={fromFilter} onChange={(e) => onFromFilterChange(e.target.value)} />
             <Input label="To" type="date" value={toFilter} onChange={(e) => onToFilterChange(e.target.value)} />
+          </div>
+          <div className="lg:w-52 shrink-0 lg:ml-auto">
             <Select label="Status" value={statusFilter} onChange={(e) => onStatusFilterChange(e.target.value)} options={STATUS_OPTIONS} />
           </div>
         </div>

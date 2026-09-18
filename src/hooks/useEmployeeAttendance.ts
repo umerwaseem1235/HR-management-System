@@ -1,50 +1,47 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useEmployee } from './useEmployee';
 import { useLeave } from '../contexts/LeaveContext';
-import { mockAttendance } from '../lib/mock-data';
 import type { AttendanceRecord, User } from '../lib/types';
 import { toDateStr, buildMonthlySchedule } from '../components/attendance/attendance-utils';
+import { getAttendanceByEmployee } from '@/lib/actions/attendance';
 
 export interface EmployeeAttendanceData {
-  /** Raw auth user — null when logged out. */
   user: User | null;
-  /** Current month label (e.g. "September 2026"). */
   monthLabel: string;
-  /** Attendance records for the current month. */
   records: AttendanceRecord[];
-  /** Count of present days in the current month. */
   presentDays: number;
-  /** Count of absent days in the current month. */
   absentDays: number;
-  /** Count of late days in the current month. */
   lateDays: number;
-  /** Total leaves taken (attendance + approved leave overlap). */
   leavesTaken: number;
-  /** Selected date filter value. */
   selectedDate: string;
-  /** Status filter value. */
   statusFilter: string;
-  /** Set the selected date filter. */
   onSelectedDate: (v: string) => void;
-  /** Set the status filter. */
   onStatusFilter: (v: string) => void;
 }
 
-/**
- * Encapsulates all business logic for the **employee** attendance view.
- *
- * Extracts the inline `useMemo` blocks and filter state that were previously
- * in `page.tsx` (lines 55–109) into a dedicated hook so the page becomes a
- * thin routing shell.
- */
 export function useEmployeeAttendance(): EmployeeAttendanceData {
   const { user, employee, employeeId, employeeName, isEmployee } = useEmployee();
   const { leaveRequests } = useLeave();
 
   const [selectedDate, setSelectedDate] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+
+  useEffect(() => {
+    async function loadData() {
+      if (employeeId) {
+        try {
+          const data = await getAttendanceByEmployee(employeeId);
+          setAttendanceRecords(data);
+        } catch (error) {
+          console.error('Failed to load employee attendance:', error);
+        }
+      }
+    }
+    loadData();
+  }, [employeeId]);
 
   const { monthLabel, monthlyRecords, presentDays, absentDays, lateDays, leavesTaken } = useMemo(() => {
     const now = new Date();
@@ -66,12 +63,7 @@ export function useEmployeeAttendance(): EmployeeAttendanceData {
     const empName = employee ? `${employee.firstName} ${employee.lastName}` : user.name;
     const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
 
-    // Real records from mock data
-    const realMonthly = mockAttendance.filter(
-      (a) =>
-        (empId ? a.employeeId === empId : a.employeeName.toLowerCase() === user.name.toLowerCase()) &&
-        a.date.startsWith(monthPrefix),
-    );
+    const realMonthly = attendanceRecords.filter((a) => a.date.startsWith(monthPrefix));
     const realDates = new Set(realMonthly.map((r) => r.date));
 
     // Fill gaps with generated schedule
@@ -119,7 +111,7 @@ export function useEmployeeAttendance(): EmployeeAttendanceData {
       lateDays,
       leavesTaken: attendanceLeaveDates.size + approvedLeaveDays,
     };
-  }, [user, isEmployee, employee, employeeId, employeeName, leaveRequests]);
+  }, [user, isEmployee, employee, attendanceRecords, leaveRequests]);
 
   return {
     user,

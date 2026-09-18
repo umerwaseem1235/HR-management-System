@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNotifications } from '../contexts/NotificationContext';
-import { mockEmployees } from '../lib/mock-data';
-import type { AttendanceRecord } from '../lib/types';
+import type { AttendanceRecord, Employee } from '../lib/types';
+import { getEmployees } from '@/lib/actions/employees';
+import { getAllAttendance, createAttendanceRecord, getCorrections, updateCorrectionStatus } from '@/lib/actions/attendance';
 import {
   toDateStr, timeToMinutes, todayStr, aggregate,
-  buildMonthlySchedule, initialCorrections, initialHolidays,
+  initialHolidays,
 } from '../components/attendance/attendance-utils';
 import type {
   CorrectionRequest, Holiday, ManualEntryValues,
@@ -14,11 +15,8 @@ import type {
 } from '../components/attendance/types';
 
 export interface AdminAttendanceData {
-  // ---- Tab state ----
   activeTab: string;
   onActiveTab: (tab: string) => void;
-
-  // ---- Daily log ----
   viewDate: string;
   onViewDate: (v: string) => void;
   dayRecords: AttendanceRecord[];
@@ -26,59 +24,54 @@ export interface AdminAttendanceData {
   onManualOpen: () => void;
   onManualClose: () => void;
   onAddManual: (values: ManualEntryValues) => void;
-
-  // ---- Summaries ----
   summaryMode: SummaryMode;
   onSummaryMode: (m: SummaryMode) => void;
   summaryCounts: AttendanceRecord[];
   agg: AttendanceAggregate;
   summaryLabel: string;
-
-  // ---- Corrections ----
   corrections: CorrectionRequest[];
   pendingCorrections: CorrectionRequest[];
   onApproveCorrection: (id: string) => void;
   onRejectCorrection: (id: string) => void;
-
-  // ---- Holidays ----
   holidays: Holiday[];
   holidayMsg: string;
   onAddHoliday: (e: React.FormEvent<HTMLFormElement>) => void;
   onDeleteHoliday: (id: string) => void;
-
-  // ---- Admin tabs config ----
   adminTabs: { id: string; label: string; count?: number }[];
 }
 
-/**
- * Encapsulates all business logic for the **admin / HR** attendance view.
- *
- * Extracts state, derived computations, and event handlers that were
- * previously inlined in `page.tsx` (lines 39–251) so the page becomes
- * a thin routing shell.
- */
 export function useAdminAttendance(): AdminAttendanceData {
   const { addNotification } = useNotifications();
 
-  // ---- Core state ----
   const [activeTab, setActiveTab] = useState('daily');
   const [manualOpen, setManualOpen] = useState(false);
   const [viewDate, setViewDate] = useState(todayStr());
   const [summaryMode, setSummaryMode] = useState<SummaryMode>('daily');
   const [holidays, setHolidays] = useState<Holiday[]>(initialHolidays);
-  const [corrections, setCorrections] = useState<CorrectionRequest[]>(initialCorrections);
   const [holidayMsg, setHolidayMsg] = useState('');
 
-  const [attendRecords, setAttendRecords] = useState<AttendanceRecord[]>(() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    return mockEmployees.flatMap((emp) =>
-      buildMonthlySchedule(emp.id, `${emp.firstName} ${emp.lastName}`, year, month),
-    );
-  });
+  const [attendRecords, setAttendRecords] = useState<AttendanceRecord[]>([]);
+  const [corrections, setCorrections] = useState<CorrectionRequest[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
 
-  // ---- Derived values ----
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [empData, attData, corrData] = await Promise.all([
+          getEmployees(),
+          getAllAttendance(),
+          getCorrections()
+        ]);
+        setEmployees(empData);
+        setAttendRecords(attData);
+        setCorrections(corrData);
+      } catch (error) {
+        console.error('Failed to load admin attendance data:', error);
+      }
+    }
+    loadData();
+  }, []);
+
   const dayRecords = attendRecords.filter((r) => r.date === viewDate);
 
   const summaryCounts = useMemo(() => {
@@ -118,9 +111,8 @@ export function useAdminAttendance(): AdminAttendanceData {
     { id: 'config', label: 'Holidays' },
   ];
 
-  // ---- Event handlers ----
-  const handleAddManual = useCallback((values: ManualEntryValues) => {
-    const emp = mockEmployees.find((e) => e.id === values.employeeId);
+  const handleAddManual = useCallback(async (values: ManualEntryValues) => {
+    const emp = employees.find((e) => e.id === values.employeeId);
     if (!emp) return;
     const inMin = values.checkIn ? timeToMinutes(values.checkIn) : 0;
     const outMin = values.checkOut ? timeToMinutes(values.checkOut) : 0;
@@ -129,58 +121,70 @@ export function useAdminAttendance(): AdminAttendanceData {
     else if (values.status === 'Present' || values.status === 'Late') workHours = 8;
     else if (values.status === 'Half Day') workHours = 4;
 
-    const record: AttendanceRecord = {
-      id: `manual-${Date.now()}`,
-      employeeId: emp.id,
-      employeeName: `${emp.firstName} ${emp.lastName}`,
-      date: values.date,
-      checkIn: values.checkIn,
-      checkOut: values.checkOut,
-      status: values.status as AttendanceRecord['status'],
-      workHours,
-      overtime: 0,
-      notes: values.notes || undefined,
-    };
-    setAttendRecords((current) => {
-      const without = current.filter((r) => !(r.employeeId === emp.id && r.date === values.date));
-      return [record, ...without];
-    });
-    setViewDate(values.date);
+    try {
+      const newRecord = await createAttendanceRecord({
+        employeeId: emp.id,
+        date: values.date,
+        checkIn: values.checkIn,
+        checkOut: values.checkOut,
+        status: values.status as AttendanceRecord['status'],
+        workHours,
+        overtime: 0,
+        notes: values.notes || undefined,
+      });
+      setAttendRecords((current) => {
+        const without = current.filter((r) => !(r.employeeId === emp.id && r.date === values.date));
+        return [newRecord, ...without];
+      });
+      setViewDate(values.date);
+    } catch (err) {
+      console.error('Failed to add manual record:', err);
+    }
+  }, [employees]);
+
+  const handleApproveCorrection = useCallback(async (id: string) => {
+    try {
+      await updateCorrectionStatus(id, 'Approved');
+      setCorrections((current) =>
+        current.map((c) => {
+          if (c.id !== id) return c;
+          if (c.status === 'Pending') {
+            setAttendRecords((recs) =>
+              recs.map((r) => {
+                if (r.employeeId === c.employeeId && r.date === c.date) {
+                  const updated: AttendanceRecord = {
+                    ...r,
+                    status: c.requestedStatus as AttendanceRecord['status'],
+                    checkIn: c.requestedCheckIn ?? r.checkIn,
+                    checkOut: c.requestedCheckOut ?? r.checkOut,
+                  };
+                  const inMin = updated.checkIn ? timeToMinutes(updated.checkIn) : 0;
+                  const outMin = updated.checkOut ? timeToMinutes(updated.checkOut) : 0;
+                  if (inMin && outMin && outMin > inMin)
+                    updated.workHours = Math.round(((outMin - inMin) / 60) * 10) / 10;
+                  else if (updated.status === 'Present' || updated.status === 'Late') updated.workHours = 8;
+                  else if (updated.status === 'Half Day') updated.workHours = 4;
+                  return updated;
+                }
+                return r;
+              }),
+            );
+          }
+          return { ...c, status: 'Approved' as const };
+        }),
+      );
+    } catch (err) {
+      console.error('Failed to approve correction:', err);
+    }
   }, []);
 
-  const handleApproveCorrection = useCallback((id: string) => {
-    setCorrections((current) =>
-      current.map((c) => {
-        if (c.id !== id) return c;
-        if (c.status === 'Pending') {
-          setAttendRecords((recs) =>
-            recs.map((r) => {
-              if (r.employeeId === c.employeeId && r.date === c.date) {
-                const updated: AttendanceRecord = {
-                  ...r,
-                  status: c.requestedStatus as AttendanceRecord['status'],
-                  checkIn: c.requestedCheckIn ?? r.checkIn,
-                  checkOut: c.requestedCheckOut ?? r.checkOut,
-                };
-                const inMin = updated.checkIn ? timeToMinutes(updated.checkIn) : 0;
-                const outMin = updated.checkOut ? timeToMinutes(updated.checkOut) : 0;
-                if (inMin && outMin && outMin > inMin)
-                  updated.workHours = Math.round(((outMin - inMin) / 60) * 10) / 10;
-                else if (updated.status === 'Present' || updated.status === 'Late') updated.workHours = 8;
-                else if (updated.status === 'Half Day') updated.workHours = 4;
-                return updated;
-              }
-              return r;
-            }),
-          );
-        }
-        return { ...c, status: 'Approved' as const };
-      }),
-    );
-  }, []);
-
-  const handleRejectCorrection = useCallback((id: string) => {
-    setCorrections((current) => current.map((c) => (c.id === id ? { ...c, status: 'Rejected' as const } : c)));
+  const handleRejectCorrection = useCallback(async (id: string) => {
+    try {
+      await updateCorrectionStatus(id, 'Rejected');
+      setCorrections((current) => current.map((c) => (c.id === id ? { ...c, status: 'Rejected' as const } : c)));
+    } catch (err) {
+      console.error('Failed to reject correction:', err);
+    }
   }, []);
 
   const handleAddHoliday = useCallback(
@@ -197,7 +201,7 @@ export function useAdminAttendance(): AdminAttendanceData {
       ]);
       addNotification({
         title: 'New Holiday Announced',
-        message: `${name} on ${date} (${type}) — notified to all ${mockEmployees.length} employees.`,
+        message: `${name} on ${date} (${type}) — notified to all employees.`,
         type: 'info',
         link: '/attendance',
       });

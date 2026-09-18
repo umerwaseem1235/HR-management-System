@@ -2,7 +2,6 @@
 
 import { ArrowUpRight, CheckCircle2, XCircle } from 'lucide-react';
 import Card from '../../ui/Card';
-import Badge from '../../ui/Badge';
 import Avatar from '../../ui/Avatar';
 import type { DepartmentCount, LeaveRequest, UpcomingEvent } from '../dashboard-types';
 
@@ -65,22 +64,31 @@ export function DepartmentHeadcountCard({
   totalEmployees: number;
 }) {
   return (
-    <Card className="lg:col-span-2">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-base font-semibold text-[#17324D]">Department Headcount</h3>
-        <Badge variant="default">{totalEmployees} Total</Badge>
+    <Card className="lg:col-span-2 !rounded-2xl !p-5 h-full flex flex-col">
+      <div className="flex items-center justify-between pb-3 mb-2 border-b border-[#EDF2FA]">
+        <div className="flex items-center gap-2">
+          <span className="w-1 h-6 rounded-full bg-[#0B5CAD]" />
+          <h3 className="text-[17px] font-bold text-[#0B5CAD] tracking-tight">Department Headcount</h3>
+        </div>
+        <span className="rounded-full bg-[#E8F1FC] px-3 py-1 text-[13px] font-bold text-[#1A64B4] whitespace-nowrap">
+          {totalEmployees} Total
+        </span>
       </div>
-      <div className="space-y-4">
+      <div className="flex-1 flex flex-col justify-evenly">
         {departments.slice(0, 6).map(dept => (
-          <div key={dept.name} className="flex items-center gap-3">
-            <span className="text-[13px] font-medium text-[#263238] w-32 truncate">{dept.name}</span>
-            <div className="flex-1 bg-[#EAF2F4] rounded-full h-2.5 overflow-hidden">
+          <div key={dept.name} className="flex items-center gap-3 py-[7px] px-2 -mx-2 rounded-lg hover:bg-[#F5F9FD] transition-colors">
+            <span className="w-28 sm:w-36 shrink-0 truncate text-[13px] font-medium text-[#3B4E64]">{dept.name}</span>
+            <div className="flex-1 h-2 rounded-full bg-[#EDF2FA] overflow-hidden">
               <div
-                className={`${dept.color} h-full rounded-full transition-all duration-500`}
-                style={{ width: `${(dept.count / maxCount) * 100}%`, minWidth: '8px' }}
+                className={`${dept.fill ? '' : dept.color} h-full rounded-full transition-all duration-500`}
+                style={{
+                  width: `${(dept.count / Math.max(maxCount, 1)) * 100}%`,
+                  minWidth: '8px',
+                  ...(dept.fill ? { background: dept.fill } : {}),
+                }}
               />
             </div>
-            <span className="w-6 text-right text-xs font-semibold tabular-nums text-[#17324D]">{dept.count}</span>
+            <span className="w-6 text-right text-[13px] font-bold tabular-nums text-[#17324D]">{dept.count}</span>
           </div>
         ))}
       </div>

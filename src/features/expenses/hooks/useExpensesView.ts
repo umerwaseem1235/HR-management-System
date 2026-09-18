@@ -30,22 +30,22 @@ export function useExpensesView() {
   const [confirmRejectExp, setConfirmRejectExp] = useState<ExpenseClaim | null>(null);
   const [confirmDeleteExp, setConfirmDeleteExp] = useState<ExpenseClaim | null>(null);
   const [expenseMonth, setExpenseMonth] = useState('all');
-  const [zoom, setZoom] = useState(0.5);
+  const [zoom, setZoom] = useState(1);
 
   const openReceipt = (exp: ExpenseClaim) => {
     setViewingExp(exp);
     setViewingReceipt(exp.receipt ?? null);
-    setZoom(0.5);
+    setZoom(1);
   };
 
   const closeReceipt = () => {
     setViewingExp(null);
     setViewingReceipt(null);
-    setZoom(0.5);
+    setZoom(1);
   };
 
-  const zoomIn = () => setZoom((z) => Math.min(3, Math.round((z + 0.1) * 100) / 100));
-  const zoomOut = () => setZoom((z) => Math.max(0.1, Math.round((z - 0.25) * 100) / 100));
+  const zoomIn = () => setZoom((z) => Math.min(3, Math.round((z + 0.25) * 100) / 100));
+  const zoomOut = () => setZoom((z) => Math.max(0.25, Math.round((z - 0.25) * 100) / 100));
 
   // Resolve the logged-in user to an employee record (same matching as profile page)
   const employee = useMemo(() => {

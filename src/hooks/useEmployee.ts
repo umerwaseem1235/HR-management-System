@@ -1,19 +1,7 @@
-import { useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { mockEmployees } from '../lib/mock-data';
+import { getEmployeeByUserId } from '@/lib/actions/employees';
 import type { Employee, User } from '../lib/types';
-
-/**
- * Resolves the logged-in user to their employee record.
- *
- * Deduplicates the matching logic copy-pasted across the expenses, leave,
- * attendance, progress, remote, documents and reports pages: match by email
- * first, then by full name (case-insensitive). Falls back to the raw user
- * name/id when no employee record matches (e.g. admin accounts).
- *
- * Adoption is opt-in — no existing page was migrated to it yet; new pages
- * and future refactors should prefer this hook over inline `useMemo` blocks.
- */
 
 export interface EmployeeResolution {
   /** Raw auth user (`null` when logged out). */
@@ -28,29 +16,21 @@ export interface EmployeeResolution {
   isEmployee: boolean;
 }
 
-/** Pure matcher (exported for tests); the hook memoizes it over `user`. */
-export function resolveEmployeeForUser(user: User | null): Employee | undefined {
-  if (!user) return undefined;
-  return (
-    mockEmployees.find((e) => e.email.toLowerCase() === user.email.toLowerCase()) ||
-    mockEmployees.find((e) => `${e.firstName} ${e.lastName}`.toLowerCase() === user.name.toLowerCase())
-  );
-}
-
-/**
- * @example
- * const { employee, employeeId, employeeName, isEmployee } = useEmployee();
- * const visible = useMemo(
- *   () => (isEmployee ? rows.filter((r) => r.employeeId === employeeId) : rows),
- *   [isEmployee, rows, employeeId],
- * );
- */
 export function useEmployee(): EmployeeResolution {
   const { user } = useAuth();
+  const [employee, setEmployee] = useState<Employee | undefined>();
 
-  const employee = useMemo(() => resolveEmployeeForUser(user), [user]);
+  useEffect(() => {
+    if (user?.id) {
+      getEmployeeByUserId(user.id)
+        .then((emp) => setEmployee(emp || undefined))
+        .catch((err) => {
+          console.error('Failed to resolve employee for user:', err);
+        });
+    }
+  }, [user?.id]);
 
-  const employeeId = employee?.id ?? user?.id ?? '';
+  const employeeId = employee?.id ?? user?.employeeId ?? user?.id ?? '';
   const employeeName = employee ? `${employee.firstName} ${employee.lastName}` : (user?.name ?? '');
   const isEmployee = user?.role === 'employee';
 

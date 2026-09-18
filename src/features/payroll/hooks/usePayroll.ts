@@ -49,7 +49,7 @@ export function usePayroll() {
 
   // ---- Runs tab: new run form ----
   const [newMonth, setNewMonth] = useState('0');
-  const [newYear, setNewYear] = useState('2024');
+  const [newYear, setNewYear] = useState(() => String(new Date().getFullYear()));
   const [runError, setRunError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 

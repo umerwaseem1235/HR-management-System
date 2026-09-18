@@ -3,9 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { ShieldCheck, Briefcase, UserRound } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import LoginForm from '../../components/auth/LoginForm';
-import DemoAccountsDropdown from '../../components/auth/DemoAccountsDropdown';
+
+const DEMO_ACCOUNTS = [
+  { role: 'Super Admin', email: 'admin@codqor.com', pass: 'admin123', icon: ShieldCheck },
+  { role: 'HR Manager', email: 'hr@codqor.com', pass: 'hr1234', icon: Briefcase },
+  { role: 'Employee', email: 'employee@codqor.com', pass: 'emp123', icon: UserRound },
+];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -49,11 +55,11 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const success = await login(email, password);
-      if (success) {
+      const result = await login(email, password);
+      if (result.success) {
         router.push('/dashboard');
       } else {
-        setError('Invalid email or password. Please try again.');
+        setError(result.error || 'Invalid email or password. Please try again.');
       }
     } catch {
       setError('An error occurred. Please try again.');
@@ -311,21 +317,56 @@ export default function LoginPage() {
               onSubmit={handleSubmit}
             />
 
-            {/* Quick Demo Accounts */}
+            {/* Demo Accounts */}
             <div className="mt-7 border-t border-[#E5E7EB] pt-5">
-              <div className="mb-2.5">
+              <div className="mb-2.5 flex items-center justify-between">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">
-                  Quick Access
+                  Demo Accounts
                 </span>
+                <span className="text-[11px] text-[#9CA3AF]">Click to auto-fill</span>
               </div>
-              <DemoAccountsDropdown
-                activeEmail={email}
-                onSelect={(demoEmail, demoPass) => {
-                  setEmail(demoEmail);
-                  setPassword(demoPass);
-                  setError('');
-                }}
-              />
+              <div className="grid grid-cols-3 gap-2">
+                {DEMO_ACCOUNTS.map((demo) => {
+                  const isSelected = email === demo.email;
+                  const Icon = demo.icon;
+                  return (
+                    <button
+                      key={demo.role}
+                      type="button"
+                      onClick={() => {
+                        setEmail(demo.email);
+                        setPassword(demo.pass);
+                        setError('');
+                      }}
+                      className={`group flex cursor-pointer flex-col items-center rounded-xl border px-2 py-3 text-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#1565D8]/30 focus:ring-offset-2 ${
+                        isSelected
+                          ? 'border-[#1565D8]/40 bg-[#1565D8]/[0.06] shadow-sm ring-1 ring-[#1565D8]/20'
+                          : 'border-[#E5E7EB] bg-[#F9FAFB] hover:border-[#CBD5E1] hover:bg-white hover:shadow-sm'
+                      }`}
+                    >
+                      <span
+                        className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors duration-200 ${
+                          isSelected
+                            ? 'bg-[#1565D8]/10 text-[#1565D8]'
+                            : 'bg-white text-[#9CA3AF] ring-1 ring-[#E5E7EB] group-hover:text-[#1565D8]'
+                        }`}
+                      >
+                        <Icon size={17} />
+                      </span>
+                      <span
+                        className={`mt-2 text-[11px] font-semibold leading-tight transition-colors ${
+                          isSelected ? 'text-[#1565D8]' : 'text-[#1a1a2e]'
+                        }`}
+                      >
+                        {demo.role}
+                      </span>
+                      <span className="mt-0.5 font-mono text-[10px] text-[#6B7280]">
+                        {demo.pass}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Footer */}

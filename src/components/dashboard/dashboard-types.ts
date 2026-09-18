@@ -39,6 +39,7 @@ export interface DepartmentCount {
   name: string;
   count: number;
   color: string;
+  fill?: string;
 }
 
 export interface UpcomingEvent {

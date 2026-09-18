@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { ExpenseClaim } from '../lib/types';
-import { mockExpenses } from '../lib/mock-data';
+import { getExpenseClaims, createExpenseClaim, updateExpenseStatus as updateExpenseStatusAction, deleteExpenseClaim as deleteExpenseClaimAction, updateExpenseClaim as updateExpenseClaimAction } from '@/lib/actions/expenses';
 
 export interface NewExpenseInput {
   employeeId: string;
@@ -16,65 +16,63 @@ export interface NewExpenseInput {
 
 interface ExpenseContextType {
   expenses: ExpenseClaim[];
-  addExpenseClaim: (input: NewExpenseInput) => ExpenseClaim;
-  updateExpenseStatus: (id: string, status: 'Approved' | 'Rejected' | 'Reimbursed') => void;
-  deleteExpenseClaim: (id: string) => void;
-  updateExpenseClaim: (id: string, input: { category: string; amount: number; date: string; description: string; receipt?: string }) => void;
+  isLoading: boolean;
+  addExpenseClaim: (input: NewExpenseInput) => Promise<ExpenseClaim>;
+  updateExpenseStatus: (id: string, status: 'Approved' | 'Rejected' | 'Reimbursed') => Promise<void>;
+  deleteExpenseClaim: (id: string) => Promise<void>;
+  updateExpenseClaim: (id: string, input: { category: string; amount: number; date: string; description: string; receipt?: string }) => Promise<void>;
 }
 
 const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'hrms_expenses';
-
 export function ExpenseProvider({ children }: { children: ReactNode }) {
-  const [expenses, setExpenses] = useState<ExpenseClaim[]>(mockExpenses);
+  const [expenses, setExpenses] = useState<ExpenseClaim[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load persisted claims (including employee-submitted ones) after mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setExpenses(JSON.parse(stored));
+    async function load() {
+      try {
+        const data = await getExpenseClaims();
+        setExpenses(data);
+      } catch (error) {
+        console.error('Failed to load expenses:', error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch {
-      // Corrupt storage — keep mock defaults
     }
+    load();
   }, []);
 
-  // Persist so submitted claims survive reloads
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
-    } catch {
-      // Storage unavailable — ignore
-    }
-  }, [expenses]);
-
-  const addExpenseClaim = (input: NewExpenseInput): ExpenseClaim => {
-    const claim: ExpenseClaim = {
-      id: `exp-${Date.now()}`,
-      ...input,
-      status: 'Pending',
-      submittedOn: new Date().toISOString().slice(0, 10),
-    };
+  const addExpenseClaim = async (input: NewExpenseInput): Promise<ExpenseClaim> => {
+    const claim = await createExpenseClaim({
+      employeeId: input.employeeId,
+      category: input.category,
+      amount: input.amount,
+      date: input.date,
+      description: input.description,
+      receipt: input.receipt
+    });
     setExpenses((prev) => [claim, ...prev]);
     return claim;
   };
 
-  const updateExpenseStatus = (id: string, status: 'Approved' | 'Rejected' | 'Reimbursed') => {
+  const updateExpenseStatus = async (id: string, status: 'Approved' | 'Rejected' | 'Reimbursed') => {
+    await updateExpenseStatusAction(id, status);
     setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, status } : e)));
   };
 
-  const deleteExpenseClaim = (id: string) => {
+  const deleteExpenseClaim = async (id: string) => {
+    await deleteExpenseClaimAction(id);
     setExpenses((prev) => prev.filter((e) => e.id !== id));
   };
 
-  const updateExpenseClaim = (id: string, input: { category: string; amount: number; date: string; description: string; receipt?: string }) => {
+  const updateExpenseClaim = async (id: string, input: { category: string; amount: number; date: string; description: string; receipt?: string }) => {
+    await updateExpenseClaimAction(id, input);
     setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, ...input } : e)));
   };
 
   return (
-    <ExpenseContext.Provider value={{ expenses, addExpenseClaim, updateExpenseStatus, deleteExpenseClaim, updateExpenseClaim }}>
+    <ExpenseContext.Provider value={{ expenses, isLoading, addExpenseClaim, updateExpenseStatus, deleteExpenseClaim, updateExpenseClaim }}>
       {children}
     </ExpenseContext.Provider>
   );

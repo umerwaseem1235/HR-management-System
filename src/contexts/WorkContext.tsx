@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { DailyWork, DailyWorkStatus } from '../lib/types';
+import { getDailyWork, createDailyWork, updateDailyWork as updateDailyWorkAction, deleteDailyWork as deleteDailyWorkAction, updateDailyWorkStatus as updateDailyWorkStatusAction } from '@/lib/actions/daily-work';
 
 export interface NewWorkInput {
   employeeId: string;
@@ -25,65 +26,64 @@ export interface UpdateWorkInput {
 
 interface WorkContextType {
   workItems: DailyWork[];
-  addWork: (input: NewWorkInput) => DailyWork;
-  updateWork: (id: string, input: UpdateWorkInput) => void;
-  deleteWork: (id: string) => void;
-  updateWorkStatus: (id: string, status: DailyWorkStatus) => void;
+  isLoading: boolean;
+  addWork: (input: NewWorkInput) => Promise<DailyWork>;
+  updateWork: (id: string, input: UpdateWorkInput) => Promise<void>;
+  deleteWork: (id: string) => Promise<void>;
+  updateWorkStatus: (id: string, status: DailyWorkStatus) => Promise<void>;
 }
 
 const WorkContext = createContext<WorkContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'hrms_daily_work';
-
 export function WorkProvider({ children }: { children: ReactNode }) {
   const [workItems, setWorkItems] = useState<DailyWork[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load persisted work after mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setWorkItems(JSON.parse(stored));
+    async function load() {
+      try {
+        const data = await getDailyWork();
+        setWorkItems(data);
+      } catch (error) {
+        console.error('Failed to load daily work:', error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch {
-      // Corrupt storage — start empty
     }
+    load();
   }, []);
 
-  // Persist so submitted work survives reloads
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(workItems));
-    } catch {
-      // Storage unavailable — ignore
-    }
-  }, [workItems]);
-
-  const addWork = (input: NewWorkInput): DailyWork => {
-    const item: DailyWork = {
-      id: `work-${Date.now()}`,
-      ...input,
-      status: 'Submitted',
-      submittedOn: new Date().toISOString().slice(0, 10),
-    };
+  const addWork = async (input: NewWorkInput): Promise<DailyWork> => {
+    const item = await createDailyWork({
+      employeeId: input.employeeId,
+      title: input.title,
+      description: input.description,
+      date: input.date,
+      fileData: input.fileData,
+      fileName: input.fileName,
+      link: input.link
+    });
     setWorkItems((prev) => [item, ...prev]);
     return item;
   };
 
-  const updateWork = (id: string, input: UpdateWorkInput) => {
+  const updateWork = async (id: string, input: UpdateWorkInput) => {
+    await updateDailyWorkAction(id, input);
     setWorkItems((prev) => prev.map((w) => (w.id === id ? { ...w, ...input } : w)));
   };
 
-  const deleteWork = (id: string) => {
+  const deleteWork = async (id: string) => {
+    await deleteDailyWorkAction(id);
     setWorkItems((prev) => prev.filter((w) => w.id !== id));
   };
 
-  const updateWorkStatus = (id: string, status: DailyWorkStatus) => {
+  const updateWorkStatus = async (id: string, status: DailyWorkStatus) => {
+    await updateDailyWorkStatusAction(id, status);
     setWorkItems((prev) => prev.map((w) => (w.id === id ? { ...w, status } : w)));
   };
 
   return (
-    <WorkContext.Provider value={{ workItems, addWork, updateWork, deleteWork, updateWorkStatus }}>
+    <WorkContext.Provider value={{ workItems, isLoading, addWork, updateWork, deleteWork, updateWorkStatus }}>
       {children}
     </WorkContext.Provider>
   );

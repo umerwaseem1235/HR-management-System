@@ -5,7 +5,8 @@ export const PAYROLL_MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-export const PAYROLL_YEARS = [2023, 2024, 2025, 2026];
+/** Years offered in the "Start a New Payroll Run" year dropdown — current year only. */
+export const PAYROLL_YEARS: number[] = [new Date().getFullYear()];
 
 /** Daily rate divisor (30-day month convention, shown in the UI). */
 export const DAILY_RATE_DIVISOR = 30;

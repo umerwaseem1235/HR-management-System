@@ -1,0 +1,16 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Models are introspected from the live Supabase database after the
+// migrations in supabase/migrations/ have been applied:
+//   1. Set the real password in DATABASE_URL / DIRECT_URL (.env.local)
+//   2. npx prisma db pull
+// The app's primary data layer is the Supabase JS client
+// (src/lib/actions/* + src/lib/supabase/database.types.ts).

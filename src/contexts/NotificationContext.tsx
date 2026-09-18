@@ -2,71 +2,81 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Notification } from '../lib/types';
-import { mockNotifications } from '../lib/mock-data';
+import { getNotifications, markAsRead as markAsReadAction, markAllAsRead as markAllAsReadAction, createNotification as createNotificationAction } from '@/lib/actions/notifications';
+import { useAuth } from './AuthContext';
 
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
-  markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
-  addNotification: (input: { title: string; message: string; type?: Notification['type']; link?: string }) => void;
+  isLoading: boolean;
+  markAsRead: (id: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  addNotification: (input: { title: string; message: string; type?: Notification['type']; link?: string; userId?: string }) => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'hrms_notifications';
-
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load persisted read states after mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const readById: Record<string, boolean> = JSON.parse(stored);
-        setNotifications((prev) => prev.map((n) => ({ ...n, read: readById[n.id] ?? n.read })));
+    async function load() {
+      if (!user?.id) {
+        setNotifications([]);
+        setIsLoading(false);
+        return;
       }
-    } catch {
-      // Corrupt storage — keep mock defaults
+      try {
+        setIsLoading(true);
+        const data = await getNotifications(user.id);
+        setNotifications(data);
+      } catch (error) {
+        console.error('Failed to load notifications:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
-  }, []);
+    load();
+  }, [user?.id]);
 
-  // Persist read states so they survive reloads
-  useEffect(() => {
-    try {
-      const readById: Record<string, boolean> = {};
-      notifications.forEach((n) => { readById[n.id] = n.read; });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(readById));
-    } catch {
-      // Storage unavailable — ignore
-    }
-  }, [notifications]);
-
-  const markAsRead = (id: string) => {
+  const markAsRead = async (id: string) => {
+    await markAsReadAction(id);
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    if (!user?.id) return;
+    await markAllAsReadAction(user.id);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
-  const addNotification = (input: { title: string; message: string; type?: Notification['type']; link?: string }) => {
-    const n: Notification = {
-      id: `n-${Date.now()}`,
+  const addNotification = async (input: { title: string; message: string; type?: Notification['type']; link?: string; userId?: string }) => {
+    const targetUserId = input.userId || user?.id;
+    const n = await createNotificationAction({
+      userId: targetUserId,
       title: input.title,
       message: input.message,
-      type: input.type || 'info',
-      read: false,
-      createdAt: new Date().toISOString(),
-      link: input.link,
-    };
-    setNotifications((prev) => [n, ...prev]);
+      type: input.type,
+      link: input.link
+    });
+    // Only update local state if it's meant for the current user
+    if (targetUserId === user?.id) {
+      setNotifications((prev) => [n, ...prev]);
+    }
   };
 
   return (
     <NotificationContext.Provider
-      value={{ notifications, unreadCount: notifications.filter((n) => !n.read).length, markAsRead, markAllAsRead, addNotification }}
+      value={{ 
+        notifications, 
+        unreadCount: notifications.filter((n) => !n.read).length, 
+        isLoading, 
+        markAsRead, 
+        markAllAsRead, 
+        addNotification 
+      }}
     >
       {children}
     </NotificationContext.Provider>
