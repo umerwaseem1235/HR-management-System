@@ -3,7 +3,7 @@ import { Lock } from 'lucide-react';
 import Badge from '../ui/Badge';
 import type { PayrollRun } from '../../lib/payroll';
 
-export const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
+export const money = (n: number) => `PKR ${Math.round(n).toLocaleString()}`;
 
 export function RunStatusBadge({ status }: { status: PayrollRun['status'] }) {
   if (status === 'Finalized')

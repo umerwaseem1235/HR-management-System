@@ -205,13 +205,16 @@ export default function ProgressModal(props: ProgressModalProps) {
         size="lg"
       >
         <form onSubmit={onSubmit} className="space-y-5">
+          {formErrors.submit && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">{formErrors.submit}</p>
+          )}
           <div>
             <label className="block text-sm font-medium text-[#263238] mb-1.5">Project</label>
             <input
               list="progress-projects"
               value={projectName}
               onChange={(e) => onProjectNameChange(e.target.value)}
-              placeholder="e.g. CodeQor HRMS Portal"
+              placeholder="e.g. CodQor HRMS Portal"
               className={`w-full rounded-lg border border-[#D6E4E8] bg-white px-4 py-2.5 text-sm text-[#263238] placeholder-gray-400 focus:border-[#024fa7] focus:ring-2 focus:ring-[#024fa7]/20 focus:outline-none transition-colors ${formErrors.projectName ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
             />
             <datalist id="progress-projects">

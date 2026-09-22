@@ -125,7 +125,7 @@ export default function ExpensesView() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-xl bg-[#EAF2F4]/60 border border-[#D6E4E8] p-4">
               <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Category</p><p className="text-sm font-semibold text-[#17324D]">{e.viewingExp.category}</p></div>
-              <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Amount</p><p className="text-sm font-semibold text-[#17324D]">${e.viewingExp.amount.toLocaleString()}</p></div>
+              <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Amount</p><p className="text-sm font-semibold text-[#17324D]">PKR {e.viewingExp.amount.toLocaleString()}</p></div>
               <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Date</p><p className="text-sm font-semibold text-[#17324D]">{e.viewingExp.date}</p></div>
               <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Submitted</p><p className="text-sm font-semibold text-[#17324D]">{e.viewingExp.submittedOn}</p></div>
             </div>
@@ -184,7 +184,7 @@ export default function ExpensesView() {
         variant="approve"
         headline={
           <>
-            Approve <span className="font-semibold text-[#17324D]">${e.confirmApproveExp?.amount.toLocaleString()}</span> for{' '}
+            Approve <span className="font-semibold text-[#17324D]">PKR {e.confirmApproveExp?.amount.toLocaleString()}</span> for{' '}
             <span className="font-semibold text-[#17324D]">{e.confirmApproveExp?.employeeName}</span>?
           </>
         }
@@ -206,7 +206,7 @@ export default function ExpensesView() {
         variant="reject"
         headline={
           <>
-            Reject <span className="font-semibold text-[#17324D]">${e.confirmRejectExp?.amount.toLocaleString()}</span> for{' '}
+            Reject <span className="font-semibold text-[#17324D]">PKR {e.confirmRejectExp?.amount.toLocaleString()}</span> for{' '}
             <span className="font-semibold text-[#17324D]">{e.confirmRejectExp?.employeeName}</span>?
           </>
         }
@@ -228,7 +228,7 @@ export default function ExpensesView() {
         variant="delete"
         headline={
           <>
-            Delete <span className="font-semibold text-[#17324D]">${e.confirmDeleteExp?.amount.toLocaleString()}</span> — {e.confirmDeleteExp?.category}?
+            Delete <span className="font-semibold text-[#17324D]">PKR {e.confirmDeleteExp?.amount.toLocaleString()}</span> — {e.confirmDeleteExp?.category}?
           </>
         }
         subline={e.confirmDeleteExp ? `${e.confirmDeleteExp.employeeName} · ${e.confirmDeleteExp.date} · ${e.confirmDeleteExp.description}` : undefined}

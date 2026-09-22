@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 interface LoginFormProps {
   email: string;
@@ -31,7 +30,6 @@ export default function LoginForm({
   onRememberMeChange,
   onSubmit,
 }: LoginFormProps) {
-  const router = useRouter();
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
@@ -117,8 +115,8 @@ export default function LoginForm({
           </div>
         </div>
 
-        {/* Remember me + Forgot password row */}
-        <div className="flex items-center justify-between">
+        {/* Remember me */}
+        <div className="flex items-center justify-start">
           <label className="group flex cursor-pointer items-center gap-2.5">
             <div className="relative">
               <input
@@ -151,12 +149,6 @@ export default function LoginForm({
               Remember me
             </span>
           </label>
-          <button
-            type="button"
-            className="cursor-pointer text-[13px] font-semibold text-[#1565D8] transition-colors hover:text-[#0D47A1]"
-          >
-            Forgot Password?
-          </button>
         </div>
 
         {/* Sign In button */}
@@ -178,22 +170,6 @@ export default function LoginForm({
                 'Sign In'
               )}
             </span>
-          </button>
-        </div>
-
-        {/* Sign up link */}
-        <div className="pt-1 text-center text-[13.5px] leading-relaxed">
-          <span className="text-[#6B7280]">New to CodQor HRMS? </span>
-          <button
-            type="button"
-            onClick={() => router.push('/signup')}
-            className="group relative inline-flex cursor-pointer items-center gap-1 font-semibold text-[#1565D8] transition-colors duration-200 after:absolute after:-bottom-0.5 after:left-0 after:h-[1.5px] after:w-0 after:rounded-full after:bg-current after:transition-all after:duration-300 hover:text-[#0D47A1] hover:after:w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1565D8]/40 focus-visible:ring-offset-2"
-          >
-            Create an account
-            <ArrowRight
-              size={15}
-              className="transition-transform duration-300 group-hover:translate-x-0.5"
-            />
           </button>
         </div>
       </form>

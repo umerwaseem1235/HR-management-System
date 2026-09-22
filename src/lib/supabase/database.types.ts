@@ -257,6 +257,11 @@ export interface Database {
           work_hours: number | null;
           overtime: number | null;
           notes: string | null;
+          check_in_lat: number | null;
+          check_in_lng: number | null;
+          check_out_lat: number | null;
+          check_out_lng: number | null;
+          distance_from_office: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -270,6 +275,11 @@ export interface Database {
           work_hours?: number | null;
           overtime?: number | null;
           notes?: string | null;
+          check_in_lat?: number | null;
+          check_in_lng?: number | null;
+          check_out_lat?: number | null;
+          check_out_lng?: number | null;
+          distance_from_office?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -283,6 +293,11 @@ export interface Database {
           work_hours?: number | null;
           overtime?: number | null;
           notes?: string | null;
+          check_in_lat?: number | null;
+          check_in_lng?: number | null;
+          check_out_lat?: number | null;
+          check_out_lng?: number | null;
+          distance_from_office?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -729,6 +744,7 @@ export interface Database {
           resume: string | null;
           notes: string | null;
           rating: number | null;
+          source: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -743,6 +759,7 @@ export interface Database {
           resume?: string | null;
           notes?: string | null;
           rating?: number | null;
+          source?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -757,6 +774,82 @@ export interface Database {
           resume?: string | null;
           notes?: string | null;
           rating?: number | null;
+          source?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      interviews: {
+        Row: {
+          id: string;
+          candidate_id: string;
+          date: string;
+          time: string | null;
+          mode: string | null;
+          interviewer: string | null;
+          interviewer_id: string | null;
+          round: string | null;
+          status: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          candidate_id: string;
+          date: string;
+          time?: string | null;
+          mode?: string | null;
+          interviewer?: string | null;
+          interviewer_id?: string | null;
+          round?: string | null;
+          status?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          candidate_id?: string;
+          date?: string;
+          time?: string | null;
+          mode?: string | null;
+          interviewer?: string | null;
+          interviewer_id?: string | null;
+          round?: string | null;
+          status?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      offers: {
+        Row: {
+          id: string;
+          candidate_id: string;
+          salary: number | null;
+          joining_date: string | null;
+          status: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          candidate_id: string;
+          salary?: number | null;
+          joining_date?: string | null;
+          status?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          candidate_id?: string;
+          salary?: number | null;
+          joining_date?: string | null;
+          status?: string | null;
+          notes?: string | null;
           created_at?: string;
           updated_at?: string;
         };

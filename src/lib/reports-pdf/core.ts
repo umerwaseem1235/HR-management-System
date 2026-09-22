@@ -82,11 +82,22 @@ export function addReportContent(doc: jsPDF, id: ReportId, firstPage: boolean): 
     }
   }
 
-  y = ensureSpace(doc, y, 12);
+  y += 6;
+  y = ensureSpace(doc, y, 16);
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7.5);
   doc.setTextColor(...GRAY);
-  doc.text('This is a system-generated report from CodQor HRMS and does not require a signature.', MARGIN, y);
+  const disclaimer = 'This is a system-generated report from CodQor HRMS and does not require a signature.';
+  let discLines: string[] = [disclaimer];
+  try {
+    discLines = doc.splitTextToSize(disclaimer, 182) as string[];
+  } catch {
+    // single-line fallback
+  }
+  discLines.forEach((ln, i) => {
+    doc.text(ln, MARGIN, y + i * 4);
+  });
+  y += discLines.length * 4;
 }
 
 /* ================= Public API ================= */

@@ -6,7 +6,7 @@ import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import SearchBar from '@/components/ui/SearchBar';
 import Select from '@/components/ui/Select';
-import { mockEmployees } from '@/lib/mock-data';
+import type { ReportEmployeeOption } from '@/lib/actions/reports';
 import type { TabId } from '../types';
 
 interface ReportFiltersProps {
@@ -18,6 +18,8 @@ interface ReportFiltersProps {
   onDraftToChange: (v: string) => void;
   isEmployee: boolean;
   empId: string;
+  employees: ReportEmployeeOption[];
+  employeesLoading: boolean;
   onEmpIdChange: (v: string) => void;
   query: string;
   onQueryChange: (v: string) => void;
@@ -28,7 +30,7 @@ interface ReportFiltersProps {
 
 export default function ReportFilters({
   tab, fetchLabel, draftFrom, onDraftFromChange, draftTo, onDraftToChange,
-  isEmployee, empId, onEmpIdChange, query, onQueryChange, queryPlaceholder,
+  isEmployee, empId, employees, employeesLoading, onEmpIdChange, query, onQueryChange, queryPlaceholder,
   onFetch, onPrint,
 }: ReportFiltersProps) {
   return (
@@ -45,7 +47,9 @@ export default function ReportFilters({
                 label="Employee"
                 value={empId}
                 onChange={(e) => { onEmpIdChange(e.target.value); }}
-                options={mockEmployees.map((e) => ({ value: e.id, label: `${e.firstName} ${e.lastName}` }))}
+                options={employeesLoading
+                  ? [{ value: empId, label: 'Loading…' }]
+                  : employees.map((e) => ({ value: e.id, label: `${e.firstName} ${e.lastName}`.trim() || e.email }))}
               />
             </div>
           )}

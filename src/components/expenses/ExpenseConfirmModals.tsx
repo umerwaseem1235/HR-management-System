@@ -37,7 +37,7 @@ export default function ExpenseConfirmModals({
               </div>
               <div className="flex-1">
                 <p className="text-sm text-gray-600">
-                  Approve <span className="font-semibold text-[#17324D]">${confirmApproveExp.amount.toLocaleString()}</span> for{' '}
+                  Approve <span className="font-semibold text-[#17324D]">PKR {confirmApproveExp.amount.toLocaleString()}</span> for{' '}
                   <span className="font-semibold text-[#17324D]">{confirmApproveExp.employeeName}</span>?
                 </p>
                 <p className="text-xs text-gray-500 mt-1">{confirmApproveExp.category} · {confirmApproveExp.date} · {confirmApproveExp.description}</p>
@@ -66,7 +66,7 @@ export default function ExpenseConfirmModals({
               </div>
               <div className="flex-1">
                 <p className="text-sm text-gray-600">
-                  Reject <span className="font-semibold text-[#17324D]">${confirmRejectExp.amount.toLocaleString()}</span> for{' '}
+                  Reject <span className="font-semibold text-[#17324D]">PKR {confirmRejectExp.amount.toLocaleString()}</span> for{' '}
                   <span className="font-semibold text-[#17324D]">{confirmRejectExp.employeeName}</span>?
                 </p>
                 <p className="text-xs text-gray-500 mt-1">{confirmRejectExp.category} · {confirmRejectExp.date} · {confirmRejectExp.description}</p>
@@ -95,7 +95,7 @@ export default function ExpenseConfirmModals({
               </div>
               <div className="flex-1">
                 <p className="text-sm text-gray-600">
-                  Delete <span className="font-semibold text-[#17324D]">${confirmDeleteExp.amount.toLocaleString()}</span> — {confirmDeleteExp.category}?
+                  Delete <span className="font-semibold text-[#17324D]">PKR {confirmDeleteExp.amount.toLocaleString()}</span> — {confirmDeleteExp.category}?
                 </p>
                 <p className="text-xs text-gray-500 mt-1">{confirmDeleteExp.employeeName} · {confirmDeleteExp.date} · {confirmDeleteExp.description}</p>
               </div>

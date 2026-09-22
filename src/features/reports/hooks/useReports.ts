@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { mockEmployees } from '@/lib/mock-data';
+import { useEffect, useMemo, useState } from 'react';
 import { downloadTabReport } from '@/lib/reports-pdf';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProgress } from '@/contexts/ProgressContext';
 import { useWork } from '@/contexts/WorkContext';
+import { getAttendanceReport, getReportEmployees, type ReportEmployeeOption } from '@/lib/actions/reports';
+import type { AttendanceRecord } from '@/lib/types';
 import type { DailyWork } from '@/types';
 import type { AttendanceDayRow, TabId } from '../types';
 
@@ -47,57 +48,48 @@ export function stripHtml(html: string): string {
     .trim();
 }
 
-function hashStr(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
+function toMinutes(t: string | null | undefined): number | null {
+  if (!t) return null;
+  const m = t.match(/(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  return Number(m[1]) * 60 + Number(m[2]);
+}
+
+function formatHours(checkIn: string | null | undefined, checkOut: string | null | undefined, workHours: number | null | undefined): string {
+  const inM = toMinutes(checkIn);
+  const outM = toMinutes(checkOut);
+  if (inM !== null && outM !== null && outM > inM) {
+    const diff = outM - inM;
+    return `${Math.floor(diff / 60)}h ${diff % 60}m`;
   }
-  return h >>> 0;
-}
-
-function fmtTime(mins: number): string {
-  return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
-}
-
-function fmtDur(mins: number): string {
-  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
-}
-
-/** Deterministic per-employee daily attendance for any date range. */
-export function buildAttendanceDays(empId: string, from: string, to: string): AttendanceDayRow[] {
-  const rows: AttendanceDayRow[] = [];
-  if (!from || !to || from > to) return rows;
-  const end = new Date(`${to}T00:00:00`);
-  for (let d = new Date(`${from}T00:00:00`); d <= end; d.setDate(d.getDate() + 1)) {
-    const iso = toISO(d);
-    const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
-    if (d.getDay() === 0) {
-      rows.push({ date: iso, weekday, clockIn: '—', clockOut: '—', hours: '—', status: 'Holiday' });
-      continue;
-    }
-    const h = hashStr(`${empId}|${iso}`);
-    const r = h % 100;
-    let status: AttendanceDayRow['status'] = 'Present';
-    if (r >= 94) status = 'Absent';
-    else if (r >= 89) status = 'Leave';
-    else if (r >= 84) status = 'Half Day';
-    else if (r >= 73) status = 'Late';
-    if (status === 'Absent' || status === 'Leave') {
-      rows.push({ date: iso, weekday, clockIn: '—', clockOut: '—', hours: '—', status });
-      continue;
-    }
-    if (status === 'Half Day') {
-      const inM = 8 * 60 + 40 + ((h >> 3) % 20);
-      const outM = 13 * 60 + 30 + ((h >> 5) % 80);
-      rows.push({ date: iso, weekday, clockIn: fmtTime(inM), clockOut: fmtTime(outM), hours: fmtDur(outM - inM), status });
-      continue;
-    }
-    const inM = 8 * 60 + 35 + ((h >> 2) % 55);
-    const outM = 17 * 60 + 55 + ((h >> 4) % 55);
-    rows.push({ date: iso, weekday, clockIn: fmtTime(inM), clockOut: fmtTime(outM), hours: fmtDur(outM - inM), status });
+  if (workHours && workHours > 0) {
+    const h = Math.floor(workHours);
+    const mins = Math.round((workHours - h) * 60);
+    return mins > 0 ? `${h}h ${mins}m` : `${h}h`;
   }
-  return rows;
+  return '—';
+}
+
+/** Map a real DB attendance record to a report table row. */
+function toDayRow(r: AttendanceRecord): AttendanceDayRow {
+  const d = new Date(`${r.date}T00:00:00`);
+  const weekday = isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' });
+  return {
+    date: r.date,
+    weekday,
+    clockIn: r.checkIn || '—',
+    clockOut: r.checkOut || '—',
+    hours: formatHours(r.checkIn, r.checkOut, r.workHours),
+    status: (r.status as AttendanceDayRow['status']) ?? 'Present',
+  };
+}
+
+/**
+ * @deprecated Reports now load real attendance from the database
+ * (`getAttendanceReport`). Kept only so old imports don't break.
+ */
+export function buildAttendanceDays(_empId: string, _from: string, _to: string): AttendanceDayRow[] {
+  return [];
 }
 
 export const PRINT_STATUS_COLOR: Record<string, string> = {
@@ -128,25 +120,50 @@ export function useReports() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const [empId, setEmpId] = useState(mockEmployees[0]?.id ?? '');
+  // Real employees from the database (no dummy data).
+  const [employees, setEmployees] = useState<ReportEmployeeOption[]>([]);
+  const [employeesLoading, setEmployeesLoading] = useState(true);
+  const [empId, setEmpId] = useState('');
   const [viewDay, setViewDay] = useState<AttendanceDayRow | null>(null);
   const [viewNote, setViewNote] = useState<{ project: string; date: string; html: string } | null>(null);
   const [viewTask, setViewTask] = useState<DailyWork | null>(null);
 
+  // Real attendance rows from the database for the selected range.
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+
   const [downloading, setDownloading] = useState(false);
 
-  const employee = useMemo(() => {
-    if (!user) return undefined;
-    return (
-      mockEmployees.find((e) => e.email.toLowerCase() === user.email.toLowerCase()) ||
-      mockEmployees.find((e) => `${e.firstName} ${e.lastName}`.toLowerCase() === user.name.toLowerCase())
-    );
-  }, [user]);
+  useEffect(() => {
+    let cancelled = false;
+    async function loadEmployees() {
+      try {
+        const list = await getReportEmployees();
+        if (cancelled) return;
+        setEmployees(list);
+        // Default the dropdown to the first real employee.
+        setEmpId((prev) => prev || list[0]?.id || '');
+      } catch (err) {
+        console.error('Failed to load report employees:', err);
+      } finally {
+        if (!cancelled) setEmployeesLoading(false);
+      }
+    }
+    loadEmployees();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const isEmployee = user?.role === 'employee';
-  const scopeId = isEmployee ? (employee?.id ?? user?.id ?? '') : empId;
-  const scopeEmployee = mockEmployees.find((e) => e.id === scopeId);
-  const scopeName = scopeEmployee ? `${scopeEmployee.firstName} ${scopeEmployee.lastName}` : (isEmployee ? (user?.name ?? '') : '');
+  // Employees always see their own real record; admins/HR see the selected real employee.
+  const scopeId = isEmployee ? (user?.employeeId ?? '') : empId;
+  const scopeEmployee = employees.find((e) => e.id === scopeId);
+  const scopeName = isEmployee
+    ? (user?.name ?? '')
+    : scopeEmployee
+      ? `${scopeEmployee.firstName} ${scopeEmployee.lastName}`.trim()
+      : '';
 
   const switchTab = (t: TabId) => {
     setTab(t);
@@ -159,35 +176,72 @@ export function useReports() {
     setPage(1);
   };
 
-  /* ---- Attendance rows ---- */
+  /* ---- Attendance rows (REAL database records) ---- */
+  useEffect(() => {
+    let cancelled = false;
+    async function loadAttendance() {
+      if (!scopeId || !from || !to || from > to) {
+        setAttendanceRecords([]);
+        return;
+      }
+      setAttendanceLoading(true);
+      try {
+        const rows = await getAttendanceReport(scopeId, from, to);
+        if (!cancelled) setAttendanceRecords(rows);
+      } catch (err) {
+        console.error('Failed to load attendance report:', err);
+        if (!cancelled) setAttendanceRecords([]);
+      } finally {
+        if (!cancelled) setAttendanceLoading(false);
+      }
+    }
+    loadAttendance();
+    return () => {
+      cancelled = true;
+    };
+  }, [scopeId, from, to]);
+
   const attendanceRows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return buildAttendanceDays(scopeId, from, to).filter((r) => {
-      if (q && !`${r.date} ${r.weekday} ${r.status} ${r.clockIn} ${r.clockOut}`.toLowerCase().includes(q)) return false;
-      return true;
-    });
-  }, [scopeId, from, to, query]);
+    return attendanceRecords
+      .map(toDayRow)
+      .filter((r) => {
+        if (q && !`${r.date} ${r.weekday} ${r.status} ${r.clockIn} ${r.clockOut}`.toLowerCase().includes(q)) return false;
+        return true;
+      })
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  }, [attendanceRecords, query]);
 
-  /* ---- Progress rows (real entries) ---- */
+  /* ---- Progress rows (real entries from ProgressContext / DB) ---- */
   const progressRows = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const scope = scopeName.trim().toLowerCase();
     return progressEntries
       .filter((e) => {
-        if (e.employeeId !== scopeId && e.employeeName.toLowerCase() !== scopeName.toLowerCase()) return false;
+        if (scopeId || scope) {
+          const idMatch = scopeId ? e.employeeId === scopeId : false;
+          const nameMatch = scope ? e.employeeName.toLowerCase() === scope : false;
+          if (!idMatch && !nameMatch) return false;
+        }
         if (from && e.submissionDate < from) return false;
         if (to && e.submissionDate > to) return false;
-        if (q && !`${e.projectName} ${stripHtml(e.description)} ${e.submissionDate}`.toLowerCase().includes(q)) return false;
+        if (q && !`${e.employeeName} ${e.projectName} ${stripHtml(e.description)} ${e.submissionDate}`.toLowerCase().includes(q)) return false;
         return true;
       })
       .sort((a, b) => (a.submissionDate < b.submissionDate ? -1 : a.submissionDate > b.submissionDate ? 1 : 0));
   }, [progressEntries, scopeId, scopeName, from, to, query]);
 
-  /* ---- Task rows (daily work) ---- */
+  /* ---- Task rows (daily work, real DB) ---- */
   const taskRows = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const scope = scopeName.trim().toLowerCase();
     return workItems
       .filter((w) => {
-        if (w.employeeId !== scopeId && w.employeeName.toLowerCase() !== scopeName.toLowerCase()) return false;
+        if (scopeId || scope) {
+          const idMatch = scopeId ? w.employeeId === scopeId : false;
+          const nameMatch = scope ? w.employeeName.toLowerCase() === scope : false;
+          if (!idMatch && !nameMatch) return false;
+        }
         if (from && w.date < from) return false;
         if (to && w.date > to) return false;
         if (q && !`${w.title} ${w.description} ${w.date} ${w.status}`.toLowerCase().includes(q)) return false;
@@ -320,7 +374,8 @@ export function useReports() {
   };
 
   return {
-    user, isEmployee, employee, scopeId, scopeName,
+    user, isEmployee, employee: scopeEmployee, scopeId, scopeName,
+    employees, employeesLoading, attendanceLoading,
     tab, switchTab, tabMeta,
     draftFrom, setDraftFrom, draftTo, setDraftTo,
     from, to, query, setQuery, page, setPage, pageSize, setPageSize,

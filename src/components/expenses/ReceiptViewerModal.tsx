@@ -38,7 +38,7 @@ export default function ReceiptViewerModal({
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-xl bg-[#EAF2F4]/60 border border-[#D6E4E8] px-4 py-3">
             <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Category</p><p className="text-sm font-semibold text-[#17324D]">{viewingExp.category}</p></div>
-            <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Amount</p><p className="text-sm font-semibold text-[#17324D]">${viewingExp.amount.toLocaleString()}</p></div>
+            <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Amount</p><p className="text-sm font-semibold text-[#17324D]">PKR {viewingExp.amount.toLocaleString()}</p></div>
             <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Date</p><p className="text-sm font-semibold text-[#17324D]">{viewingExp.date}</p></div>
             <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Submitted</p><p className="text-sm font-semibold text-[#17324D]">{viewingExp.submittedOn}</p></div>
           </div>

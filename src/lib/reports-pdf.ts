@@ -67,7 +67,7 @@ function header(doc: any, eyebrow: string, title: string): void {
   doc.setTextColor(...WHITE);
   doc.setFontSize(6.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('CodeQor HRMS', MARGIN, 12);
+  doc.text('CodQor HRMS', MARGIN, 12);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.text(title, MARGIN, 18);
@@ -89,7 +89,7 @@ function footer(doc: any): void {
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     const today = new Date().toLocaleDateString('en-GB');
-    doc.text(`CodeQor HRMS — ${today} — Page ${i} of ${pageCount}`, MARGIN, 285);
+    doc.text(`CodQor HRMS — ${today} — Page ${i} of ${pageCount}`, MARGIN, 285);
   }
 }
 
@@ -153,6 +153,16 @@ function sectionBar(doc: any, y: number, title: string): number {
   return y + 12;
 }
 
+function cleanCell(val: unknown): string {
+  return String(val ?? '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    // jsPDF standard fonts (helvetica) cannot render emoji — they print
+    // as mojibake like "Ø=Þ€". Strip them so notes stay readable.
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}\u{1F1E6}-\u{1F1FF}\u{2690}-\u{2695}\u{2640}-\u{2642}\u{25A0}-\u{25FF}]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function drawTable(
   doc: any,
   y: number,
@@ -160,39 +170,56 @@ function drawTable(
   rows: (string | number)[][],
 ): number {
   const xStart = MARGIN;
-  const rowH = 6.5;
   const fontSize = 6.5;
+  const lineH = 4;
+  const cellPadX = 2;
+  const rowPadTop = 2.5;
+  const rowPadBottom = 2;
 
-  // Header
-  doc.setFillColor(...NAVY);
-  doc.rect(xStart, y, INNER_W, HEADER_H, 'F');
-  doc.setFontSize(fontSize);
-  doc.setFont('helvetica', 'bold');
-  rgb(doc, WHITE);
-  let x = xStart;
-  cols.forEach((c) => {
-    const tx = c.align === 'center' ? x + c.width / 2 : c.align === 'right' ? x + c.width - 2 : x + 2;
-    doc.text(c.label, tx, y + 5, { align: c.align });
-    x += c.width;
-  });
-  y += HEADER_H;
+  const drawHead = (yy: number): number => {
+    doc.setFillColor(...NAVY);
+    doc.rect(xStart, yy, INNER_W, HEADER_H, 'F');
+    doc.setFontSize(fontSize);
+    doc.setFont('helvetica', 'bold');
+    rgb(doc, WHITE);
+    let x = xStart;
+    cols.forEach((c) => {
+      const tx = c.align === 'center' ? x + c.width / 2 : c.align === 'right' ? x + c.width - 2 : x + 2;
+      doc.text(c.label, tx, yy + 5, { align: c.align });
+      x += c.width;
+    });
+    return yy + HEADER_H;
+  };
+
+  y = ensureSpace(doc, y, HEADER_H + 10);
+  y = drawHead(y);
 
   doc.setFontSize(fontSize);
   doc.setFont('helvetica', 'normal');
+
   rows.forEach((row, ri) => {
+    // Wrap every cell inside its column width so long notes never
+    // overflow / get clipped — row grows to fit the tallest cell.
+    const wrapped: string[][] = row.map((cell, ci) => {
+      const c = cols[ci];
+      const maxW = Math.max(10, c.width - cellPadX * 2);
+      const clean = cleanCell(cell);
+      if (!clean) return [''];
+      try {
+        const lines = doc.splitTextToSize(clean, maxW) as string[];
+        return lines.length > 0 ? lines : [''];
+      } catch {
+        return [clean];
+      }
+    });
+    const lineCount = Math.max(1, ...wrapped.map((w) => w.length));
+    const rowH = rowPadTop + lineCount * lineH + rowPadBottom;
+
     if (y + rowH > 270) {
       doc.addPage();
       header(doc, '', '');
       y = 32;
-      doc.setFillColor(...NAVY);
-      doc.rect(xStart, y, INNER_W, HEADER_H, 'F');
-      x = xStart;
-      cols.forEach((c) => {
-        const tx = c.align === 'center' ? x + c.width / 2 : c.align === 'right' ? x + c.width - 2 : x + 2;
-        doc.text(c.label, tx, y + 5, { align: c.align });
-        x += c.width;
-      });
-      y += HEADER_H;
+      y = drawHead(y);
       doc.setFontSize(fontSize);
       doc.setFont('helvetica', 'normal');
     }
@@ -200,13 +227,16 @@ function drawTable(
       doc.setFillColor(245, 248, 250);
       doc.rect(xStart, y, INNER_W, rowH, 'F');
     }
-    x = xStart;
-    row.forEach((cell, ci) => {
+    let x = xStart;
+    row.forEach((_cell, ci) => {
       const c = cols[ci];
-      const val = cell === undefined || cell === null ? '' : String(cell);
-      const tx = c.align === 'center' ? x + c.width / 2 : c.align === 'right' ? x + c.width - 2 : x + 2;
+      const lines = wrapped[ci];
       rgb(doc, ri % 2 === 0 ? DARK : NAVY);
-      doc.text(val, tx, y + 4.5, { align: c.align });
+      lines.forEach((ln, li) => {
+        const ly = y + rowPadTop + li * lineH;
+        const tx = c.align === 'center' ? x + c.width / 2 : c.align === 'right' ? x + c.width - 2 : x + 2;
+        doc.text(ln, tx, ly, { align: c.align });
+      });
       x += c.width;
     });
     y += rowH;
@@ -251,11 +281,23 @@ export function downloadTabReport(spec: TabReportSpec): void {
   y = sectionBar(doc, y, spec.sectionTitle);
   y = drawTable(doc, y, spec.cols, spec.rows);
 
-  y = ensureSpace(doc, y, 12);
+  // Disclaimer sits safely below the table with a gap — never on top of a row.
+  y += 6;
+  y = ensureSpace(doc, y, 14);
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7.5);
   doc.setTextColor(...GRAY);
-  doc.text('This is a system-generated report from CodeQor HRMS and does not require a signature.', MARGIN, y);
+  const disclaimer = 'This is a system-generated report from CodQor HRMS and does not require a signature.';
+  let discLines: string[] = [disclaimer];
+  try {
+    discLines = doc.splitTextToSize(disclaimer, INNER_W) as string[];
+  } catch {
+    // keep single line fallback
+  }
+  discLines.forEach((ln: string, i: number) => {
+    doc.text(ln, MARGIN, y + i * 4);
+  });
+  y += discLines.length * 4;
 
   footer(doc);
   downloadBlob(`${spec.fileSlug}-${todayLabel()}.pdf`, doc.output('blob'));

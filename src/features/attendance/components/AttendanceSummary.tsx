@@ -112,6 +112,7 @@ export default function AttendanceSummary({
                 <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Present</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Absent</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Late</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Half Day</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Total Hours</th>
               </tr>
             </thead>
@@ -126,6 +127,7 @@ export default function AttendanceSummary({
                     <td className="px-6 py-3 text-sm text-green-600">{dAgg.present}</td>
                     <td className="px-6 py-3 text-sm text-red-600">{dAgg.absent}</td>
                     <td className="px-6 py-3 text-sm text-orange-600">{dAgg.late}</td>
+                    <td className="px-6 py-3 text-sm text-yellow-600">{dAgg.halfDay}</td>
                     <td className="px-6 py-3 text-sm text-[#263238]">{dAgg.totalHours.toFixed(1)}h</td>
                   </tr>
                 );

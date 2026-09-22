@@ -8,11 +8,12 @@ import Button from '@/components/ui/Button';
 import Avatar from '@/components/ui/Avatar';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { StatusBadge } from '@/components/shared';
-import { UserPlus, Upload, CalendarDays, FileText, ArrowRight, XCircle } from 'lucide-react';
+import { UserPlus, Pencil, Trash2, Download, Upload, CalendarDays, FileText, ArrowRight, XCircle } from 'lucide-react';
 import { mockEmployees } from '@/lib/mock-data';
 import { DEPARTMENTS, BRANCHES, DESIGNATIONS } from '@/lib/constants';
 import type { Job } from '@/types';
-import { CandidateExt, Interview, Offer, SOURCES, STAGES, INTERVIEW_MODES, today } from '../types';
+import { CandidateExt, Interview, Offer, SOURCES, STAGES, INTERVIEW_MODES, today, cvDisplayName } from '../types';
+import { EditCandState } from '../hooks/useRecruitment';
 
 interface CandidateModalProps {
   jobs: Job[];
@@ -21,8 +22,17 @@ interface CandidateModalProps {
   candModal: boolean;
   onCloseCandModal: () => void;
   onAddCandidate: (e: React.FormEvent<HTMLFormElement>) => void;
+  editCandModal: EditCandState | null;
+  onEditCandChange: (patch: Partial<EditCandState>) => void;
+  onCloseEditCand: () => void;
+  onSaveEditCand: (e: React.FormEvent) => void;
+  isSavingCand?: boolean;
+  confirmDeleteCand: CandidateExt | null;
+  onCloseDeleteCandConfirm: () => void;
+  onConfirmDeleteCand: (cand: CandidateExt) => void;
   detail: CandidateExt | null;
   onCloseDetail: () => void;
+  onDownloadResume: (path?: string | null) => void;
   noteText: string;
   onNoteTextChange: (value: string) => void;
   onAddNote: () => void;
@@ -30,10 +40,6 @@ interface CandidateModalProps {
   onIntModalChange: (patch: Partial<{ candidateId: string; date: string; time: string; mode: string; interviewer: string; round: string }>) => void;
   onCloseIntModal: () => void;
   onScheduleInterview: () => void;
-  fbModal: { id: string; feedback: string; rating: string } | null;
-  onFbModalChange: (patch: Partial<{ id: string; feedback: string; rating: string }>) => void;
-  onCloseFbModal: () => void;
-  onSaveFeedback: () => void;
   offerModal: { candidateId: string; salary: string; joiningDate: string; notes: string } | null;
   onOfferModalChange: (patch: Partial<{ candidateId: string; salary: string; joiningDate: string; notes: string }>) => void;
   onCloseOfferModal: () => void;
@@ -53,9 +59,10 @@ export default function CandidateModal(props: CandidateModalProps) {
   const {
     jobs, candidates, interviews,
     candModal, onCloseCandModal, onAddCandidate,
-    detail, onCloseDetail, noteText, onNoteTextChange, onAddNote,
+    editCandModal, onEditCandChange, onCloseEditCand, onSaveEditCand, isSavingCand,
+    confirmDeleteCand, onCloseDeleteCandConfirm, onConfirmDeleteCand,
+    detail, onCloseDetail, onDownloadResume, noteText, onNoteTextChange, onAddNote,
     intModal, onIntModalChange, onCloseIntModal, onScheduleInterview,
-    fbModal, onFbModalChange, onCloseFbModal, onSaveFeedback,
     offerModal, onOfferModalChange, onCloseOfferModal, onSaveOffer,
     offerView, onCloseOfferView,
     convertModal, onConvertModalChange, onCloseConvertModal, onConvertToEmployee,
@@ -74,7 +81,6 @@ export default function CandidateModal(props: CandidateModalProps) {
             <Select name="jobId" label="Applied For" options={[{ value: '', label: 'Select Job' }, ...jobs.filter(j => j.status === 'Open').map(j => ({ value: j.id, label: j.title }))]} required />
             <Select name="stage" label="Stage" options={STAGES.map(s => ({ value: s, label: s }))} required />
             <Select name="source" label="Source" options={SOURCES.map(s => ({ value: s, label: s }))} required />
-            <Input name="rating" label="Rating (1-5)" type="number" min={1} max={5} />
             <div className="sm:col-span-2"><label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-[#B9D0D6] bg-[#F8FBFC] px-4 py-3"><Upload size={17} /><span className="text-sm">Upload CV (PDF/DOC)</span><input name="cv" type="file" accept=".pdf,.doc,.docx" className="sr-only" /></label></div>
             <div className="sm:col-span-2"><label className="block text-sm font-medium mb-1.5">Notes</label><textarea name="notes" rows={3} className="w-full rounded-lg border border-[#D6E4E8] px-4 py-2.5 text-sm" /></div>
           </div>
@@ -82,19 +88,41 @@ export default function CandidateModal(props: CandidateModalProps) {
         </form>
       </Modal>
 
+      {/* edit candidate */}
+      <Modal isOpen={!!editCandModal} onClose={onCloseEditCand} title="Edit Candidate" size="lg">
+        {editCandModal && (
+          <form onSubmit={onSaveEditCand} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input label="Full Name" value={editCandModal.name} onChange={e => onEditCandChange({ name: e.target.value })} required />
+              <Input label="Email" type="email" value={editCandModal.email} onChange={e => onEditCandChange({ email: e.target.value })} required />
+              <Input label="Phone" value={editCandModal.phone} onChange={e => onEditCandChange({ phone: e.target.value })} required />
+              <Select label="Applied For" value={editCandModal.jobId} onChange={e => onEditCandChange({ jobId: e.target.value })} options={[{ value: '', label: 'Select Job' }, ...jobs.map(j => ({ value: j.id, label: `${j.title} (${j.status})` }))]} required />
+              <Select label="Stage" value={editCandModal.stage} onChange={e => onEditCandChange({ stage: e.target.value as CandidateExt['stage'] })} options={STAGES.map(s => ({ value: s, label: s }))} required />
+              <Select label="Source" value={editCandModal.source} onChange={e => onEditCandChange({ source: e.target.value })} options={SOURCES.map(s => ({ value: s, label: s }))} required />
+              {editCandModal.resume
+                ? <div className="sm:col-span-2 flex items-center gap-2 rounded-lg border border-[#D6E4E8] bg-[#F8FBFC] px-4 py-2.5 text-sm"><Download size={15} className="text-purple-600" /><span className="flex-1 truncate text-gray-600">{cvDisplayName(editCandModal.resume)}</span><button type="button" onClick={() => onDownloadResume(editCandModal.resume)} className="font-semibold text-purple-700 hover:underline cursor-pointer">Download</button></div>
+                : null}
+              <div className="sm:col-span-2"><label className="block text-sm font-medium mb-1.5">Notes</label><textarea rows={3} value={editCandModal.notes} onChange={e => onEditCandChange({ notes: e.target.value })} className="w-full rounded-lg border border-[#D6E4E8] px-4 py-2.5 text-sm" /></div>
+            </div>
+            <div className="flex justify-end gap-3 pt-2 border-t border-[#D6E4E8]"><Button variant="outline" type="button" onClick={onCloseEditCand} disabled={isSavingCand}>Cancel</Button><Button type="submit" loading={isSavingCand}><Pencil size={16} /> {isSavingCand ? 'Saving…' : 'Save Changes'}</Button></div>
+          </form>
+        )}
+      </Modal>
+
       {/* detail */}
       <Modal isOpen={!!detail} onClose={onCloseDetail} title="Candidate Profile & History" size="lg">
         {detail && (
           <div className="space-y-4">
             <div className="flex items-center gap-3"><Avatar name={detail.name} size="sm" /><div className="flex-1"><p className="font-semibold text-[#17324D]">{detail.name}</p><p className="text-xs text-gray-500">{detail.email} · {detail.phone} · {detail.source}</p></div><StatusBadge status={detail.stage} /></div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-xl bg-[#EAF2F4]/60 border p-4 text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 rounded-xl bg-[#EAF2F4]/60 border p-4 text-sm">
               <div><p className="text-[11px] text-gray-500 uppercase">Job</p><p className="font-semibold">{detail.jobTitle}</p></div>
-              <div><p className="text-[11px] text-gray-500 uppercase">CV</p><p className="font-semibold">{detail.resume || '—'}</p></div>
-              <div><p className="text-[11px] text-gray-500 uppercase">Rating</p><p className="font-semibold">{detail.rating ?? '—'}</p></div>
+              <div><p className="text-[11px] text-gray-500 uppercase">CV</p>{detail.resume
+                ? <button onClick={() => onDownloadResume(detail.resume)} title={`Download ${cvDisplayName(detail.resume)}`} className="inline-flex items-center gap-1.5 font-semibold text-purple-700 hover:underline cursor-pointer"><Download size={13} />{cvDisplayName(detail.resume)}</button>
+                : <p className="font-semibold">—</p>}</div>
               <div><p className="text-[11px] text-gray-500 uppercase">Applied</p><p className="font-semibold">{detail.appliedDate}</p></div>
             </div>
             {detail.notes && <p className="text-sm text-gray-600 rounded-lg border p-3">Notes: {detail.notes}</p>}
-            <div><p className="text-sm font-semibold mb-2">Interviews</p>{interviews.filter(i => i.candidateId === detail.id).map(i => <p key={i.id} className="text-xs text-gray-600">{i.date} {i.time} · {i.round} · {i.interviewer} · {i.status}{i.feedback ? ` — ${i.feedback}` : ''}</p>)}{interviews.filter(i => i.candidateId === detail.id).length === 0 && <p className="text-xs text-gray-400">No interviews.</p>}</div>
+            <div><p className="text-sm font-semibold mb-2">Interviews</p>{interviews.filter(i => i.candidateId === detail.id).map(i => <p key={i.id} className="text-xs text-gray-600">{i.date} {i.time} · {i.round} · {i.interviewer} · {i.status}</p>)}{interviews.filter(i => i.candidateId === detail.id).length === 0 && <p className="text-xs text-gray-400">No interviews.</p>}</div>
             <div><p className="text-sm font-semibold mb-2">History</p><div className="space-y-1.5 max-h-40 overflow-auto">{[...detail.history].reverse().map((h, i) => <div key={i} className="flex gap-2 text-xs"><span className="text-gray-400 whitespace-nowrap">{h.date}</span><span className="font-semibold">{h.action}</span><span className="text-gray-500">{h.note || ''}</span></div>)}</div></div>
             <div className="flex gap-2"><Input placeholder="Add a note…" value={noteText} onChange={e => onNoteTextChange(e.target.value)} /><Button variant="outline" size="sm" onClick={onAddNote}>Add</Button></div>
           </div>
@@ -113,18 +141,10 @@ export default function CandidateModal(props: CandidateModalProps) {
         </div>}
       </Modal>
 
-      <Modal isOpen={!!fbModal} onClose={onCloseFbModal} title="Interviewer Feedback" size="sm">
-        {fbModal && <div className="space-y-4">
-          <div><label className="block text-sm font-medium mb-1.5">Feedback</label><textarea rows={4} value={fbModal.feedback} onChange={e => onFbModalChange({ feedback: e.target.value })} className="w-full rounded-lg border border-[#D6E4E8] px-4 py-2.5 text-sm" placeholder="Strengths, gaps, decision…" /></div>
-          <Input label="Rating (1-5)" type="number" min={1} max={5} value={fbModal.rating} onChange={e => onFbModalChange({ rating: e.target.value })} />
-          <div className="flex justify-end gap-3"><Button variant="outline" onClick={onCloseFbModal}>Cancel</Button><Button variant="primary" onClick={onSaveFeedback}>Save</Button></div>
-        </div>}
-      </Modal>
-
       {/* offer */}
       <Modal isOpen={!!offerModal} onClose={onCloseOfferModal} title="Record Offer" size="sm">
         {offerModal && <div className="space-y-4">
-          <Input label="Salary ($/year)" type="number" value={offerModal.salary} onChange={e => onOfferModalChange({ salary: e.target.value })} />
+          <Input label="Salary (PKR/year)" type="number" value={offerModal.salary} onChange={e => onOfferModalChange({ salary: e.target.value })} />
           <Input label="Joining Date" type="date" value={offerModal.joiningDate} onChange={e => onOfferModalChange({ joiningDate: e.target.value })} />
           <Input label="Notes" value={offerModal.notes} onChange={e => onOfferModalChange({ notes: e.target.value })} />
           <div className="flex justify-end gap-3"><Button variant="outline" onClick={onCloseOfferModal}>Cancel</Button><Button variant="primary" onClick={onSaveOffer}><FileText size={16} /> Save Offer</Button></div>
@@ -134,14 +154,14 @@ export default function CandidateModal(props: CandidateModalProps) {
       <Modal isOpen={!!offerView} onClose={onCloseOfferView} title="Offer Letter" size="lg">
         {offerView && <div className="space-y-4">
           <div className="rounded-xl border p-6 text-sm leading-6">
-            <p className="font-bold text-lg">Offer Letter — CodeQor</p>
+            <p className="font-bold text-lg">Offer Letter — CodQor</p>
             <p className="mt-2">Date: {today()}</p>
             <p>Candidate: {offerView.cand.name} ({offerView.cand.email})</p>
             <p>Position: {offerView.cand.jobTitle}</p>
-            <p>Salary: ${offerView.offer.salary.toLocaleString()}/year</p>
+            <p>Salary: PKR {offerView.offer.salary.toLocaleString()}/year</p>
             <p>Joining: {offerView.offer.joiningDate}</p>
             <p className="mt-3">We are pleased to offer you the above position. Please confirm acceptance.</p>
-            <p className="mt-4">HR, CodeQor</p>
+            <p className="mt-4">HR, CodQor</p>
           </div>
           <div className="flex justify-end gap-3"><Button variant="outline" onClick={onCloseOfferView}>Close</Button></div>
         </div>}
@@ -160,6 +180,27 @@ export default function CandidateModal(props: CandidateModalProps) {
           <div className="flex justify-end gap-3"><Button variant="outline" onClick={onCloseConvertModal}>Cancel</Button><Button variant="primary" onClick={onConvertToEmployee}><ArrowRight size={16} /> Convert</Button></div>
         </div>}
       </Modal>
+
+      <ConfirmDialog
+        isOpen={!!confirmDeleteCand}
+        onClose={onCloseDeleteCandConfirm}
+        title="Delete Candidate?"
+        variant="delete"
+        headline={
+          <>
+            Delete <span className="font-semibold text-[#17324D]">{confirmDeleteCand?.name}</span>?
+          </>
+        }
+        subline={confirmDeleteCand ? `${confirmDeleteCand.jobTitle} · ${confirmDeleteCand.stage} · Applied ${confirmDeleteCand.appliedDate}` : undefined}
+        note={
+          <>
+            This action <span className="font-semibold">cannot be undone</span>. The candidate and their interviews & offers will be permanently removed.
+          </>
+        }
+        confirmLabel="Delete"
+        confirmIcon={<Trash2 size={16} />}
+        onConfirm={() => { if (confirmDeleteCand) onConfirmDeleteCand(confirmDeleteCand); }}
+      />
 
       <ConfirmDialog
         isOpen={!!confirmCancelInterview}

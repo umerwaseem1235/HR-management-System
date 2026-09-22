@@ -56,6 +56,9 @@ export default function RemoteRequestModal(props: RemoteRequestModalProps) {
       {/* Request modal */}
       <Modal isOpen={showRequestModal} onClose={onCloseRequestModal} title="Request Remote Work" size="lg">
         <form onSubmit={onSubmit} className="space-y-4">
+          {formErrors.submit && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">{formErrors.submit}</p>
+          )}
           <div className="flex items-center gap-3 rounded-xl border border-[#D6E4E8] bg-[#F8FBFC] px-4 py-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] shadow-md ring-1 ring-black/5">
               <Wifi size={17} strokeWidth={1.6} className="text-[#024fa7]" />

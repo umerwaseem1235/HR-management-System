@@ -142,6 +142,10 @@ export function scaleCols(cols: Col[]): Col[] {
 
 export function drawTable(doc: jsPDF, y: number, cols: Col[], rows: string[][]): number {
   const columns = scaleCols(cols);
+  const fontSize = 8;
+  const lineH = 4.2;
+  const rowPadTop = 3;
+  const rowPadBottom = 2.5;
   const drawHead = (yy: number) => {
     doc.setFillColor(...BLUE);
     doc.rect(MARGIN, yy - 5.5, CONTENT_W, 8, 'F');
@@ -161,38 +165,60 @@ export function drawTable(doc: jsPDF, y: number, cols: Col[], rows: string[][]):
   y = ensureSpace(doc, y, 16);
   y = drawHead(y);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.setFontSize(fontSize);
 
   rows.forEach((row, idx) => {
-    if (y > BOTTOM - 4) {
+    // Wrap each cell inside its column so full notes print on
+    // multiple lines instead of being cut off with "…".
+    const wrapped: string[][] = row.map((cell, ci) => {
+      const c = columns[ci];
+      const maxW = Math.max(10, c.width - 4);
+      const clean = sanitizePdfText(String(cell ?? '')
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim());
+      if (!clean) return ['-'];
+      try {
+        const lines = doc.splitTextToSize(clean, maxW) as string[];
+        return lines.length > 0 ? lines : ['-'];
+      } catch {
+        return [clean];
+      }
+    });
+    const lineCount = Math.max(1, ...wrapped.map((w) => w.length));
+    const rowH = rowPadTop + lineCount * lineH + rowPadBottom;
+
+    if (y + rowH > BOTTOM) {
       doc.addPage();
       y = 20;
       y = drawHead(y);
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
+      doc.setFontSize(fontSize);
     }
     if (idx % 2 === 1) {
       doc.setFillColor(...LIGHT);
-      doc.rect(MARGIN, y - 5.5, CONTENT_W, 7.5, 'F');
+      doc.rect(MARGIN, y - 5.5, CONTENT_W, rowH, 'F');
     }
     doc.setTextColor(...DARK);
     let x = MARGIN + 2;
-    row.forEach((cell, ci) => {
+    row.forEach((_cell, ci) => {
       const c = columns[ci];
-      const maxChars = Math.max(6, Math.floor(c.width / 1.75));
-      const text = cell.length > maxChars ? `${cell.slice(0, maxChars - 1)}…` : cell;
-      if (c.align === 'right') doc.text(text, x + c.width - 2, y, { align: 'right' });
-      else if (c.align === 'center') doc.text(text, x + c.width / 2 - 1, y, { align: 'center' });
-      else doc.text(text, x, y);
+      const lines = wrapped[ci];
+      lines.forEach((ln, li) => {
+        const ly = y - 1 + li * lineH;
+        if (c.align === 'right') doc.text(ln, x + c.width - 2, ly, { align: 'right' });
+        else if (c.align === 'center') doc.text(ln, x + c.width / 2 - 1, ly, { align: 'center' });
+        else doc.text(ln, x, ly);
+      });
       x += c.width;
     });
-    y += 7.5;
+    y += rowH;
   });
   return y + 4;
 }
 
 export function money(n: number): string {
-  return `$${Math.round(n).toLocaleString()}`;
+  return `PKR ${Math.round(n).toLocaleString()}`;
 }
 
 export function groupCount<T>(items: T[], key: (t: T) => string): { label: string; count: number }[] {
@@ -203,12 +229,22 @@ export function groupCount<T>(items: T[], key: (t: T) => string): { label: strin
     .sort((a, b) => b.count - a.count);
 }
 
+/** jsPDF standard fonts (helvetica) cannot render emoji — strip them so
+ *  PDFs show clean text instead of mojibake like "Ø=Þ€". */
+export function sanitizePdfText(s: string): string {
+  return s
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}\u{1F1E6}-\u{1F1FF}\u{2690}-\u{2695}\u{2640}-\u{2642}\u{25A0}-\u{25FF}]/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 export function plainNote(html: string): string {
-  return html
+  return sanitizePdfText(html
     .replace(/<(br|p|div|li|h1|h2|h3)[^>]*>/gi, ' ')
     .replace(/<[^>]*>/g, ' ')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
     .replace(/\s+/g, ' ')
-    .trim();
+    .trim());
 }

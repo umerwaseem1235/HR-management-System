@@ -130,7 +130,7 @@ export default function ActivityHistory({ activeTab, employee, employeeSlips }: 
                 <p className="text-xs text-gray-500">Generated: {slip.generatedOn}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm font-bold text-[#17324D]">${slip.netSalary.toLocaleString()}</p>
+                <p className="text-sm font-bold text-[#17324D]">PKR {slip.netSalary.toLocaleString()}</p>
                 <Badge variant="success" size="sm">{slip.status}</Badge>
               </div>
             </div>

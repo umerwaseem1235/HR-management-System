@@ -3,6 +3,7 @@ import { mockEmployees } from '@/lib/mock-data';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRemote } from '@/contexts/RemoteContext';
 import { useNotifications } from '@/contexts/NotificationContext';
+import { getHrAdminUserIds, getEmployeeUserId } from '@/lib/actions/notifications';
 import { todayStr } from '@/utils/date';
 import type { RemoteRequest } from '@/types';
 
@@ -77,6 +78,8 @@ export function useRemoteView() {
   const visibleRequests = useMemo(() => {
     if (!user) return [];
     if (!isEmployee) return remoteRequests;
+    // Prefer the real employee record linked to the login (real UUID from DB).
+    if (user.employeeId) return remoteRequests.filter((r) => r.employeeId === user.employeeId);
     return remoteRequests.filter((r) =>
       employee ? r.employeeId === employee.id : r.employeeName.toLowerCase() === user.name.toLowerCase()
     );
@@ -152,7 +155,7 @@ export function useRemoteView() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     const errors: Record<string, string> = {};
@@ -175,37 +178,74 @@ export function useRemoteView() {
     setFormErrors(errors);
     if (Object.keys(errors).length > 0 || days === null) return;
 
-    addRemoteRequest({
-      employeeId: employee?.id ?? user.id,
-      employeeName: employee ? `${employee.firstName} ${employee.lastName}` : user.name,
-      fromDate,
-      toDate,
-      days,
-      reason: reason.trim(),
-      workPlan: workPlan.trim() || undefined,
-    });
-    addNotification({
-      title: 'Remote Request Submitted',
-      message: `${user.name} requested remote work ${formatRange(fromDate, toDate)} (${days} day${days > 1 ? 's' : ''}).`,
-      type: 'info',
-      link: '/remote',
-    });
+    const requesterName = employee ? `${employee.firstName} ${employee.lastName}` : user.name;
+    try {
+      await addRemoteRequest({
+        // Prefer the real employee record linked to the login (real UUID) —
+        // the server also re-resolves this, satisfying the FK + RLS policy.
+        employeeId: user.employeeId ?? employee?.id ?? user.id,
+        employeeName: requesterName,
+        fromDate,
+        toDate,
+        days,
+        reason: reason.trim(),
+        workPlan: workPlan.trim() || undefined,
+      });
+    } catch (err) {
+      // Keep the modal open with data intact so nothing is lost — user can retry.
+      setFormErrors({ submit: err instanceof Error ? err.message : 'Failed to submit request. Please try again.' });
+      return;
+    }
+    // Notify every HR manager and admin — fire-and-forget so a notification
+    // failure never blocks the (already saved) request.
+    try {
+      const hrAdminIds = await getHrAdminUserIds();
+      await Promise.all(
+        hrAdminIds
+          .filter((id) => id !== user.id)
+          .map((id) =>
+            addNotification({
+              userId: id,
+              title: 'New Remote Request',
+              message: `${requesterName} requested remote work ${formatRange(fromDate, toDate)} (${days} day${days > 1 ? 's' : ''}).`,
+              type: 'info',
+              link: '/remote',
+            })
+          )
+      );
+    } catch {
+      // Notification delivery failed silently — the request itself is saved.
+    }
     setShowRequestModal(false);
     resetForm();
     setPage(1);
   };
 
-  const handleReview = () => {
+  const handleReview = async () => {
     if (!review || !user) return;
-    updateRemoteStatus(review.id, review.decision, user.name, review.comments.trim() || undefined);
+    try {
+      await updateRemoteStatus(review.id, review.decision, user.name, review.comments.trim() || undefined);
+    } catch (err) {
+      setFormErrors({ submit: err instanceof Error ? err.message : 'Failed to save decision. Please try again.' });
+      return;
+    }
     const target = remoteRequests.find((r) => r.id === review.id);
     if (target) {
-      addNotification({
-        title: `Remote Request ${review.decision}`,
-        message: `${target.employeeName}'s remote request ${formatRange(target.fromDate, target.toDate)} was ${review.decision.toLowerCase()} by ${user.name}.`,
-        type: review.decision === 'Approved' ? 'success' : 'error',
-        link: '/remote',
-      });
+      // Notify the requesting employee (fire-and-forget).
+      try {
+        const employeeUserId = await getEmployeeUserId(target.employeeId);
+        if (employeeUserId) {
+          await addNotification({
+            userId: employeeUserId,
+            title: `Remote Request ${review.decision}`,
+            message: `Your remote request ${formatRange(target.fromDate, target.toDate)} was ${review.decision.toLowerCase()} by ${user.name}.`,
+            type: review.decision === 'Approved' ? 'success' : 'error',
+            link: '/remote',
+          });
+        }
+      } catch {
+        // Notification delivery failed silently — the decision itself is saved.
+      }
     }
     setReview(null);
   };

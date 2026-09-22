@@ -1,6 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { User, UserRole } from '../lib/types';
 import { signIn, signUp, signOut, getCurrentUser } from '@/lib/actions/auth';
 import { createClient } from '@/lib/client';
@@ -18,9 +19,10 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchUser = async () => {
     const { user, error } = await getCurrentUser();
@@ -75,8 +77,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    await signOut();
+    // Clear local state first so route guards see a logged-out user instantly,
+    // even if a network call below fails.
     setUser(null);
+    setIsLoading(false);
+    try {
+      // Clear the browser session (also fires SIGNED_OUT on the listener).
+      await supabase.auth.signOut();
+    } catch {
+      // Ignore — server-side cleanup below is the source of truth.
+    }
+    try {
+      // Clear the server session cookies.
+      await signOut();
+    } catch {
+      // Ignore — local state is already cleared.
+    }
+    router.replace('/login');
+    router.refresh();
   };
 
   const switchRole = (role: UserRole) => {

@@ -8,7 +8,7 @@ import { useLeave } from '@/contexts/LeaveContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { timeToMinutes, toDateStr, todayStr } from '@/utils/date';
 import type { CorrectionRequest, Holiday } from '../types';
-import { aggregate, buildMonthlySchedule, calcWorkHours } from '../utils';
+import { aggregate, buildMonthlySchedule, calcWorkHours, DEFAULT_LATE_RULE, resolveLateStatus, type LateArrivalRule } from '../utils';
 
 const INITIAL_CORRECTIONS: CorrectionRequest[] = [
   { id: 'c1', employeeId: '9', employeeName: 'Ahmed Hassan', date: todayStr(), currentStatus: 'Absent', requestedStatus: 'Present', requestedCheckIn: '09:05', requestedCheckOut: '18:00', reason: 'Biometric device not working, forgot to mark attendance', status: 'Pending' },
@@ -47,6 +47,7 @@ export function useAttendance() {
   const [confirmRejectCorrection, setConfirmRejectCorrection] = useState<CorrectionRequest | null>(null);
   const [confirmDeleteHoliday, setConfirmDeleteHoliday] = useState<Holiday | null>(null);
   const [logSearch, setLogSearch] = useState('');
+  const [lateRule, setLateRule] = useState<LateArrivalRule>(DEFAULT_LATE_RULE);
   const [attendRecords, setAttendRecords] = useState<AttendanceRecord[]>(() => {
     const now = new Date();
     const year = now.getFullYear();
@@ -65,12 +66,12 @@ export function useAttendance() {
     );
   }, [user]);
 
-  const { monthLabel, monthlyRecords, presentDays, absentDays, lateDays, leavesTaken } = useMemo(() => {
+  const { monthLabel, monthlyRecords, presentDays, absentDays, lateDays, halfDayDays, leavesTaken } = useMemo(() => {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
     const monthLabel = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    const empty = { monthLabel, monthlyRecords: [] as AttendanceRecord[], presentDays: 0, absentDays: 0, lateDays: 0, leavesTaken: 0 };
+    const empty = { monthLabel, monthlyRecords: [] as AttendanceRecord[], presentDays: 0, absentDays: 0, lateDays: 0, halfDayDays: 0, leavesTaken: 0 };
     if (!user || !isEmployee) return empty;
 
     const empId = employee?.id ?? '';
@@ -91,6 +92,7 @@ export function useAttendance() {
     const presentDays = monthlyRecords.filter((r) => r.status === 'Present').length;
     const absentDays = monthlyRecords.filter((r) => r.status === 'Absent').length;
     const lateDays = monthlyRecords.filter((r) => r.status === 'Late').length;
+    const halfDayDays = monthlyRecords.filter((r) => r.status === 'Half Day').length;
     const attendanceLeaveDates = new Set(monthlyRecords.filter((r) => r.status === 'Leave').map((r) => r.date));
 
     const monthStart = new Date(year, month, 1);
@@ -110,7 +112,7 @@ export function useAttendance() {
         }
       });
 
-    return { monthLabel, monthlyRecords, presentDays, absentDays, lateDays, leavesTaken: attendanceLeaveDates.size + approvedLeaveDays };
+    return { monthLabel, monthlyRecords, presentDays, absentDays, lateDays, halfDayDays, leavesTaken: attendanceLeaveDates.size + approvedLeaveDays };
   }, [user, isEmployee, employee, leaveRequests]);
 
   // ---- Hoisted above all early returns (Rules of Hooks): every hook must
@@ -151,6 +153,7 @@ export function useAttendance() {
     { id: 'summaries', label: 'Summaries' },
     { id: 'corrections', label: 'Corrections', count: pendingCorrections.length },
     { id: 'config', label: 'Holidays' },
+    { id: 'rules', label: 'Rules' },
   ];
 
   const agg = aggregate(summaryCounts);
@@ -162,9 +165,17 @@ export function useAttendance() {
         ? `Weekly Summary — Week of ${viewDate}`
         : `Monthly Summary — ${viewDate.slice(0, 7)}`;
 
+  const applyLateRule = (checkIn: string, chosenStatus: string): string => {
+    if (!lateRule.enabled || !checkIn) return chosenStatus;
+    // Explicit non-attendance statuses are never overridden by the rule.
+    if (['Absent', 'Leave', 'Holiday', 'Weekend'].includes(chosenStatus)) return chosenStatus;
+    return resolveLateStatus(checkIn, lateRule).status;
+  };
+
   const handleAddManual = (values: { employeeId: string; date: string; checkIn: string; checkOut: string; status: string; notes: string }) => {
     const emp = mockEmployees.find((e) => e.id === values.employeeId);
     if (!emp) return;
+    const finalStatus = applyLateRule(values.checkIn, values.status);
     const record: AttendanceRecord = {
       id: `manual-${Date.now()}`,
       employeeId: emp.id,
@@ -172,8 +183,8 @@ export function useAttendance() {
       date: values.date,
       checkIn: values.checkIn,
       checkOut: values.checkOut,
-      status: values.status as AttendanceRecord['status'],
-      workHours: calcWorkHours(values.checkIn, values.checkOut, values.status),
+      status: finalStatus as AttendanceRecord['status'],
+      workHours: calcWorkHours(values.checkIn, values.checkOut, finalStatus),
       overtime: 0,
       notes: values.notes || undefined,
     };
@@ -185,6 +196,7 @@ export function useAttendance() {
   };
 
   const handleUpdateRecord = (id: string, values: { checkIn: string; checkOut: string; status: string; notes: string }) => {
+    const finalStatus = applyLateRule(values.checkIn, values.status);
     setAttendRecords((current) =>
       current.map((r) =>
         r.id === id
@@ -192,8 +204,8 @@ export function useAttendance() {
               ...r,
               checkIn: values.checkIn,
               checkOut: values.checkOut,
-              status: values.status as AttendanceRecord['status'],
-              workHours: calcWorkHours(values.checkIn, values.checkOut, values.status),
+              status: finalStatus as AttendanceRecord['status'],
+              workHours: calcWorkHours(values.checkIn, values.checkOut, finalStatus),
               notes: values.notes || undefined,
             }
           : r,
@@ -285,12 +297,15 @@ export function useAttendance() {
     setConfirmDeleteHoliday,
     logSearch,
     setLogSearch,
+    lateRule,
+    setLateRule,
     attendRecords,
     monthLabel,
     monthlyRecords,
     presentDays,
     absentDays,
     lateDays,
+    halfDayDays,
     leavesTaken,
     dayRecords,
     filteredDayRecords,

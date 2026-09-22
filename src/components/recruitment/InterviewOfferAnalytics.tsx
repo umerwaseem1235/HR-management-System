@@ -56,7 +56,7 @@ export function OfferSection({ offers, candidates, onViewLetter, onStatus }: Off
         return (
           <div key={o.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border border-[#D6E4E8]">
             <div className="flex-1">
-              <p className="text-sm font-semibold text-[#17324D]">{cand.name} · ${o.salary.toLocaleString()}</p>
+              <p className="text-sm font-semibold text-[#17324D]">{cand.name} · PKR {o.salary.toLocaleString()}</p>
               <p className="text-xs text-gray-500">Joining {o.joiningDate} · {o.notes || cand.jobTitle}</p>
             </div>
             <Badge variant={o.status === 'Accepted' ? 'success' : o.status === 'Rejected' ? 'danger' : 'info'}>{o.status}</Badge>

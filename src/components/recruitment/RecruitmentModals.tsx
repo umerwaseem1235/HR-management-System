@@ -125,7 +125,7 @@ export default function RecruitmentModals(p: RecruitmentModalsProps) {
 
       <Modal isOpen={!!offerModal} onClose={() => p.onOfferModal(null)} title="Record Offer" size="sm">
         {offerModal && <div className="space-y-4">
-          <Input label="Salary ($/year)" type="number" value={offerModal.salary} onChange={e => p.onOfferModal({ ...offerModal, salary: e.target.value })} />
+          <Input label="Salary (PKR/year)" type="number" value={offerModal.salary} onChange={e => p.onOfferModal({ ...offerModal, salary: e.target.value })} />
           <Input label="Joining Date" type="date" value={offerModal.joiningDate} onChange={e => p.onOfferModal({ ...offerModal, joiningDate: e.target.value })} />
           <Input label="Notes" value={offerModal.notes} onChange={e => p.onOfferModal({ ...offerModal, notes: e.target.value })} />
           <div className="flex justify-end gap-3"><Button variant="outline" onClick={() => p.onOfferModal(null)}>Cancel</Button><Button variant="primary" onClick={p.onSaveOffer}><FileText size={16} /> Save Offer</Button></div>
@@ -139,7 +139,7 @@ export default function RecruitmentModals(p: RecruitmentModalsProps) {
             <p className="mt-2">Date: {today}</p>
             <p>Candidate: {offerView.cand.name} ({offerView.cand.email})</p>
             <p>Position: {offerView.cand.jobTitle}</p>
-            <p>Salary: ${offerView.offer.salary.toLocaleString()}/year</p>
+            <p>Salary: PKR {offerView.offer.salary.toLocaleString()}/year</p>
             <p>Joining: {offerView.offer.joiningDate}</p>
             <p className="mt-3">We are pleased to offer you the above position. Please confirm acceptance.</p>
             <p className="mt-4">HR, CodQor</p>

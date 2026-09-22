@@ -6,10 +6,13 @@ import { mockEmployees } from '@/lib/mock-data';
 import type { LeaveRequest } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeave } from '@/contexts/LeaveContext';
+import { useNotifications } from '@/contexts/NotificationContext';
+import { getEmployeeUserId } from '@/lib/actions/notifications';
 import { diffInDaysInclusive } from '../utils';
 
 export function useLeaveView() {
   const { user } = useAuth();
+  const { addNotification } = useNotifications();
   const {
     leaveRequests,
     leaveBalances,
@@ -51,10 +54,13 @@ export function useLeaveView() {
     );
   }, [user]);
 
-  // Employees only see their own leave records; admins/HR see everything
+  // Employees only see their own leave records; admins/HR see everything.
+  // Prefer the real employee record linked to the login (real UUID from DB);
+  // fall back to the legacy demo-data matching when no link exists.
   const visibleRequests = useMemo(() => {
     if (!isEmployee) return leaveRequests;
     if (!user) return [];
+    if (user.employeeId) return leaveRequests.filter((l) => l.employeeId === user.employeeId);
     return leaveRequests.filter((l) =>
       employee ? l.employeeId === employee.id : l.employeeName.toLowerCase() === user.name.toLowerCase(),
     );
@@ -145,6 +151,34 @@ export function useLeaveView() {
 
   const goToRequestLeave = () => router.push('/leave/request');
 
+  const notifyEmployeeOfDecision = async (leave: LeaveRequest, status: 'Approved' | 'Rejected', decidedBy: string) => {
+    try {
+      const employeeUserId = await getEmployeeUserId(leave.employeeId);
+      if (!employeeUserId) return;
+      await addNotification({
+        userId: employeeUserId,
+        title: `Leave ${status}`,
+        message: `Your ${leave.leaveType} request (${leave.startDate} → ${leave.endDate}, ${leave.days} day${leave.days > 1 ? 's' : ''}) was ${status.toLowerCase()} by ${decidedBy}.`,
+        type: status === 'Approved' ? 'success' : 'error',
+        link: '/leave',
+      });
+    } catch {
+      // Notification delivery failed silently — the decision itself is saved.
+    }
+  };
+
+  const confirmApprove = async (leave: LeaveRequest, decidedBy: string) => {
+    await updateLeaveStatus(leave.id, 'Approved', decidedBy);
+    setConfirmApproveLeave(null);
+    await notifyEmployeeOfDecision(leave, 'Approved', decidedBy);
+  };
+
+  const confirmReject = async (leave: LeaveRequest, decidedBy: string) => {
+    await updateLeaveStatus(leave.id, 'Rejected', decidedBy);
+    setConfirmRejectLeave(null);
+    await notifyEmployeeOfDecision(leave, 'Rejected', decidedBy);
+  };
+
   return {
     user,
     router,
@@ -189,6 +223,8 @@ export function useLeaveView() {
     openEdit,
     closeEdit,
     handleEditSubmit,
+    confirmApprove,
+    confirmReject,
     closeBalanceModal,
     handleBalanceSubmit,
     goToRequestLeave,

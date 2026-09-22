@@ -114,8 +114,7 @@ export default function LeaveView() {
         confirmLabel="Confirm Approve"
         confirmIcon={<CheckCircle2 size={16} />}
         onConfirm={() => {
-          if (lv.confirmApproveLeave && lv.user) lv.updateLeaveStatus(lv.confirmApproveLeave.id, 'Approved', lv.user.name);
-          lv.setConfirmApproveLeave(null);
+          if (lv.confirmApproveLeave && lv.user) lv.confirmApprove(lv.confirmApproveLeave, lv.user.name);
         }}
       />
 
@@ -143,8 +142,7 @@ export default function LeaveView() {
         confirmLabel="Confirm Reject"
         confirmIcon={<XCircle size={16} />}
         onConfirm={() => {
-          if (lv.confirmRejectLeave && lv.user) lv.updateLeaveStatus(lv.confirmRejectLeave.id, 'Rejected', lv.user.name);
-          lv.setConfirmRejectLeave(null);
+          if (lv.confirmRejectLeave && lv.user) lv.confirmReject(lv.confirmRejectLeave, lv.user.name);
         }}
       />
 

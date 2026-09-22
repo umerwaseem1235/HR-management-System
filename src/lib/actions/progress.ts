@@ -1,8 +1,11 @@
 'use server';
 
 import { createClient } from '@/lib/server';
+import { ensureLinkedEmployee } from '@/lib/actions/leave';
 import { revalidatePath } from 'next/cache';
 import { ProgressEntry } from '@/lib/types';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function getProgressEntries(employeeId?: string): Promise<ProgressEntry[]> {
   const supabase = await createClient();
@@ -43,11 +46,18 @@ export async function createProgressEntry(data: {
 }): Promise<ProgressEntry> {
   const supabase = await createClient();
   const createdOn = new Date().toISOString().slice(0, 10);
-  
+
+  // employee_id is a UUID FK and RLS only accepts the record linked to the
+  // login — resolve demo ids to the linked record (auto-created if needed).
+  let employeeId = data.employeeId;
+  if (!UUID_RE.test(employeeId || '')) {
+    employeeId = await ensureLinkedEmployee(supabase);
+  }
+
   const { data: row, error } = await supabase
     .from('progress_entries')
     .insert({
-      employee_id: data.employeeId,
+      employee_id: employeeId,
       project_name: data.projectName,
       description: data.description,
       submission_date: data.submissionDate,

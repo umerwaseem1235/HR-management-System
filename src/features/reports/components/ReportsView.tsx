@@ -53,10 +53,12 @@ export default function ReportsView() {
         onDraftToChange={r.setDraftTo}
         isEmployee={r.isEmployee}
         empId={r.empId}
+        employees={r.employees}
+        employeesLoading={r.employeesLoading}
         onEmpIdChange={(v) => { r.setEmpId(v); r.setPage(1); }}
         query={r.query}
         onQueryChange={(v) => { r.setQuery(v); r.setPage(1); }}
-        queryPlaceholder={r.tab === 'attendance' ? 'Search date, status…' : r.tab === 'progress' ? 'Search project, note…' : 'Search title, status…'}
+        queryPlaceholder={r.tab === 'attendance' ? 'Search date, status…' : r.tab === 'progress' ? 'Search employee, project, note…' : 'Search title, status…'}
         onFetch={r.handleFetch}
         onPrint={() => window.print()}
       />
@@ -65,6 +67,7 @@ export default function ReportsView() {
         tab={r.tab}
         title={r.tabMeta[r.tab].title}
         rowCount={r.rowCount}
+        isLoading={r.tab === 'attendance' ? r.attendanceLoading : false}
         attPage={r.attPage}
         progPage={r.progPage}
         taskPage={r.taskPage}

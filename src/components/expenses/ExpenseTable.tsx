@@ -37,7 +37,7 @@ export default function ExpenseTable({ visibleExpenses, isEmployee, onApprove, o
                   <td className="px-6 py-4"><div><p className="text-sm font-medium">{exp.category}</p><p className="text-xs text-gray-500">{exp.description}</p></div></td>
                 )}
                 {!isEmployee && <td className="px-6 py-4 text-sm">{exp.category}</td>}
-                <td className="px-6 py-4 text-sm font-semibold text-[#17324D]">${exp.amount.toLocaleString()}</td>
+                <td className="px-6 py-4 text-sm font-semibold text-[#17324D]">PKR {exp.amount.toLocaleString()}</td>
                 <td className="px-6 py-4 text-sm text-gray-500">{exp.date}</td>
                 <td className="px-6 py-4"><ExpenseStatusBadge status={exp.status} /></td>
                 {!isEmployee && <td className="px-6 py-4">

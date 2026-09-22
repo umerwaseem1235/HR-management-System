@@ -34,7 +34,7 @@ export default function ComponentModal({ modal, onClose, onChange, onSave }: Com
             ]}
           />
           <Input
-            label="Monthly Amount ($)"
+            label="Monthly Amount (PKR)"
             type="number"
             min={0}
             placeholder="0"

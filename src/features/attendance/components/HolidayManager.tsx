@@ -20,7 +20,7 @@ export default function HolidayManager({
   onDelete: (holiday: Holiday) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="min-w-0">
       {/* Holiday configuration */}
       <Card>
         <div className="flex items-center justify-between mb-4">

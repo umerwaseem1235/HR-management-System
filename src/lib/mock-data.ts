@@ -203,7 +203,7 @@ export const mockExpenses: ExpenseClaim[] = [
 export const mockNotifications: Notification[] = [
   { id: '1', title: 'Leave Request', message: 'Michael Chen has requested monthly leave for Jan 15-16.', type: 'info', read: false, createdAt: '2024-01-08T09:30:00', link: '/leave' },
   { id: '2', title: 'Leave Request', message: 'Emily Rodriguez has requested monthly leave for Jan 22.', type: 'info', read: false, createdAt: '2024-01-08T09:15:00', link: '/leave' },
-  { id: '3', title: 'Expense Submitted', message: 'Jessica Lee submitted an expense claim of $599.', type: 'info', read: false, createdAt: '2024-01-08T08:45:00', link: '/expenses' },
+  { id: '3', title: 'Expense Submitted', message: 'Jessica Lee submitted an expense claim of PKR 599.', type: 'info', read: false, createdAt: '2024-01-08T08:45:00', link: '/expenses' },
   { id: '4', title: 'Document Expiry', message: 'Priya Sharma\'s work permit expires in 30 days.', type: 'warning', read: false, createdAt: '2024-01-08T08:00:00', link: '/documents' },
   { id: '5', title: 'Birthday', message: 'Ahmed Hassan\'s birthday is tomorrow!', type: 'success', read: true, createdAt: '2024-01-07T18:00:00' },
   { id: '6', title: 'Payslip Generated', message: 'December 2023 payslips have been generated.', type: 'success', read: true, createdAt: '2024-01-01T10:00:00', link: '/payroll' },

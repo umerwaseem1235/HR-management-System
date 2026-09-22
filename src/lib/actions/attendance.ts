@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/server';
 import { revalidatePath } from 'next/cache';
 import type { AttendanceRecord } from '@/lib/types';
+import { calculateDistance, getOfficeLocationConfig } from '@/lib/location';
 
 function mapAttendance(db: any): AttendanceRecord {
   return {
@@ -16,6 +17,11 @@ function mapAttendance(db: any): AttendanceRecord {
     workHours: db.work_hours,
     overtime: db.overtime,
     notes: db.notes,
+    checkInLat: db.check_in_lat,
+    checkInLng: db.check_in_lng,
+    checkOutLat: db.check_out_lat,
+    checkOutLng: db.check_out_lng,
+    distanceFromOffice: db.distance_from_office,
   };
 }
 
@@ -79,6 +85,11 @@ export async function createAttendanceRecord(data: any): Promise<AttendanceRecor
     work_hours: data.workHours ?? data.work_hours ?? 0,
     overtime: data.overtime ?? 0,
     notes: data.notes ?? null,
+    check_in_lat: data.checkInLat ?? data.check_in_lat ?? null,
+    check_in_lng: data.checkInLng ?? data.check_in_lng ?? null,
+    check_out_lat: data.checkOutLat ?? data.check_out_lat ?? null,
+    check_out_lng: data.checkOutLng ?? data.check_out_lng ?? null,
+    distance_from_office: data.distanceFromOffice ?? data.distance_from_office ?? null,
   };
   const { data: row, error } = await supabase
     .from('attendance')
@@ -186,4 +197,152 @@ export async function deleteHoliday(id: string) {
   const { error } = await supabase.from('holidays').delete().eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/attendance');
+}
+
+export interface CheckInWithLocationResult {
+  success: boolean;
+  record?: AttendanceRecord;
+  error?: string;
+  distance?: number;
+  withinRadius?: boolean;
+}
+
+export async function checkInWithLocation(data: {
+  employeeId: string;
+  date: string;
+  checkIn: string;
+  latitude: number;
+  longitude: number;
+}): Promise<CheckInWithLocationResult> {
+  const supabase = await createClient();
+  const officeConfig = getOfficeLocationConfig();
+  const employeeLocation = { latitude: data.latitude, longitude: data.longitude };
+  const officeLocation = { latitude: officeConfig.latitude, longitude: officeConfig.longitude };
+
+  const distance = calculateDistance(employeeLocation, officeLocation);
+  const withinRadius = distance <= officeConfig.radiusMeters;
+
+  if (!withinRadius) {
+    return {
+      success: false,
+      error: `Check-in rejected: You are ${Math.round(distance)} meters from the office. Maximum allowed distance is ${officeConfig.radiusMeters} meters.`,
+      distance: Math.round(distance),
+      withinRadius: false,
+    };
+  }
+
+  const now = new Date();
+  const checkInTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const status: 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Holiday' | 'Weekend' = 'Present';
+
+  const dbData = {
+    employee_id: data.employeeId,
+    date: data.date,
+    check_in: checkInTime,
+    check_out: null,
+    status,
+    work_hours: 0,
+    overtime: 0,
+    notes: null,
+    check_in_lat: data.latitude,
+    check_in_lng: data.longitude,
+    check_out_lat: null,
+    check_out_lng: null,
+    distance_from_office: Math.round(distance),
+  };
+
+  const { data: row, error } = await supabase
+    .from('attendance')
+    .upsert(dbData, { onConflict: 'employee_id,date' })
+    .select('*, employees(first_name, last_name)')
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidatePath('/attendance');
+  revalidatePath('/dashboard');
+
+  return {
+    success: true,
+    record: mapAttendance(row),
+    distance: Math.round(distance),
+    withinRadius: true,
+  };
+}
+
+export async function checkOutWithLocation(data: {
+  employeeId: string;
+  date: string;
+  checkOut: string;
+  latitude: number;
+  longitude: number;
+}): Promise<CheckInWithLocationResult> {
+  const supabase = await createClient();
+  const officeConfig = getOfficeLocationConfig();
+  const employeeLocation = { latitude: data.latitude, longitude: data.longitude };
+  const officeLocation = { latitude: officeConfig.latitude, longitude: officeConfig.longitude };
+
+  const distance = calculateDistance(employeeLocation, officeLocation);
+  const withinRadius = distance <= officeConfig.radiusMeters;
+
+  if (!withinRadius) {
+    return {
+      success: false,
+      error: `Check-out rejected: You are ${Math.round(distance)} meters from the office. Maximum allowed distance is ${officeConfig.radiusMeters} meters.`,
+      distance: Math.round(distance),
+      withinRadius: false,
+    };
+  }
+
+  const { data: existing } = await supabase
+    .from('attendance')
+    .select('*')
+    .eq('employee_id', data.employeeId)
+    .eq('date', data.date)
+    .single();
+
+  const checkInTime = existing?.check_in;
+  let workHours = 0;
+  if (checkInTime) {
+    const [inH, inM] = checkInTime.split(':').map(Number);
+    const [outH, outM] = data.checkOut.split(':').map(Number);
+    const inMinutes = inH * 60 + inM;
+    const outMinutes = outH * 60 + outM;
+    workHours = Math.round((outMinutes - inMinutes) / 60 * 10) / 10;
+  }
+
+  const status: 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Holiday' | 'Weekend' =
+    (existing?.status as 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Holiday' | 'Weekend') || 'Present';
+
+  const dbData = {
+    employee_id: data.employeeId,
+    date: data.date,
+    check_in: checkInTime,
+    check_out: data.checkOut,
+    status,
+    work_hours: workHours,
+    overtime: 0,
+    notes: existing?.notes ?? null,
+    check_in_lat: existing?.check_in_lat,
+    check_in_lng: existing?.check_in_lng,
+    check_out_lat: data.latitude,
+    check_out_lng: data.longitude,
+    distance_from_office: Math.round(distance),
+  };
+
+  const { data: row, error } = await supabase
+    .from('attendance')
+    .upsert(dbData, { onConflict: 'employee_id,date' })
+    .select('*, employees(first_name, last_name)')
+    .single();
+
+  if (error) throw new Error(error.message);
+  revalidatePath('/attendance');
+  revalidatePath('/dashboard');
+
+  return {
+    success: true,
+    record: mapAttendance(row),
+    distance: Math.round(distance),
+    withinRadius: true,
+  };
 }

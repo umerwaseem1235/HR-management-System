@@ -52,11 +52,14 @@ export function DailyLogTable({
   viewDate,
   logSearch,
   onEdit,
+  graceMinutes = 15,
 }: {
   records: AttendanceRecord[];
   viewDate: string;
   logSearch: string;
   onEdit: (record: AttendanceRecord) => void;
+  /** Rule grace so "Late By" matches the configured late-arrival rule. */
+  graceMinutes?: number;
 }) {
   return (
     <Card padding="none">
@@ -80,7 +83,7 @@ export function DailyLogTable({
           </thead>
           <tbody className="divide-y divide-[#D6E4E8]">
             {records.map((att) => {
-              const lb = lateBy(att);
+              const lb = lateBy(att, graceMinutes);
               const el = earlyLeave(att);
               return (
                 <tr key={att.id} className="hover:bg-[#EAF2F4]/50">
