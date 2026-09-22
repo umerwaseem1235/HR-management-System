@@ -1,6 +1,6 @@
 'use client';
 
-import { Calculator, CheckCircle2, Lock, Trash2 } from 'lucide-react';
+import { AlertTriangle, Calculator, CheckCircle2, Lock, LockOpen, Trash2, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -9,7 +9,6 @@ import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import Tabs from '@/components/ui/Tabs';
 import { formatCurrency as money } from '@/utils';
-import { mockEmployees } from '@/lib/mock-data';
 import { usePayroll } from '../hooks/usePayroll';
 import ComponentModal from './ComponentModal';
 import LineEditor from './LineEditor';
@@ -35,17 +34,29 @@ export default function PayrollView() {
       />
 
       {p.successMsg && (
-        <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+        <div key={p.successMsgKey} className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
           <CheckCircle2 size={18} className="mt-0.5 flex-shrink-0" />
           <p className="flex-1">{p.successMsg}</p>
-          <button onClick={() => p.setSuccessMsg('')} className="font-semibold hover:underline">Dismiss</button>
+          <button onClick={() => { p.setSuccessMsg(''); p.setSuccessMsgKey(0); }} title="Dismiss" aria-label="Dismiss success message" className="rounded p-0.5 hover:bg-green-100">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {p.runError && p.selectedRun && (
+        <div key={p.runErrorKey} className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <AlertTriangle size={18} className="mt-0.5 flex-shrink-0" />
+          <p className="flex-1">{p.runError}</p>
+          <button onClick={() => { p.setRunError(''); p.setRunErrorKey(0); }} title="Dismiss" aria-label="Dismiss error message" className="rounded p-0.5 hover:bg-red-100">
+            <X size={14} />
+          </button>
         </div>
       )}
 
       {isAdmin && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard title="Monthly Payroll" value={money(p.totalPayroll / 12)} iconName="payroll" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
-          <StatCard title="Total Employees" value={mockEmployees.length} iconName="totalEmployees" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+          <StatCard title="Total Employees" value={p.employees.length} iconName="totalEmployees" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
           <StatCard title="Payroll Status" value={p.payrollStatus} iconName="payrollStatus" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
         </div>
       )}
@@ -77,6 +88,8 @@ export default function PayrollView() {
               newYear={p.newYear}
               onNewYearChange={p.setNewYear}
               runError={p.runError}
+              runErrorKey={p.runErrorKey}
+              onDismissError={() => { p.setRunError(''); p.setRunErrorKey(0); }}
               onStart={p.startNewRun}
               search={p.runSearch}
               onSearchChange={p.setRunSearch}
@@ -97,12 +110,14 @@ export default function PayrollView() {
               onSearchChange={p.setRunDetailSearch}
               empMonthly={p.empMonthly}
               dailyRateDivisor={p.DAILY_RATE_DIVISOR}
+              isSuperAdmin={p.isSuperAdmin}
               onBack={() => p.setSelectedRunId(null)}
               onExport={() => p.exportRun(p.selectedRun!)}
               onEditLine={p.setEditingLine}
               onMarkReviewed={() => p.markReviewed(p.selectedRun!)}
               onReopen={() => p.reopenToDraft(p.selectedRun!)}
               onFinalizeRequest={() => p.setShowFinalize(true)}
+              onUnlockRequest={() => p.setShowUnlock(true)}
             />
           )}
 
@@ -119,6 +134,7 @@ export default function PayrollView() {
           {/* ==================== MONTHLY LEAVES (separate tab) ==================== */}
           {activeTab === 'emp-rules' && isAdmin && (
             <MonthlyLeaves
+              employees={p.employees}
               monthlyDefault={p.monthlyDefault}
               onMonthlyDefaultChange={p.setMonthlyDefault}
               fineDefault={p.fineDefault}
@@ -174,6 +190,32 @@ export default function PayrollView() {
           </div>
         )}
       </ConfirmDialog>
+
+      {/* ============ Unlock confirmation (Super Admin only) ============ */}
+      <ConfirmDialog
+        isOpen={p.showUnlock && !!p.selectedRun && p.selectedRun.status === 'Finalized'}
+        onClose={() => !p.busy && p.setShowUnlock(false)}
+        title="Unlock Payroll Run"
+        variant="warning"
+        icon={<LockOpen size={20} className="text-amber-600" />}
+        headline={
+          <>
+            Unlock <span className="font-semibold text-[#17324D]">{p.selectedRun?.month} {p.selectedRun?.year}</span> and
+            return it to <span className="font-semibold">Reviewed</span>?
+          </>
+        }
+        subline={p.selectedRun ? `${p.selectedRun.items.length} employees · Net ${money(p.selectedRun.totalNet)}` : undefined}
+        note={
+          <>
+            Only a <span className="font-semibold">Super Admin</span> can unlock a finalized run.
+            The run can be corrected and finalized again afterwards.
+          </>
+        }
+        confirmLabel="Unlock Run"
+        confirmIcon={<LockOpen size={16} />}
+        onConfirm={p.unlockRun}
+        loading={p.busy}
+      />
 
       <ConfirmDialog
         isOpen={!!p.confirmDeleteRun}

@@ -10,22 +10,19 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useRequireAuth, AuthLoadingFallback } from '../../components/auth/RequireAuth';
 import { ROLE_LABELS } from '../../lib/constants';
-import { mockEmployees } from '../../lib/mock-data';
+import { useEmployeeDirectory } from '../../hooks/useEmployeeDirectory';
 import ProfileHeader from '../../components/profile/ProfileHeader';
 import ProfileInfo, { FieldRow } from '../../components/profile/ProfileInfo';
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const { findByUser } = useEmployeeDirectory();
 
   useRequireAuth();
   if (!user) return <AuthLoadingFallback />;
 
-  // Match logged-in user to an employee record (by email first, then by name)
-  const employee =
-    mockEmployees.find((e) => e.email.toLowerCase() === user.email.toLowerCase()) ||
-    mockEmployees.find(
-      (e) => `${e.firstName} ${e.lastName}`.toLowerCase() === user.name.toLowerCase()
-    );
+  // Match logged-in user to a live employee record (by email first, then by name)
+  const employee = findByUser(user);
 
   const statusBadge = (status: string) => {
     const map: Record<string, 'success' | 'danger' | 'warning' | 'info'> = {

@@ -14,19 +14,26 @@ export interface EmployeeResolution {
   employeeName: string;
   /** `true` for the `employee` role. */
   isEmployee: boolean;
+  /** Whether the employee data is still loading. */
+  isLoading: boolean;
 }
 
 export function useEmployee(): EmployeeResolution {
   const { user } = useAuth();
   const [employee, setEmployee] = useState<Employee | undefined>();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    setIsLoading(true);
     if (user?.id) {
       getEmployeeByUserId(user.id)
         .then((emp) => setEmployee(emp || undefined))
         .catch((err) => {
           console.error('Failed to resolve employee for user:', err);
-        });
+        })
+        .finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
     }
   }, [user?.id]);
 
@@ -34,5 +41,5 @@ export function useEmployee(): EmployeeResolution {
   const employeeName = employee ? `${employee.firstName} ${employee.lastName}` : (user?.name ?? '');
   const isEmployee = user?.role === 'employee';
 
-  return { user, employee, employeeId, employeeName, isEmployee };
+  return { user, employee, employeeId, employeeName, isEmployee, isLoading };
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo, ReactNode } from 'react';
 import { LeaveRequest, LeaveBalance } from '../lib/types';
 import { LEAVE_TYPES } from '../lib/constants';
 import { 
@@ -82,6 +82,7 @@ interface LeaveContextType {
   updateLeaveRequest: (id: string, input: { leaveType: string; startDate: string; endDate: string; days: number; reason: string }) => Promise<void>;
   deleteLeaveRequest: (id: string) => Promise<void>;
   updateLeaveBalance: (leaveType: string, total: number, used: number) => void;
+  ensureLoaded: () => void;
 }
 
 const LeaveContext = createContext<LeaveContextType | undefined>(undefined);
@@ -89,27 +90,33 @@ const LeaveContext = createContext<LeaveContextType | undefined>(undefined);
 export function LeaveProvider({ children }: { children: ReactNode }) {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const fetchedRef = useRef(false);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [requests, balances] = await Promise.all([
-          getLeaveRequests(),
-          getLeaveBalances()
-        ]);
-        setLeaveRequests(sanitizeRequests(requests));
-        setLeaveBalances(sanitizeBalances(balances));
-      } catch (error) {
-        console.error('Failed to load leave data:', error);
-      } finally {
-        setIsLoading(false);
-      }
+  const loadData = useCallback(async () => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    setIsLoading(true);
+    try {
+      const [requests, balances] = await Promise.all([
+        getLeaveRequests(),
+        getLeaveBalances()
+      ]);
+      setLeaveRequests(sanitizeRequests(requests));
+      setLeaveBalances(sanitizeBalances(balances));
+    } catch (error) {
+      console.error('Failed to load leave data:', error);
+      fetchedRef.current = false; // allow retry on error
+    } finally {
+      setIsLoading(false);
     }
-    load();
   }, []);
 
-  const addLeaveRequest = async (input: NewLeaveInput): Promise<LeaveRequest> => {
+  const ensureLoaded = useCallback(() => {
+    if (!fetchedRef.current) loadData();
+  }, [loadData]);
+
+  const addLeaveRequest = useCallback(async (input: NewLeaveInput): Promise<LeaveRequest> => {
     const request = await createLeaveRequest({
       employeeId: input.employeeId,
       leaveType: input.leaveType,
@@ -120,35 +127,60 @@ export function LeaveProvider({ children }: { children: ReactNode }) {
     });
     setLeaveRequests((prev) => [request, ...prev]);
     return request;
-  };
+  }, []);
 
-  const updateLeaveStatus = async (id: string, status: 'Approved' | 'Rejected', approvedBy?: string, comments?: string) => {
+  const updateLeaveStatus = useCallback(async (id: string, status: 'Approved' | 'Rejected', approvedBy?: string, comments?: string) => {
     await updateLeaveStatusAction(id, status, approvedBy, comments);
     setLeaveRequests((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status, approvedBy, comments } : r))
     );
-  };
+  }, []);
 
-  const updateLeaveRequest = async (id: string, input: { leaveType: string; startDate: string; endDate: string; days: number; reason: string }) => {
+  const updateLeaveRequest = useCallback(async (id: string, input: { leaveType: string; startDate: string; endDate: string; days: number; reason: string }) => {
     await updateLeaveRequestAction(id, input);
     setLeaveRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...input } : r)));
-  };
+  }, []);
 
-  const deleteLeaveRequest = async (id: string) => {
+  const deleteLeaveRequest = useCallback(async (id: string) => {
     await deleteLeaveRequestAction(id);
     setLeaveRequests((prev) => prev.filter((r) => r.id !== id));
-  };
+  }, []);
 
-  const updateLeaveBalance = (leaveType: string, total: number, used: number) => {
+  const updateLeaveBalance = useCallback((leaveType: string, total: number, used: number) => {
     setLeaveBalances((prev) =>
       prev.map((b) =>
         b.leaveType === leaveType ? { ...b, total, used, remaining: Math.max(0, total - used) } : b
       )
     );
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      leaveRequests,
+      leaveBalances,
+      isLoading,
+      addLeaveRequest,
+      updateLeaveStatus,
+      updateLeaveRequest,
+      deleteLeaveRequest,
+      updateLeaveBalance,
+      ensureLoaded,
+    }),
+    [
+      leaveRequests,
+      leaveBalances,
+      isLoading,
+      addLeaveRequest,
+      updateLeaveStatus,
+      updateLeaveRequest,
+      deleteLeaveRequest,
+      updateLeaveBalance,
+      ensureLoaded,
+    ]
+  );
 
   return (
-    <LeaveContext.Provider value={{ leaveRequests, leaveBalances, isLoading, addLeaveRequest, updateLeaveStatus, updateLeaveRequest, deleteLeaveRequest, updateLeaveBalance }}>
+    <LeaveContext.Provider value={value}>
       {children}
     </LeaveContext.Provider>
   );
@@ -159,5 +191,9 @@ export function useLeave() {
   if (context === undefined) {
     throw new Error('useLeave must be used within a LeaveProvider');
   }
+  const { ensureLoaded } = context;
+  useEffect(() => {
+    ensureLoaded();
+  }, [ensureLoaded]);
   return context;
 }

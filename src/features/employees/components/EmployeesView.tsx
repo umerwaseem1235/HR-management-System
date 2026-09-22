@@ -3,11 +3,11 @@
 import React from 'react';
 import PageHeader from '@/components/ui/PageHeader';
 import Button from '@/components/ui/Button';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, AlertCircle } from 'lucide-react';
 import EmployeeFilters from './EmployeeFilters';
 import EmployeeTable from './EmployeeTable';
 import EmployeeFormModal from './EmployeeFormModal';
-import { useEmployees } from '../hooks/useEmployees';
+import { useEmployeesSupabase } from '../hooks/useEmployeesSupabase';
 
 export default function EmployeesView() {
   const {
@@ -20,22 +20,38 @@ export default function EmployeesView() {
     isAddEmployeeOpen,
     setIsAddEmployeeOpen,
     filtered,
+    isLoading,
+    error,
     editingEmployee,
     setEditingEmployee,
+    lookupData,
+    isLookupLoading,
+    isSubmitting,
     handleAddEmployee,
     handleEditEmployee,
-  } = useEmployees();
+    handleDeleteEmployee,
+  } = useEmployeesSupabase();
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Employees"
         actions={
-          <Button variant="primary" onClick={() => setIsAddEmployeeOpen(true)}>
+          <Button
+            variant="primary"
+            onClick={() => setIsAddEmployeeOpen(true)}
+          >
             <UserPlus size={16} /> Add Employee
           </Button>
         }
       />
+
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50/80 px-4 py-3 text-red-700">
+          <AlertCircle size={18} />
+          <span className="text-sm">{error}</span>
+        </div>
+      )}
 
       <EmployeeFilters
         search={search}
@@ -46,9 +62,23 @@ export default function EmployeesView() {
         onStatusFilterChange={setStatusFilter}
       />
 
-      <EmployeeTable employees={filtered} onEdit={setEditingEmployee} />
+      <EmployeeTable
+        employees={filtered}
+        onEdit={setEditingEmployee}
+        onDelete={handleDeleteEmployee}
+        isLoading={isLoading}
+      />
 
-      <EmployeeFormModal isOpen={isAddEmployeeOpen} onClose={() => setIsAddEmployeeOpen(false)} onSave={handleAddEmployee} />
+      <EmployeeFormModal
+        isOpen={isAddEmployeeOpen}
+        onClose={() => setIsAddEmployeeOpen(false)}
+        onSave={handleAddEmployee}
+        lookupData={lookupData}
+        isLookupLoading={isLookupLoading}
+        isSubmitting={isSubmitting}
+        isCreatingAccount
+        submitError={error}
+      />
       {editingEmployee && (
         <EmployeeFormModal
           key={editingEmployee.id}
@@ -56,6 +86,10 @@ export default function EmployeesView() {
           employee={editingEmployee}
           onClose={() => setEditingEmployee(null)}
           onSave={handleEditEmployee}
+          lookupData={lookupData}
+          isLookupLoading={isLookupLoading}
+          isSubmitting={isSubmitting}
+          submitError={error}
         />
       )}
     </div>

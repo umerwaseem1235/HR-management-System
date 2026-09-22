@@ -45,6 +45,7 @@ export default function ReportsView() {
 
       {/* Filters */}
       <ReportFilters
+        employees={r.employees}
         tab={r.tab}
         fetchLabel={r.tabMeta[r.tab].fetchLabel}
         draftFrom={r.draftFrom}

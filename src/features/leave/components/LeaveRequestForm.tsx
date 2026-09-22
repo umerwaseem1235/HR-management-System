@@ -10,7 +10,7 @@ import Input from '@/components/ui/Input';
 import PageHeader from '@/components/ui/PageHeader';
 import Select from '@/components/ui/Select';
 import { LEAVE_TYPES } from '@/lib/constants';
-import { mockEmployees } from '@/lib/mock-data';
+import { useEmployeeDirectory } from '@/hooks/useEmployeeDirectory';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeave } from '@/contexts/LeaveContext';
 import { diffInDaysInclusive } from '../utils';
@@ -29,11 +29,11 @@ export default function LeaveRequestForm() {
 
   const days = useMemo(() => diffInDaysInclusive(startDate, endDate), [startDate, endDate]);
 
+  const { findByUser } = useEmployeeDirectory();
+
   if (!user) return null;
 
-  const employee =
-    mockEmployees.find((e) => e.email.toLowerCase() === user.email.toLowerCase()) ||
-    mockEmployees.find((e) => `${e.firstName} ${e.lastName}`.toLowerCase() === user.name.toLowerCase());
+  const employee = findByUser(user);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

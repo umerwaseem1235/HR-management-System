@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { mockEmployees } from '@/lib/mock-data';
+import { useEmployeeDirectory } from '@/hooks/useEmployeeDirectory';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRemote } from '@/contexts/RemoteContext';
 import { useNotifications } from '@/contexts/NotificationContext';
@@ -66,13 +66,8 @@ export function useRemoteView() {
 
   const isEmployee = user?.role === 'employee';
 
-  const employee = useMemo(() => {
-    if (!user) return undefined;
-    return (
-      mockEmployees.find((e) => e.email.toLowerCase() === user.email.toLowerCase()) ||
-      mockEmployees.find((e) => `${e.firstName} ${e.lastName}`.toLowerCase() === user.name.toLowerCase())
-    );
-  }, [user]);
+  const { findByUser } = useEmployeeDirectory();
+  const employee = useMemo(() => findByUser(user), [findByUser, user]);
 
   const visibleRequests = useMemo(() => {
     if (!user) return [];

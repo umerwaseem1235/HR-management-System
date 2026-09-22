@@ -153,6 +153,7 @@ create table public.holidays (
   id uuid primary key default uuid_generate_v4(),
   name text not null,
   date date not null,
+  type text not null default 'Public',
   is_recurring boolean default false,
   branch_id uuid references public.branches(id) on delete cascade,
   created_at timestamptz default now()

@@ -1,7 +1,6 @@
 'use server';
 
 import { createClient } from '@/lib/server';
-import { redirect } from 'next/navigation';
 import { UserRole, User } from '@/lib/types';
 
 export async function signUp(formData: FormData) {
@@ -58,10 +57,11 @@ export async function signIn(formData: FormData) {
   return { success: true };
 }
 
-export async function signOut() {
+export async function signOut(): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect('/login');
+  const { error } = await supabase.auth.signOut();
+  if (error) return { success: false, error: error.message };
+  return { success: true };
 }
 
 export async function getCurrentUser(): Promise<{ user: User | null; error: string | null }> {
@@ -72,22 +72,16 @@ export async function getCurrentUser(): Promise<{ user: User | null; error: stri
     return { user: null, error: authError?.message || 'Not authenticated' };
   }
 
-  const { data: userData, error: userError } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', authData.user.id)
-    .single();
+  // Profile + linked employee are independent reads — one round-trip, not two.
+  // This runs on every page load (auth gates all routes), so it must stay lean.
+  const [{ data: userData, error: userError }, { data: employeeData }] = await Promise.all([
+    supabase.from('users').select('*').eq('id', authData.user.id).single(),
+    supabase.from('employees').select('id').eq('user_id', authData.user.id).single(),
+  ]);
 
   if (userError || !userData) {
     return { user: null, error: userError?.message || 'User profile not found' };
   }
-
-  // Find employee linked to this user
-  const { data: employeeData } = await supabase
-    .from('employees')
-    .select('id')
-    .eq('user_id', authData.user.id)
-    .single();
 
   const user: User = {
     id: userData.id,

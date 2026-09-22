@@ -6,7 +6,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import Select from '@/components/ui/Select';
-import { mockEmployees } from '@/lib/mock-data';
+import type { Employee } from '@/types';
 import { todayStr } from '@/utils/date';
 import { ADMIN_STATUS_OPTIONS } from '../utils';
 
@@ -14,10 +14,12 @@ export default function ManualEntryModal({
   open,
   onClose,
   onSave,
+  employees,
 }: {
   open: boolean;
   onClose: () => void;
   onSave: (values: { employeeId: string; date: string; checkIn: string; checkOut: string; status: string; notes: string }) => void;
+  employees: Employee[];
 }) {
   const [selectedEmp, setSelectedEmp] = useState('');
   const [date, setDate] = useState(todayStr());
@@ -46,7 +48,13 @@ export default function ManualEntryModal({
               label="Employee"
               value={selectedEmp}
               onChange={(e) => setSelectedEmp(e.target.value)}
-              options={[{ value: '', label: 'Select employee...' }, ...mockEmployees.map((e) => ({ value: e.id, label: `${e.firstName} ${e.lastName} (${e.employeeCode})` }))]}
+              options={[
+                { value: '', label: 'Select employee...' },
+                ...employees.map((e) => ({
+                  value: e.id,
+                  label: `${e.firstName} ${e.lastName} (${e.employeeCode})`,
+                })),
+              ]}
               required
             />
           </div>

@@ -1,36 +1,78 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ImagePlus, Trash2, UserPlus } from 'lucide-react';
+import { ImagePlus, Trash2, UserPlus, Loader2, Eye, EyeOff, Key, AlertCircle, CheckCircle2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import Select from '@/components/ui/Select';
-import { BRANCHES, DEPARTMENTS, DESIGNATIONS, SHIFTS } from '@/lib/constants';
-import { Employee } from '@/types';
+import { Employee } from '@/lib/types';
 
-interface AddEmployeeModalProps {
+interface LookupItem {
+  id: string;
+  name: string;
+}
+
+interface EmployeeFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   employee?: Employee;
-  onSave?: (values: Record<string, string>, photo: string | null) => void;
+  onSave?: (values: Record<string, string>, photo: string | null) => void | Promise<void>;
+  submitError?: string | null;
+  lookupData?: {
+    departments: LookupItem[];
+    designations: LookupItem[];
+    branches: LookupItem[];
+    shifts: LookupItem[];
+    managers: LookupItem[];
+  } | null;
+  isLookupLoading?: boolean;
+  isSubmitting?: boolean;
+  isCreatingAccount?: boolean;
 }
 
-export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: AddEmployeeModalProps) {
+export default function EmployeeFormModal({
+  isOpen,
+  onClose,
+  employee,
+  onSave,
+  lookupData,
+  isLookupLoading,
+  isSubmitting,
+  isCreatingAccount = false,
+  submitError,
+}: EmployeeFormModalProps) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmError, setConfirmError] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [loginTouched, setLoginTouched] = useState(false);
 
   useEffect(() => {
-    // Only preload the preview when the stored avatar is a real image.
-    // Mock records keep initials (e.g. "MC") in the avatar field.
     const avatar = employee?.avatar;
-    if (isOpen && avatar && /^(https?:\/\/|blob:|data:image\/|\/)/.test(avatar)) {
+    const isImageUrl = (url: string) => {
+      const regex = new RegExp('^(https?:\\/\\/|blob:|data:image\\/|\\/)');
+      return regex.test(url);
+    };
+    if (isOpen && avatar && isImageUrl(avatar)) {
       setTimeout(() => setPhotoPreview(avatar), 0);
     } else if (isOpen && !employee) {
       setTimeout(() => setPhotoPreview(null), 0);
     }
     setTimeout(() => setPhotoError(''), 0);
+    if (isOpen) setLoginTouched(false);
   }, [isOpen, employee?.avatar]);
+
+  // Keep Login Email in sync with the employee email until the admin
+  // types a custom login email (typical case: both are identical).
+  const syncLoginEmail = (employeeEmail: string, form: HTMLFormElement | null) => {
+    if (loginTouched || !form) return;
+    const loginInput = form.querySelector('input[name="loginEmail"]') as HTMLInputElement | null;
+    if (loginInput) loginInput.value = employeeEmail;
+  };
 
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -47,27 +89,89 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
     }
 
     setPhotoError('');
-    // Read as a data URL so the photo survives in state after the modal
-    // closes (object URLs are revoked with the file input lifetime).
     const reader = new FileReader();
     reader.onload = () => setPhotoPreview(String(reader.result));
     reader.onerror = () => setPhotoError('Could not read the selected image.');
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const values = Object.fromEntries(new FormData(event.currentTarget).entries());
-    const stringValues = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, String(value)])) as Record<string, string>;
-    if (onSave) {
-      onSave(stringValues, photoPreview);
-    }
-    onClose();
+  const calculatePasswordStrength = (password: string): number => {
+    let strength = 0;
+    if (password.length >= 8) strength += 1;
+    if (password.length >= 12) strength += 1;
+    if (/[A-Z]/.test(password)) strength += 1;
+    if (/[a-z]/.test(password)) strength += 1;
+    if (/[0-9]/.test(password)) strength += 1;
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+    return Math.min(strength, 4);
   };
+
+  const handlePasswordChange = (password: string) => {
+    setPasswordStrength(calculatePasswordStrength(password));
+    setPasswordError('');
+  };
+
+  const handleConfirmPasswordChange = (confirmPassword: string, password: string) => {
+    setConfirmError(confirmPassword && confirmPassword !== password ? 'Passwords do not match' : '');
+  };
+
+  const [formError, setFormError] = useState('');
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFormError('');
+    const formData = new FormData(event.currentTarget);
+    const values = Object.fromEntries(formData.entries());
+    const stringValues = Object.fromEntries(
+      Object.entries(values).map(([key, value]) => [key, String(value)])
+    ) as Record<string, string>;
+
+    // Validate account credentials if creating new account
+    if (isCreatingAccount) {
+      const password = stringValues.password;
+      const confirmPassword = stringValues.confirmPassword;
+      const loginEmail = stringValues.loginEmail;
+
+      if (!loginEmail?.trim()) {
+        setFormError('Login email is required.');
+        return;
+      }
+      if (!password) {
+        setFormError('Temporary password is required.');
+        return;
+      }
+      if (password.length < 8) {
+        setFormError('Password must be at least 8 characters.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setFormError('Passwords do not match.');
+        return;
+      }
+    }
+
+    // Only close on success — a throwing onSave keeps the form open
+    // so the error stays visible instead of data silently vanishing.
+    try {
+      if (onSave) await onSave(stringValues, photoPreview);
+      onClose();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Failed to save employee.');
+    }
+  };
+
+  const getDefaultValue = (field: keyof Employee) => employee?.[field] ?? '';
+
+  const disabled = isLookupLoading || isSubmitting;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={employee ? 'Edit Employee' : 'Add New Employee'} size="lg">
       <form className="space-y-6" onSubmit={handleSubmit}>
+        {(formError || submitError) && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-medium text-red-700">
+            {formError || submitError}
+          </div>
+        )}
         <div>
           <h4 className="text-sm font-semibold text-[#17324D] mb-3">Personal Information</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -89,7 +193,7 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
                     <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#D6E4E8] bg-white px-3 py-1.5 text-sm font-medium text-[#263238] hover:bg-[#EAF2F4] transition-colors">
                       <ImagePlus size={15} />
                       {photoPreview ? 'Replace Photo' : 'Choose Photo'}
-                      <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handlePhotoChange} className="sr-only" />
+                      <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handlePhotoChange} className="sr-only" disabled={disabled} />
                     </label>
                     {photoPreview && (
                       <button
@@ -98,7 +202,8 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
                           setPhotoPreview(null);
                           setPhotoError('');
                         }}
-                        className="inline-flex items-center gap-1.5 text-sm font-medium text-red-600 hover:text-red-700"
+                        disabled={disabled}
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
                       >
                         <Trash2 size={15} /> Remove
                       </button>
@@ -107,44 +212,184 @@ export default function AddEmployeeModal({ isOpen, onClose, employee, onSave }: 
                 </div>
               </div>
             </div>
-            <Input name="firstName" label="First Name" placeholder="Enter first name" defaultValue={employee?.firstName} required />
-            <Input name="lastName" label="Last Name" placeholder="Enter last name" defaultValue={employee?.lastName} required />
-            <Input name="employeeCode" label="Employee ID" placeholder="EMP016" defaultValue={employee?.employeeCode} required />
-            <Input name="phone" label="Phone" type="tel" placeholder="+1 (555) 000-0000" defaultValue={employee?.phone} />
-            <Input name="email" label="Email" type="email" placeholder="name@company.com" defaultValue={employee?.email} required />
-            <Input name="dateOfBirth" label="Date of Birth" type="date" defaultValue={employee?.dateOfBirth} />
-            <Input name="address" label="Address" placeholder="Street address" defaultValue={employee?.address} className="sm:col-span-2" />
+            <Input name="firstName" label="First Name" placeholder="Enter first name" defaultValue={getDefaultValue('firstName')} required disabled={disabled} />
+            <Input name="lastName" label="Last Name" placeholder="Enter last name" defaultValue={getDefaultValue('lastName')} required disabled={disabled} />
+            <Input name="employeeCode" label="Employee ID" placeholder="Auto-generated if empty" defaultValue={getDefaultValue('employeeCode')} disabled={disabled} />
+            <Input name="phone" label="Phone" type="tel" placeholder="+1 (555) 000-0000" defaultValue={getDefaultValue('phone')} disabled={disabled} />
+            <Input name="email" label="Email" type="email" placeholder="name@company.com" defaultValue={getDefaultValue('email')} required disabled={disabled} onChange={(e) => syncLoginEmail(e.target.value, e.target.form)} />
+            <Input name="dateOfBirth" label="Date of Birth" type="date" defaultValue={getDefaultValue('dateOfBirth')} disabled={disabled} />
+            <Input name="address" label="Address" placeholder="Street address" defaultValue={getDefaultValue('address')} className="sm:col-span-2" disabled={disabled} />
           </div>
         </div>
 
         <div>
           <h4 className="text-sm font-semibold text-[#17324D] mb-3">Employment Details</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Select name="department" label="Department" defaultValue={employee?.department} options={[{ value: '', label: 'Select Department' }, ...DEPARTMENTS.map(department => ({ value: department, label: department }))]} required />
-            <Select name="designation" label="Designation" defaultValue={employee?.designation} options={[{ value: '', label: 'Select Designation' }, ...DESIGNATIONS.map(designation => ({ value: designation, label: designation }))]} required />
-            <Select name="branch" label="Branch" defaultValue={BRANCHES.find(branch => branch.name === employee?.branch)?.id || ''} options={[{ value: '', label: 'Select Branch' }, ...BRANCHES.map(branch => ({ value: branch.id, label: `${branch.name} - ${branch.city}` }))]} required />
-            <Input name="reportingManager" label="Reporting Manager" placeholder="Manager name" defaultValue={employee?.reportingManager} />
-            <Select name="employmentType" label="Employment Type" defaultValue={employee?.employmentType} options={[{ value: '', label: 'Select Type' }, { value: 'Full-time', label: 'Full-time' }, { value: 'Part-time', label: 'Part-time' }, { value: 'Contract', label: 'Contract' }, { value: 'Intern', label: 'Intern' }]} required />
-            <Input name="joiningDate" label="Joining Date" type="date" defaultValue={employee?.joiningDate} required />
-            <Input name="probationEndDate" label="Probation End Date" type="date" defaultValue={employee?.probationEndDate} />
-            <Select name="shift" label="Shift" defaultValue={employee?.shift} options={[{ value: '', label: 'Select Shift' }, ...SHIFTS.map(shift => ({ value: shift.id, label: `${shift.name} (${shift.startTime} - ${shift.endTime})` }))]} required />
+            <Select
+              name="departmentId"
+              label="Department"
+              defaultValue={employee?.departmentId || ''}
+              options={[{ value: '', label: isLookupLoading ? 'Loading departments...' : 'Select Department' }, ...(lookupData?.departments || []).map(d => ({ value: d.id, label: d.name }))]}
+              required
+              disabled={disabled}
+            />
+            <Select
+              name="designationId"
+              label="Designation"
+              defaultValue={employee?.designationId || ''}
+              options={[{ value: '', label: isLookupLoading ? 'Loading designations...' : 'Select Designation' }, ...(lookupData?.designations || []).map(d => ({ value: d.id, label: d.name }))]}
+              required
+              disabled={disabled}
+            />
+            <Select
+              name="branchId"
+              label="Branch"
+              defaultValue={employee?.branchId || ''}
+              options={[{ value: '', label: isLookupLoading ? 'Loading branches...' : 'Select Branch' }, ...(lookupData?.branches || []).map(b => ({ value: b.id, label: b.name }))]}
+              required
+              disabled={disabled}
+            />
+            <Select
+              name="reportingManagerId"
+              label="Reporting Manager"
+              defaultValue={employee?.reportingManagerId || ''}
+              options={[{ value: '', label: isLookupLoading ? 'Loading managers...' : 'No Manager' }, ...(lookupData?.managers || []).map(m => ({ value: m.id, label: m.name }))]}
+              disabled={disabled}
+            />
+            <Select
+              name="employmentType"
+              label="Employment Type"
+              defaultValue={getDefaultValue('employmentType')}
+              options={[{ value: '', label: 'Select Type' }, { value: 'Full-time', label: 'Full-time' }, { value: 'Part-time', label: 'Part-time' }, { value: 'Contract', label: 'Contract' }, { value: 'Intern', label: 'Intern' }]}
+              required
+              disabled={disabled}
+            />
+            <Input name="joiningDate" label="Joining Date" type="date" defaultValue={getDefaultValue('joiningDate')} required disabled={disabled} />
+            <Input name="probationEndDate" label="Probation End Date" type="date" defaultValue={getDefaultValue('probationEndDate')} disabled={disabled} />
+            <Select
+              name="shiftId"
+              label="Shift"
+              defaultValue={employee?.shiftId || ''}
+              options={[{ value: '', label: isLookupLoading ? 'Loading shifts...' : 'Select Shift' }, ...(lookupData?.shifts || []).map(s => ({ value: s.id, label: s.name }))]}
+              required
+              disabled={disabled}
+            />
           </div>
         </div>
 
         <div>
           <h4 className="text-sm font-semibold text-[#17324D] mb-3">Payroll Information</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input name="bankName" label="Bank Name" placeholder="Bank name" defaultValue={employee?.bankName} />
-            <Input name="bankAccount" label="Account Number" placeholder="Account number" defaultValue={employee?.bankAccount} />
-            <Input name="taxId" label="Tax ID" placeholder="Tax identification number" defaultValue={employee?.taxId} />
-            <Input name="salary" label="Basic Salary" type="number" placeholder="Annual salary" defaultValue={employee?.salary} />
+            <Input name="bankName" label="Bank Name" placeholder="Bank name" defaultValue={getDefaultValue('bankName')} disabled={disabled} />
+            <Input name="bankAccount" label="Account Number" placeholder="Account number" defaultValue={getDefaultValue('bankAccount')} disabled={disabled} />
+            <Input name="taxId" label="Tax ID" placeholder="Tax identification number" defaultValue={getDefaultValue('taxId')} disabled={disabled} />
+            <Input name="salary" label="Basic Salary" type="number" placeholder="Annual salary" defaultValue={getDefaultValue('salary')} disabled={disabled} />
           </div>
           <p className="text-xs text-gray-500 mt-3">Payroll information is restricted to authorized administrators.</p>
         </div>
 
+        {isCreatingAccount && (
+          <div>
+            <h4 className="text-sm font-semibold text-[#17324D] mb-3">Account Credentials</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                name="loginEmail"
+                label="Login Email"
+                type="email"
+                placeholder="login@company.com"
+                defaultValue={getDefaultValue('email')}
+                required
+                disabled={disabled}
+                onChange={() => setLoginTouched(true)}
+              />
+              <div className="relative">
+                <label className="block text-sm font-medium text-[#263238] mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    placeholder="Enter password (min. 8 characters)"
+                    required
+                    disabled={disabled}
+                    onChange={(e) => handlePasswordChange(e.target.value)}
+                    className="w-full rounded-lg border border-[#D6E4E8] bg-white px-4 py-2.5 text-sm text-[#263238] focus:border-[#024fa7] focus:ring-2 focus:ring-[#024fa7]/20 focus:outline-none transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#024fa7]"
+                    disabled={disabled}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                  </button>
+                </div>
+              </div>
+              <div className="relative">
+                <label className="block text-sm font-medium text-[#263238] mb-1.5">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    placeholder="Confirm password"
+                    required
+                    disabled={disabled}
+                    onChange={(e) => handleConfirmPasswordChange(e.target.value, ((e.target.closest('form') as HTMLFormElement | null)?.querySelector('input[name="password"]') as HTMLInputElement | null)?.value || '')}
+                    className="w-full rounded-lg border border-[#D6E4E8] bg-white px-4 py-2.5 text-sm text-[#263238] focus:border-[#024fa7] focus:ring-2 focus:ring-[#024fa7]/20 focus:outline-none transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#024fa7]"
+                    disabled={disabled}
+                  >
+                    {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                  </button>
+                </div>
+                {confirmError && <p className="text-xs text-red-600 mt-1">{confirmError}</p>}
+              </div>
+              <div className="sm:col-span-2">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500">Password Strength</span>
+                    <span className={`font-medium ${
+                      passwordStrength === 0 ? 'text-gray-400' :
+                      passwordStrength <= 1 ? 'text-red-500' :
+                      passwordStrength <= 2 ? 'text-amber-500' :
+                      passwordStrength === 3 ? 'text-yellow-500' : 'text-green-500'
+                    }`}>
+                    {passwordStrength === 0 ? 'Very Weak' :
+                     passwordStrength === 1 ? 'Weak' :
+                     passwordStrength === 2 ? 'Fair' :
+                     passwordStrength === 3 ? 'Good' : 'Strong'}
+                  </span>
+                </div>
+                <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-300 ${
+                      passwordStrength === 0 ? 'bg-gray-200 w-0' :
+                      passwordStrength === 1 ? 'bg-red-500 w-1/4' :
+                      passwordStrength === 2 ? 'bg-amber-500 w-2/4' :
+                      passwordStrength === 3 ? 'bg-yellow-500 w-3/4' : 'bg-green-500 w-full'
+                    }`}
+                    style={{ width: `${passwordStrength * 25}%` }}
+                  />
+                </div>
+                {passwordError && <p className="text-xs text-red-600">{passwordError}</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
         <div className="flex justify-end gap-3 pt-2 border-t border-[#D6E4E8]">
-          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit"><UserPlus size={16} /> {employee ? 'Save Changes' : 'Save Employee'}</Button>
+          <Button type="button" variant="outline" onClick={onClose} disabled={disabled}>Cancel</Button>
+          <Button type="submit" disabled={disabled} loading={isSubmitting}>
+            <UserPlus size={16} /> {employee ? 'Save Changes' : 'Save Employee'}
+          </Button>
         </div>
       </form>
     </Modal>

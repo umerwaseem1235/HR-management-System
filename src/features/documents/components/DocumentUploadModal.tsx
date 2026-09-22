@@ -7,7 +7,7 @@ import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { Upload, FileText, Download, Paperclip, X } from 'lucide-react';
-import { mockEmployees } from '@/lib/mock-data';
+import { useEmployeeDirectory } from '@/hooks/useEmployeeDirectory';
 import { DocumentItem } from '../types';
 
 interface DocumentUploadModalProps {
@@ -24,6 +24,7 @@ interface DocumentUploadModalProps {
   onDocExpiryChange: (value: string) => void;
   docFile: string;
   docError: string;
+  isUploading?: boolean;
   onFilePick: (file: File | undefined) => void;
   onRemoveFile: () => void;
   viewDoc: DocumentItem | null;
@@ -38,9 +39,10 @@ export default function DocumentUploadModal(props: DocumentUploadModalProps) {
     docEmployee, onDocEmployeeChange,
     docType, onDocTypeChange,
     docExpiry, onDocExpiryChange,
-    docFile, docError, onFilePick, onRemoveFile,
+    docFile, docError, isUploading, onFilePick, onRemoveFile,
     viewDoc, onCloseView, onDownload,
   } = props;
+  const { employees } = useEmployeeDirectory();
 
   return (
     <>
@@ -48,7 +50,7 @@ export default function DocumentUploadModal(props: DocumentUploadModalProps) {
         <form onSubmit={onUpload} className="space-y-4">
           <Input label="Document Name" placeholder="e.g. Employment Contract" value={docName} onChange={e => onDocNameChange(e.target.value)} required />
           <Select label="Employee" value={docEmployee} onChange={e => onDocEmployeeChange(e.target.value)}
-            options={[{ value: '', label: 'Select employee…' }, { value: 'All Employees', label: 'All Employees' }, ...mockEmployees.map(e => ({ value: `${e.firstName} ${e.lastName}`, label: `${e.firstName} ${e.lastName} — ${e.designation}` }))]} required />
+            options={[{ value: '', label: 'Select employee…' }, { value: 'All Employees', label: 'All Employees' }, ...employees.map(e => ({ value: `${e.firstName} ${e.lastName}`, label: `${e.firstName} ${e.lastName} — ${e.designation}` }))]} required />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select label="Document Type" value={docType} onChange={e => onDocTypeChange(e.target.value)}
               options={['Contract', 'ID', 'Legal', 'Policy', 'Certificate'].map(t => ({ value: t, label: t }))} required />
@@ -71,7 +73,7 @@ export default function DocumentUploadModal(props: DocumentUploadModalProps) {
           {docError && <p className="text-sm text-red-500">{docError}</p>}
           <div className="flex justify-end gap-3 pt-2 border-t border-[#D6E4E8]">
             <Button variant="outline" type="button" onClick={onCloseUpload}>Cancel</Button>
-            <Button variant="primary" type="submit"><Upload size={16} /> Upload</Button>
+            <Button variant="primary" type="submit" disabled={isUploading} loading={isUploading}><Upload size={16} /> {isUploading ? 'Uploading…' : 'Upload'}</Button>
           </div>
         </form>
       </Modal>

@@ -1,12 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { mockEmployees } from '@/lib/mock-data';
-import { expenseReportToPDF } from '@/lib/expense-report';
-import { downloadBlob } from '@/lib/payroll-pdf';
+import { useEffect, useMemo, useState } from 'react';
+// NOTE: jspdf is loaded lazily inside handleExportPDF so the expenses page
+// renders without the ~350KB PDF library in its initial bundle.
 import { useAuth } from '@/contexts/AuthContext';
 import { useExpense } from '@/contexts/ExpenseContext';
-import type { ExpenseClaim } from '@/types';
+import { getEmployees } from '@/lib/actions/employees';
+import { notifyAdminsNewClaim, notifyClaimantDecision } from '@/lib/actions/expenses';
+import type { Employee, ExpenseClaim } from '@/types';
 
 export function useExpensesView() {
   const { user } = useAuth();
@@ -47,14 +48,24 @@ export function useExpensesView() {
   const zoomIn = () => setZoom((z) => Math.min(3, Math.round((z + 0.25) * 100) / 100));
   const zoomOut = () => setZoom((z) => Math.max(0.25, Math.round((z - 0.25) * 100) / 100));
 
-  // Resolve the logged-in user to an employee record (same matching as profile page)
+  // Resolve the logged-in user to a REAL employee record from Supabase
+  // (mock IDs are not valid UUIDs and would violate the FK on submit).
+  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    getEmployees()
+      .then((data) => { if (!cancelled) setAllEmployees(data); })
+      .catch((err) => console.error('Failed to load employees:', err));
+    return () => { cancelled = true; };
+  }, []);
+
   const employee = useMemo(() => {
     if (!user) return undefined;
     return (
-      mockEmployees.find((e) => e.email.toLowerCase() === user.email.toLowerCase()) ||
-      mockEmployees.find((e) => `${e.firstName} ${e.lastName}`.toLowerCase() === user.name.toLowerCase())
+      allEmployees.find((e) => e.email.toLowerCase() === user.email.toLowerCase()) ||
+      allEmployees.find((e) => `${e.firstName} ${e.lastName}`.toLowerCase() === user.name.toLowerCase())
     );
-  }, [user]);
+  }, [user, allEmployees]);
 
   // Employees only see their own expenses; admins/HR see everything.
   // Admins can additionally narrow the view to a single calendar month.
@@ -80,7 +91,11 @@ export function useExpensesView() {
     return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   }, [expenseMonth]);
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    const [{ expenseReportToPDF }, { downloadBlob }] = await Promise.all([
+      import('@/lib/expense-report'),
+      import('@/lib/payroll-pdf'),
+    ]);
     const slug = expenseMonth === 'all' ? 'all-months' : expenseMonth;
     downloadBlob(`expense-report-${slug}.pdf`, expenseReportToPDF(visibleExpenses, expensePeriodLabel));
   };
@@ -141,7 +156,7 @@ export function useExpensesView() {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const nextErrors: Record<string, string> = {};
     if (!category) nextErrors.category = 'Please select a category.';
@@ -150,31 +165,62 @@ export function useExpensesView() {
     else if (isNaN(parsedAmount) || parsedAmount <= 0) nextErrors.amount = 'Enter a valid amount greater than 0.';
     if (!date) nextErrors.date = 'Date is required.';
     if (!description.trim()) nextErrors.description = 'Please enter a description.';
+    if (!editingId && !employee) nextErrors.employee = 'Your login is not linked to an employee record. Contact HR.';
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
     setSubmitting(true);
-    if (editingId) {
-      updateExpenseClaim(editingId, {
-        category,
-        amount: Math.round(parsedAmount * 100) / 100,
-        date,
-        description: description.trim(),
-        receipt: receiptData || undefined,
-      });
-    } else {
-      addExpenseClaim({
-        employeeId: employee?.id ?? user!.id,
-        employeeName: employee ? `${employee.firstName} ${employee.lastName}` : user!.name,
-        category,
-        amount: Math.round(parsedAmount * 100) / 100,
-        date,
-        description: description.trim(),
-        receipt: receiptData || undefined,
-      });
+    try {
+      if (editingId) {
+        await updateExpenseClaim(editingId, {
+          category,
+          amount: Math.round(parsedAmount * 100) / 100,
+          date,
+          description: description.trim(),
+          receipt: receiptData || undefined,
+        });
+      } else {
+        const claim = await addExpenseClaim({
+          employeeId: employee!.id,
+          employeeName: `${employee!.firstName} ${employee!.lastName}`,
+          category,
+          amount: Math.round(parsedAmount * 100) / 100,
+          date,
+          description: description.trim(),
+          receipt: receiptData || undefined,
+        });
+        // Notify all admins/HR — must never break the submission itself
+        try {
+          await notifyAdminsNewClaim(claim.id);
+        } catch (notifyErr) {
+          console.error('Failed to notify admins about new claim:', notifyErr);
+        }
+      }
+      setShowModal(false);
+      resetForm();
+    } catch (err) {
+      setErrors({ submit: err instanceof Error ? err.message : 'Failed to save claim' });
+    } finally {
+      setSubmitting(false);
     }
-    setShowModal(false);
-    resetForm();
+  };
+
+  const handleApproveClaim = async (id: string) => {
+    await updateExpenseStatus(id, 'Approved');
+    try {
+      await notifyClaimantDecision(id, 'Approved', user?.name || 'HR');
+    } catch (notifyErr) {
+      console.error('Failed to notify claimant:', notifyErr);
+    }
+  };
+
+  const handleRejectClaim = async (id: string) => {
+    await updateExpenseStatus(id, 'Rejected');
+    try {
+      await notifyClaimantDecision(id, 'Rejected', user?.name || 'HR');
+    } catch (notifyErr) {
+      console.error('Failed to notify claimant:', notifyErr);
+    }
   };
 
   return {
@@ -190,6 +236,7 @@ export function useExpensesView() {
     visibleExpenses, expensePeriodLabel, totalPending,
     openReceipt, closeReceipt, zoomIn, zoomOut,
     handleExportPDF, resetForm, openNew, openEdit, handleFileChange, handleSubmit,
+    handleApproveClaim, handleRejectClaim,
   };
 }
 

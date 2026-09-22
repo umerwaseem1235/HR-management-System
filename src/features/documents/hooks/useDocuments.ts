@@ -1,12 +1,24 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useEmployee } from '@/hooks/useEmployee';
-import { DocumentItem, SEED_DOCUMENTS } from '../types';
+import { useAuth } from '@/contexts/AuthContext';
+import { createClient } from '@/lib/client';
+import { DocumentItem } from '../types';
+import { createDocument, deleteDocument, getDocumentDownloadUrl, getDocuments } from '@/lib/actions/documents';
+
+const DOCUMENTS_BUCKET = 'documents';
+
+function slugify(value: string): string {
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'general';
+}
 
 export function useDocuments() {
   const { user, employeeName, isEmployee } = useEmployee();
+  const { user: authUser } = useAuth();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
-  const [docs, setDocs] = useState<DocumentItem[]>(SEED_DOCUMENTS);
+  const [docs, setDocs] = useState<DocumentItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [viewDoc, setViewDoc] = useState<DocumentItem | null>(null);
   const [docName, setDocName] = useState('');
@@ -15,7 +27,25 @@ export function useDocuments() {
   const [docExpiry, setDocExpiry] = useState('');
   const [docFile, setDocFile] = useState('');
   const [docFileData, setDocFileData] = useState('');
+  const [docFileObj, setDocFileObj] = useState<File | null>(null);
   const [docError, setDocError] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError('');
+    try {
+      setDocs(await getDocuments());
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Failed to load documents');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const filtered = docs.filter(doc => {
     // Employees see only their own documents plus company-wide shared ones.
@@ -33,7 +63,7 @@ export function useDocuments() {
   });
 
   const resetUpload = () => {
-    setDocName(''); setDocEmployee(''); setDocType('Contract'); setDocExpiry(''); setDocFile(''); setDocFileData(''); setDocError('');
+    setDocName(''); setDocEmployee(''); setDocType('Contract'); setDocExpiry(''); setDocFile(''); setDocFileData(''); setDocFileObj(null); setDocError('');
   };
 
   const openUpload = () => {
@@ -47,10 +77,11 @@ export function useDocuments() {
   };
 
   const handleFilePick = (file: File | undefined) => {
-    if (!file) { setDocFile(''); setDocFileData(''); return; }
+    if (!file) { setDocFile(''); setDocFileData(''); setDocFileObj(null); return; }
     if (file.size > 10 * 1024 * 1024) { setDocError('File must be smaller than 10MB.'); return; }
     setDocError('');
     setDocFile(file.name);
+    setDocFileObj(file);
     const reader = new FileReader();
     reader.onload = () => setDocFileData(reader.result as string);
     reader.readAsDataURL(file);
@@ -59,23 +90,61 @@ export function useDocuments() {
   const removeFile = () => {
     setDocFile('');
     setDocFileData('');
+    setDocFileObj(null);
   };
 
-  const handleUpload = (e: React.FormEvent) => {
+  const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!docName.trim()) { setDocError('Document name is required.'); return; }
     if (!docEmployee) { setDocError('Please select an employee.'); return; }
-    if (!docFile) { setDocError('Please attach a document file.'); return; }
-    setDocs(prev => [{
-      id: `doc-${Date.now()}`, name: docName.trim(), type: docType, employee: docEmployee,
-      uploadedDate: new Date().toISOString().slice(0, 10), expiryDate: docExpiry || null, status: 'Active',
-      fileData: docFileData, fileName: docFile,
-    }, ...prev]);
-    setShowUpload(false);
-    resetUpload();
+    if (!docFileObj) { setDocError('Please attach a document file.'); return; }
+    setIsUploading(true);
+    try {
+      // 1. Bytes go straight to the Storage bucket (never through the DB row)
+      const path = `${slugify(docEmployee)}/${Date.now()}_${docFileObj.name.replace(/[^a-zA-Z0-9._-]+/g, '_')}`;
+      const browser = createClient();
+      const { error: uploadErr } = await browser.storage
+        .from(DOCUMENTS_BUCKET)
+        .upload(path, docFileObj, { contentType: docFileObj.type || undefined, upsert: false });
+      if (uploadErr) throw new Error(uploadErr.message);
+      // 2. Only metadata + storage path are stored in Supabase
+      await createDocument({
+        name: docName.trim(),
+        type: docType,
+        employee: docEmployee,
+        expiryDate: docExpiry || undefined,
+        filePath: path,
+        fileName: docFileObj.name,
+        uploadedBy: authUser?.name || user?.name,
+      });
+      await refresh();
+      setShowUpload(false);
+      resetUpload();
+    } catch (err) {
+      setDocError(err instanceof Error ? err.message : 'Failed to upload document');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
-  const downloadDoc = (doc: DocumentItem) => {
+  const handleDelete = async (id: string) => {
+    const target = docs.find((d) => d.id === id);
+    if (!confirm(`Delete document "${target?.name || 'this document'}"? This cannot be undone.`)) return;
+    await deleteDocument(id);
+    await refresh();
+  };
+
+  const downloadDoc = async (doc: DocumentItem) => {
+    // Bucket-backed files resolve to a short-lived signed URL
+    if (doc.filePath) {
+      try {
+        const url = await getDocumentDownloadUrl(doc.id);
+        window.open(url, '_blank', 'noopener');
+        return;
+      } catch (err) {
+        console.error('Signed URL failed, falling back:', err);
+      }
+    }
     if (doc.fileData) {
       const a = document.createElement('a');
       a.href = doc.fileData;
@@ -98,14 +167,15 @@ export function useDocuments() {
     search, setSearch,
     category, setCategory,
     docs, filtered,
+    isLoading, loadError, refresh,
     showUpload, openUpload, closeUpload,
     viewDoc, setViewDoc,
     docName, setDocName,
     docEmployee, setDocEmployee,
     docType, setDocType,
     docExpiry, setDocExpiry,
-    docFile, docFileData, docError,
-    handleFilePick, removeFile, handleUpload, downloadDoc,
+    docFile, docFileData, docError, isUploading,
+    handleFilePick, removeFile, handleUpload, handleDelete, downloadDoc,
   };
 }
 

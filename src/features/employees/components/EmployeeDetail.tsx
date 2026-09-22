@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
@@ -9,9 +9,16 @@ import Badge from '@/components/ui/Badge';
 import Avatar from '@/components/ui/Avatar';
 import Button from '@/components/ui/Button';
 import { StatusBadge } from '@/components/shared';
-import { Mail, Phone, MapPin, Calendar, Building2, Briefcase, Edit, ArrowLeft } from 'lucide-react';
-import { mockEmployees, mockAttendance, mockLeaveBalances, mockPayslips, mockGoals, mockAssets } from '@/lib/mock-data';
+import { Mail, Phone, MapPin, Calendar, Edit, ArrowLeft } from 'lucide-react';
 import { LEAVE_TYPES } from '@/lib/constants';
+import { getEmployee } from '@/lib/actions/employees';
+import { getAttendanceByEmployee } from '@/lib/actions/attendance';
+import { getLeaveBalances } from '@/lib/actions/leave';
+import { getPayslips } from '@/lib/actions/payroll';
+import { getAssets } from '@/lib/actions/performance';
+import { getDocuments } from '@/lib/actions/documents';
+import type { Asset, AttendanceRecord, Employee, LeaveBalance, Payslip } from '@/lib/types';
+import type { DocumentRecord } from '@/lib/actions/documents';
 
 const InfoRow = ({ label, value }: { label: string; value: string }) => (
   <div className="flex flex-col sm:flex-row sm:items-center py-3 border-b border-[#D6E4E8] last:border-0">
@@ -22,9 +29,49 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => (
 
 export default function EmployeeDetail() {
   const params = useParams();
+  const id = Array.isArray(params.id) ? params.id[0] : (params.id as string);
   const [activeTab, setActiveTab] = useState('personal');
-  const employee = mockEmployees.find(e => e.id === params.id) || mockEmployees[0];
-  const employeeSlips = mockPayslips.filter(s => s.employeeId === employee.id);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [balances, setBalances] = useState<LeaveBalance[]>([]);
+  const [slips, setSlips] = useState<Payslip[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    (async () => {
+      setIsLoading(true);
+      setLoadError('');
+      try {
+        const emp = await getEmployee(id);
+        if (cancelled) return;
+        setEmployee(emp);
+        const [att, bal, pay, ass, docs] = await Promise.all([
+          getAttendanceByEmployee(id),
+          getLeaveBalances(id),
+          getPayslips(id),
+          getAssets(),
+          getDocuments(),
+        ]);
+        if (cancelled) return;
+        setAttendance(att.slice(0, 10));
+        setBalances(bal);
+        setSlips(pay);
+        setAssets(ass.filter((a) => a.assignedTo === id));
+        const fullName = `${emp.firstName} ${emp.lastName}`.toLowerCase();
+        setDocuments(docs.filter((d) => d.employee.toLowerCase() === fullName || d.employee.toLowerCase() === 'all employees'));
+      } catch (err) {
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load employee');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [id]);
 
   const tabs = [
     { id: 'personal', label: 'Personal Info' },
@@ -36,6 +83,27 @@ export default function EmployeeDetail() {
     { id: 'assets', label: 'Assets' },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 w-40 animate-pulse rounded-lg bg-[#EAF2F4]" />
+        <Card><div className="h-32 animate-pulse rounded-xl bg-[#EAF2F4]/60" /></Card>
+        <Card padding="none"><div className="p-6"><div className="h-48 animate-pulse rounded-xl bg-[#EAF2F4]/60" /></div></Card>
+      </div>
+    );
+  }
+
+  if (loadError || !employee) {
+    return (
+      <div className="space-y-6">
+        <Link href="/employees" className="inline-flex items-center gap-2 text-sm text-[#024fa7] hover:underline">
+          <ArrowLeft size={16} /> Back to Employees
+        </Link>
+        <Card><p className="p-4 text-sm text-red-600">{loadError || 'Employee not found.'}</p></Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Back button */}
@@ -46,7 +114,7 @@ export default function EmployeeDetail() {
       {/* Profile Header */}
       <Card>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-          <Avatar name={`${employee.firstName} ${employee.lastName}`} size="xl" />
+          <Avatar name={`${employee.firstName} ${employee.lastName}`} src={employee.avatar} size="xl" />
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-2xl font-bold leading-tight tracking-tight text-[#17324D]">{employee.firstName} {employee.lastName}</h1>
@@ -59,9 +127,11 @@ export default function EmployeeDetail() {
               <span className="flex items-center gap-1"><Calendar size={14} /> Joined {employee.joiningDate}</span>
             </div>
           </div>
-          <Button variant="outline" size="sm">
-            <Edit size={14} /> Edit
-          </Button>
+          <Link href="/employees">
+            <Button variant="outline" size="sm">
+              <Edit size={14} /> Edit
+            </Button>
+          </Link>
         </div>
       </Card>
 
@@ -102,89 +172,107 @@ export default function EmployeeDetail() {
           {activeTab === 'attendance' && (
             <div>
               <h3 className="text-base font-semibold text-[#17324D] mb-4">Recent Attendance</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead><tr className="bg-[#EAF2F4]">
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-[#17324D]">Date</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-[#17324D]">Check In</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-[#17324D]">Check Out</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-[#17324D]">Status</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-[#17324D]">Hours</th>
-                  </tr></thead>
-                  <tbody className="divide-y divide-[#D6E4E8]">
-                    {mockAttendance.filter(a => a.employeeId === employee.id).map(att => (
-                      <tr key={att.id}>
-                        <td className="px-4 py-3 text-sm">{att.date}</td>
-                        <td className="px-4 py-3 text-sm">{att.checkIn || '—'}</td>
-                        <td className="px-4 py-3 text-sm">{att.checkOut || '—'}</td>
-                        <td className="px-4 py-3"><Badge variant={att.status === 'Present' ? 'success' : att.status === 'Late' ? 'warning' : 'danger'} size="sm">{att.status}</Badge></td>
-                        <td className="px-4 py-3 text-sm">{att.workHours}h</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {attendance.length === 0 ? (
+                <p className="text-sm text-gray-500 py-8 text-center">No attendance records yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead><tr className="bg-[#EAF2F4]">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-[#17324D]">Date</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-[#17324D]">Check In</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-[#17324D]">Check Out</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-[#17324D]">Status</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-[#17324D]">Hours</th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-[#D6E4E8]">
+                      {attendance.map((att) => (
+                        <tr key={att.id}>
+                          <td className="px-4 py-3 text-sm">{att.date}</td>
+                          <td className="px-4 py-3 text-sm">{att.checkIn || '—'}</td>
+                          <td className="px-4 py-3 text-sm">{att.checkOut || '—'}</td>
+                          <td className="px-4 py-3"><Badge variant={att.status === 'Present' ? 'success' : att.status === 'Late' ? 'warning' : 'danger'} size="sm">{att.status}</Badge></td>
+                          <td className="px-4 py-3 text-sm">{att.workHours}h</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
           {activeTab === 'leave' && (
             <div>
               <h3 className="text-base font-semibold text-[#17324D] mb-4">Leave Balances</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {mockLeaveBalances.map(bal => {
-                  const meta = LEAVE_TYPES.find((t) => t.name === bal.leaveType);
-                  const isMonthly = bal.leaveType === 'Monthly Leave';
-                  return (
-                    <div key={bal.leaveType} className="p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]" style={{ borderTop: `3px solid ${meta?.color ?? '#024fa7'}` }}>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm font-medium">{bal.leaveType}</span>
-                        <span className="text-sm font-bold text-[#17324D]">{bal.remaining}/{bal.total}</span>
+              {balances.length === 0 ? (
+                <p className="text-sm text-gray-500 py-8 text-center">No leave balances found.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {balances.map((bal) => {
+                    const meta = LEAVE_TYPES.find((t) => t.name === bal.leaveType);
+                    return (
+                      <div key={bal.leaveType} className="p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]" style={{ borderTop: `3px solid ${meta?.color ?? '#024fa7'}` }}>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-sm font-medium">{bal.leaveType}</span>
+                          <span className="text-sm font-bold text-[#17324D]">{bal.remaining}/{bal.total}</span>
+                        </div>
+                        <div className="w-full bg-[#D6E4E8] rounded-full h-2">
+                          <div className="h-2 rounded-full" style={{ width: `${bal.total > 0 ? Math.min(100, (bal.used / bal.total) * 100) : 0}%`, backgroundColor: meta?.color ?? '#024fa7' }} />
+                        </div>
                       </div>
-                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                        {isMonthly ? 'Resets monthly · no carry forward' : `${bal.total} days / year`}
-                      </p>
-                      <div className="w-full bg-[#D6E4E8] rounded-full h-2">
-                        <div className="h-2 rounded-full" style={{ width: `${bal.total > 0 ? Math.min(100, (bal.used / bal.total) * 100) : 0}%`, backgroundColor: meta?.color ?? '#024fa7' }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
           {activeTab === 'payroll' && (
             <div>
               <h3 className="text-base font-semibold text-[#17324D] mb-4">Payslip History</h3>
-              {employeeSlips.length === 0 ? (
+              {slips.length === 0 ? (
                 <p className="text-sm text-gray-500 py-8 text-center">No payslips generated for this employee yet.</p>
               ) : (
-              <div className="space-y-3">
-                {employeeSlips.map(slip => (
-                  <div key={slip.id} className="flex items-center justify-between p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
-                    <div>
-                      <p className="text-sm font-medium text-[#263238]">{slip.month} {slip.year}</p>
-                      <p className="text-xs text-gray-500">Generated: {slip.generatedOn}</p>
+                <div className="space-y-3">
+                  {slips.map((slip) => (
+                    <div key={slip.id} className="flex items-center justify-between p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
+                      <div>
+                        <p className="text-sm font-medium text-[#263238]">{slip.month} {slip.year}</p>
+                        <p className="text-xs text-gray-500">Generated: {slip.generatedOn}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-[#17324D]">${slip.netSalary.toLocaleString()}</p>
+                        <Badge variant="success" size="sm">{slip.status}</Badge>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-[#17324D]">${slip.netSalary.toLocaleString()}</p>
-                      <Badge variant="success" size="sm">{slip.status}</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
               )}
             </div>
           )}
           {activeTab === 'documents' && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">Employee documents will be displayed here.</p>
-              <Button variant="outline" size="sm" className="mt-4">Upload Document</Button>
+            <div>
+              <h3 className="text-base font-semibold text-[#17324D] mb-4">Documents</h3>
+              {documents.length === 0 ? (
+                <p className="text-sm text-gray-500 py-8 text-center">No documents on file for this employee.</p>
+              ) : (
+                <div className="space-y-3">
+                  {documents.map((doc) => (
+                    <div key={doc.id} className="flex items-center justify-between p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
+                      <div>
+                        <p className="text-sm font-medium text-[#263238]">{doc.name}</p>
+                        <p className="text-xs text-gray-500">{doc.type} · Uploaded {doc.uploadedDate}</p>
+                      </div>
+                      <Badge variant="info" size="sm">{doc.status}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           {activeTab === 'assets' && (
             <div>
               <h3 className="text-base font-semibold text-[#17324D] mb-4">Assigned Assets</h3>
               <div className="space-y-3">
-                {mockAssets.filter(a => a.assignedTo === employee.id).map(asset => (
+                {assets.map((asset) => (
                   <div key={asset.id} className="flex items-center justify-between p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
                     <div>
                       <p className="text-sm font-medium text-[#263238]">{asset.name}</p>
@@ -193,7 +281,7 @@ export default function EmployeeDetail() {
                     <Badge variant={asset.condition === 'New' ? 'success' : asset.condition === 'Good' ? 'info' : 'warning'} size="sm">{asset.condition}</Badge>
                   </div>
                 ))}
-                {mockAssets.filter(a => a.assignedTo === employee.id).length === 0 && (
+                {assets.length === 0 && (
                   <p className="text-gray-500 text-sm text-center py-8">No assets assigned.</p>
                 )}
               </div>

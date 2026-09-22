@@ -334,6 +334,7 @@ export interface Database {
           date: string;
           is_recurring: boolean | null;
           branch_id: string | null;
+          type: string | null;
           created_at: string;
         };
         Insert: {
@@ -342,6 +343,7 @@ export interface Database {
           date: string;
           is_recurring?: boolean | null;
           branch_id?: string | null;
+          type?: string | null;
           created_at?: string;
         };
         Update: {
@@ -350,6 +352,7 @@ export interface Database {
           date?: string;
           is_recurring?: boolean | null;
           branch_id?: string | null;
+          type?: string | null;
           created_at?: string;
         };
         Relationships: [];
@@ -729,6 +732,7 @@ export interface Database {
           resume: string | null;
           notes: string | null;
           rating: number | null;
+          source: string;
           created_at: string;
           updated_at: string;
         };
@@ -743,6 +747,7 @@ export interface Database {
           resume?: string | null;
           notes?: string | null;
           rating?: number | null;
+          source?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -757,8 +762,165 @@ export interface Database {
           resume?: string | null;
           notes?: string | null;
           rating?: number | null;
+          source?: string;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      interviews: {
+        Row: {
+          id: string;
+          candidate_id: string;
+          date: string;
+          time: string;
+          mode: string;
+          interviewer_name: string;
+          interviewer_id: string | null;
+          round: string;
+          status: string;
+          feedback: string | null;
+          rating: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          candidate_id: string;
+          date: string;
+          time?: string;
+          mode?: string;
+          interviewer_name?: string;
+          interviewer_id?: string | null;
+          round?: string;
+          status?: string;
+          feedback?: string | null;
+          rating?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          candidate_id?: string;
+          date?: string;
+          time?: string;
+          mode?: string;
+          interviewer_name?: string;
+          interviewer_id?: string | null;
+          round?: string;
+          status?: string;
+          feedback?: string | null;
+          rating?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      offers: {
+        Row: {
+          id: string;
+          candidate_id: string;
+          salary: number;
+          joining_date: string | null;
+          status: string;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          candidate_id: string;
+          salary?: number;
+          joining_date?: string | null;
+          status?: string;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          candidate_id?: string;
+          salary?: number;
+          joining_date?: string | null;
+          status?: string;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      documents: {
+        Row: {
+          id: string;
+          name: string;
+          type: string;
+          employee: string;
+          uploaded_date: string;
+          expiry_date: string | null;
+          status: string;
+          file_data: string | null;
+          file_path: string | null;
+          file_name: string | null;
+          uploaded_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          type?: string;
+          employee?: string;
+          uploaded_date?: string;
+          expiry_date?: string | null;
+          status?: string;
+          file_data?: string | null;
+          file_path?: string | null;
+          file_name?: string | null;
+          uploaded_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          type?: string;
+          employee?: string;
+          uploaded_date?: string;
+          expiry_date?: string | null;
+          status?: string;
+          file_data?: string | null;
+          file_path?: string | null;
+          file_name?: string | null;
+          uploaded_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      candidate_history: {
+        Row: {
+          id: string;
+          candidate_id: string;
+          date: string;
+          action: string;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          candidate_id: string;
+          date?: string;
+          action: string;
+          note?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          candidate_id?: string;
+          date?: string;
+          action?: string;
+          note?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };

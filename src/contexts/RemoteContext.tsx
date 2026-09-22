@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo, ReactNode } from 'react';
 import { RemoteRequest, RemoteRequestStatus } from '../lib/types';
 import { getRemoteRequests, createRemoteRequest, updateRemoteStatus as updateRemoteStatusAction, deleteRemoteRequest as deleteRemoteRequestAction } from '@/lib/actions/remote';
 
@@ -20,29 +20,36 @@ interface RemoteContextType {
   addRemoteRequest: (input: NewRemoteInput) => Promise<RemoteRequest>;
   updateRemoteStatus: (id: string, status: RemoteRequestStatus, reviewedBy?: string, reviewComments?: string) => Promise<void>;
   deleteRemoteRequest: (id: string) => Promise<void>;
+  ensureLoaded: () => void;
 }
 
 const RemoteContext = createContext<RemoteContextType | undefined>(undefined);
 
 export function RemoteProvider({ children }: { children: ReactNode }) {
   const [remoteRequests, setRemoteRequests] = useState<RemoteRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const fetchedRef = useRef(false);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const data = await getRemoteRequests();
-        setRemoteRequests(data);
-      } catch (error) {
-        console.error('Failed to load remote requests:', error);
-      } finally {
-        setIsLoading(false);
-      }
+  const loadData = useCallback(async () => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    setIsLoading(true);
+    try {
+      const data = await getRemoteRequests();
+      setRemoteRequests(data);
+    } catch (error) {
+      console.error('Failed to load remote requests:', error);
+      fetchedRef.current = false;
+    } finally {
+      setIsLoading(false);
     }
-    load();
   }, []);
 
-  const addRemoteRequest = async (input: NewRemoteInput): Promise<RemoteRequest> => {
+  const ensureLoaded = useCallback(() => {
+    if (!fetchedRef.current) loadData();
+  }, [loadData]);
+
+  const addRemoteRequest = useCallback(async (input: NewRemoteInput): Promise<RemoteRequest> => {
     const request = await createRemoteRequest({
       employeeId: input.employeeId,
       fromDate: input.fromDate,
@@ -53,22 +60,34 @@ export function RemoteProvider({ children }: { children: ReactNode }) {
     });
     setRemoteRequests((prev) => [request, ...prev]);
     return request;
-  };
+  }, []);
 
-  const updateRemoteStatus = async (id: string, status: RemoteRequestStatus, reviewedBy?: string, reviewComments?: string) => {
+  const updateRemoteStatus = useCallback(async (id: string, status: RemoteRequestStatus, reviewedBy?: string, reviewComments?: string) => {
     await updateRemoteStatusAction(id, status, reviewedBy, reviewComments);
     setRemoteRequests((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status, reviewedBy, reviewComments } : r))
     );
-  };
+  }, []);
 
-  const deleteRemoteRequest = async (id: string) => {
+  const deleteRemoteRequest = useCallback(async (id: string) => {
     await deleteRemoteRequestAction(id);
     setRemoteRequests((prev) => prev.filter((r) => r.id !== id));
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      remoteRequests,
+      isLoading,
+      addRemoteRequest,
+      updateRemoteStatus,
+      deleteRemoteRequest,
+      ensureLoaded,
+    }),
+    [remoteRequests, isLoading, addRemoteRequest, updateRemoteStatus, deleteRemoteRequest, ensureLoaded]
+  );
 
   return (
-    <RemoteContext.Provider value={{ remoteRequests, isLoading, addRemoteRequest, updateRemoteStatus, deleteRemoteRequest }}>
+    <RemoteContext.Provider value={value}>
       {children}
     </RemoteContext.Provider>
   );
@@ -79,5 +98,9 @@ export function useRemote() {
   if (context === undefined) {
     throw new Error('useRemote must be used within a RemoteProvider');
   }
+  const { ensureLoaded } = context;
+  useEffect(() => {
+    ensureLoaded();
+  }, [ensureLoaded]);
   return context;
 }

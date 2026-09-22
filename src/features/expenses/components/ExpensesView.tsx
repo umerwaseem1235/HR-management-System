@@ -196,7 +196,7 @@ export default function ExpensesView() {
         }
         confirmLabel="Confirm Approve"
         confirmIcon={<CheckCircle2 size={16} />}
-        onConfirm={() => { if (e.confirmApproveExp) e.updateExpenseStatus(e.confirmApproveExp.id, 'Approved'); e.setConfirmApproveExp(null); }}
+        onConfirm={() => { if (e.confirmApproveExp) e.handleApproveClaim(e.confirmApproveExp.id); e.setConfirmApproveExp(null); }}
       />
 
       <ConfirmDialog
@@ -218,7 +218,7 @@ export default function ExpensesView() {
         }
         confirmLabel="Confirm Reject"
         confirmIcon={<XCircle size={16} />}
-        onConfirm={() => { if (e.confirmRejectExp) e.updateExpenseStatus(e.confirmRejectExp.id, 'Rejected'); e.setConfirmRejectExp(null); }}
+        onConfirm={() => { if (e.confirmRejectExp) e.handleRejectClaim(e.confirmRejectExp.id); e.setConfirmRejectExp(null); }}
       />
 
       <ConfirmDialog

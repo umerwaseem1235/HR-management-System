@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo, ReactNode } from 'react';
 import { ProgressEntry } from '../lib/types';
 import { getProgressEntries, createProgressEntry, updateProgressEntry as updateProgressEntryAction, deleteProgressEntry as deleteProgressEntryAction } from '@/lib/actions/progress';
 
@@ -24,29 +24,36 @@ interface ProgressContextType {
   addEntry: (input: NewProgressInput) => Promise<ProgressEntry>;
   updateEntry: (id: string, input: UpdateProgressInput) => Promise<void>;
   deleteEntry: (id: string) => Promise<void>;
+  ensureLoaded: () => void;
 }
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
 
 export function ProgressProvider({ children }: { children: ReactNode }) {
   const [entries, setEntries] = useState<ProgressEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const fetchedRef = useRef(false);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const data = await getProgressEntries();
-        setEntries(data);
-      } catch (error) {
-        console.error('Failed to load progress entries:', error);
-      } finally {
-        setIsLoading(false);
-      }
+  const loadData = useCallback(async () => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    setIsLoading(true);
+    try {
+      const data = await getProgressEntries();
+      setEntries(data);
+    } catch (error) {
+      console.error('Failed to load progress entries:', error);
+      fetchedRef.current = false;
+    } finally {
+      setIsLoading(false);
     }
-    load();
   }, []);
 
-  const addEntry = async (input: NewProgressInput): Promise<ProgressEntry> => {
+  const ensureLoaded = useCallback(() => {
+    if (!fetchedRef.current) loadData();
+  }, [loadData]);
+
+  const addEntry = useCallback(async (input: NewProgressInput): Promise<ProgressEntry> => {
     const entry = await createProgressEntry({
       employeeId: input.employeeId,
       projectName: input.projectName,
@@ -55,20 +62,32 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     });
     setEntries((prev) => [entry, ...prev]);
     return entry;
-  };
+  }, []);
 
-  const updateEntry = async (id: string, input: UpdateProgressInput) => {
+  const updateEntry = useCallback(async (id: string, input: UpdateProgressInput) => {
     await updateProgressEntryAction(id, input);
     setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...input } : e)));
-  };
+  }, []);
 
-  const deleteEntry = async (id: string) => {
+  const deleteEntry = useCallback(async (id: string) => {
     await deleteProgressEntryAction(id);
     setEntries((prev) => prev.filter((e) => e.id !== id));
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      entries,
+      isLoading,
+      addEntry,
+      updateEntry,
+      deleteEntry,
+      ensureLoaded,
+    }),
+    [entries, isLoading, addEntry, updateEntry, deleteEntry, ensureLoaded]
+  );
 
   return (
-    <ProgressContext.Provider value={{ entries, isLoading, addEntry, updateEntry, deleteEntry }}>
+    <ProgressContext.Provider value={value}>
       {children}
     </ProgressContext.Provider>
   );
@@ -79,5 +98,9 @@ export function useProgress() {
   if (context === undefined) {
     throw new Error('useProgress must be used within a ProgressProvider');
   }
+  const { ensureLoaded } = context;
+  useEffect(() => {
+    ensureLoaded();
+  }, [ensureLoaded]);
   return context;
 }

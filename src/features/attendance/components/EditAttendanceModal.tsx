@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Pencil } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -15,10 +15,12 @@ export default function EditAttendanceModal({
   record,
   onClose,
   onSave,
+  onDelete,
 }: {
   record: AttendanceRecord;
   onClose: () => void;
   onSave: (id: string, values: { checkIn: string; checkOut: string; status: string; notes: string }) => void;
+  onDelete?: (id: string) => void;
 }) {
   const [checkIn, setCheckIn] = useState(record.checkIn || '');
   const [checkOut, setCheckOut] = useState(record.checkOut || '');
@@ -69,9 +71,25 @@ export default function EditAttendanceModal({
             <Input label="Notes" placeholder="Reason for correction (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
         </div>
-        <div className="flex justify-end gap-3 pt-2 border-t border-[#D6E4E8]">
-          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary"><Pencil size={16} /> Save Changes</Button>
+        <div className="flex justify-between items-center pt-2 border-t border-[#D6E4E8]">
+          {onDelete ? (
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => {
+                if (window.confirm(`Delete attendance record for ${record.employeeName} on ${record.date}?`)) {
+                  onDelete(record.id);
+                  onClose();
+                }
+              }}
+            >
+              <Trash2 size={16} /> Delete
+            </Button>
+          ) : <div />}
+          <div className="flex gap-3">
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" variant="primary"><Pencil size={16} /> Save Changes</Button>
+          </div>
         </div>
       </form>
     </Modal>

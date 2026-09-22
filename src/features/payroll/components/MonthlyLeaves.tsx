@@ -2,12 +2,13 @@
 
 import Badge from '@/components/ui/Badge';
 import Select from '@/components/ui/Select';
-import { mockEmployees } from '@/lib/mock-data';
+import type { Employee } from '@/types';
 import type { EmployeeMonthlyFines, EmployeeMonthlyLeaves } from '@/lib/payroll';
 import NumberField from './NumberField';
 import type { Dispatch, SetStateAction } from 'react';
 
 interface MonthlyLeavesProps {
+  employees: Employee[];
   monthlyDefault: number;
   onMonthlyDefaultChange: (n: number) => void;
   fineDefault: number;
@@ -22,7 +23,7 @@ interface MonthlyLeavesProps {
 }
 
 export default function MonthlyLeaves({
-  monthlyDefault, onMonthlyDefaultChange, fineDefault, onFineDefaultChange,
+  employees, monthlyDefault, onMonthlyDefaultChange, fineDefault, onFineDefaultChange,
   empMonthly, onEmpMonthlyChange, empFines, onEmpFinesChange,
   overrideEmpId, onOverrideEmpIdChange, resolveMonthlyLeaves,
 }: MonthlyLeavesProps) {
@@ -60,7 +61,7 @@ export default function MonthlyLeaves({
         {Object.keys(empMonthly).length > 0 && (
           <div className="flex flex-wrap gap-2">
             {Object.keys(empMonthly).map(empId => {
-              const emp = mockEmployees.find(e => e.id === empId);
+              const emp = employees.find(e => e.id === empId);
               if (!emp) return null;
               return (
                 <span
@@ -97,13 +98,13 @@ export default function MonthlyLeaves({
             onChange={e => onOverrideEmpIdChange(e.target.value)}
             options={[
               { value: '', label: 'Select employee…' },
-              ...mockEmployees.map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName} — ${e.designation}` })),
+              ...employees.map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName} — ${e.designation}` })),
             ]}
           />
         </div>
 
         {overrideEmpId && (() => {
-          const emp = mockEmployees.find(e => e.id === overrideEmpId);
+          const emp = employees.find(e => e.id === overrideEmpId);
           if (!emp) return null;
           const isCustom = empMonthly[overrideEmpId] !== undefined;
           const effective = resolveMonthlyLeaves(overrideEmpId, monthlyDefault, empMonthly);

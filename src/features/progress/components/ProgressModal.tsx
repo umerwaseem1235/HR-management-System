@@ -10,7 +10,7 @@ import {
   Bold, Italic, Underline, List, ListOrdered, Heading1, Heading2, Quote, Code2, Link2, Minus,
   User, Mail, Briefcase, CalendarDays, ClipboardList, StickyNote,
 } from 'lucide-react';
-import { mockEmployees } from '@/lib/mock-data';
+import { useEmployeeDirectory } from '@/hooks/useEmployeeDirectory';
 import type { ProgressEntry } from '@/types';
 import { formatSubmission, stripHtml } from '../hooks/useProgressView';
 
@@ -194,6 +194,7 @@ export default function ProgressModal(props: ProgressModalProps) {
     viewing, onCloseViewing,
     confirmDeleteEntry, onCloseDeleteConfirm, onConfirmDelete,
   } = props;
+  const { employees } = useEmployeeDirectory();
 
   return (
     <>
@@ -262,7 +263,7 @@ export default function ProgressModal(props: ProgressModalProps) {
         size="lg"
       >
         {viewing && (() => {
-          const emp = mockEmployees.find((e) =>
+          const emp = employees.find((e) =>
             viewing.employeeId
               ? e.id === viewing.employeeId
               : `${e.firstName} ${e.lastName}`.toLowerCase() === viewing.employeeName.toLowerCase(),

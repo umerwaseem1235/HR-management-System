@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarDays, CheckCircle2, Trash2, UserPlus, XCircle } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Trash2, UserPlus, XCircle, LogIn, LogOut } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -31,11 +31,86 @@ export default function AttendanceView() {
     const filteredMine = att.monthlyRecords.filter((r) => !att.statusFilter || r.status === att.statusFilter);
     const searchedMine = filteredMine.filter((r) => !att.search || r.date.toLowerCase().includes(att.search.toLowerCase()));
 
+    // Get today's record for this employee
+    const todayRecord = att.attendRecords.find(
+      (r) => r.date === att.viewDate && r.employeeId === att.employee?.id
+    );
+    const hasCheckedIn = !!todayRecord?.checkIn;
+    const hasCheckedOut = !!todayRecord?.checkOut;
+
     return (
       <div className="space-y-6">
         <PageHeader
           title="My Attendance"
         />
+
+        {/* Inline Check In / Check Out — compact, professional */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-xl border border-[#D6E4E8] bg-white">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#EAF2F4] flex items-center justify-center">
+              <span className="text-xl font-medium text-[#024fa7]">{todayRecord?.employeeName?.charAt(0) || att.user?.name?.charAt(0) || 'E'}</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#17324D]">Today's Attendance</p>
+              <p className="text-xs text-gray-500">{todayStr()}</p>
+            </div>
+          </div>
+
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+            hasCheckedOut ? 'bg-green-100 text-green-700' :
+            hasCheckedIn ? 'bg-amber-100 text-amber-700' :
+            'bg-gray-100 text-gray-600'
+          }`}>
+            {hasCheckedOut ? 'Checked Out' : hasCheckedIn ? 'Checked In' : 'Not Checked In'}
+          </span>
+
+          <div className="flex items-center gap-2 sm:ml-auto">
+            <Button
+              variant={hasCheckedIn ? 'outline' : 'primary'}
+              size="sm"
+              onClick={att.handleSelfCheckIn}
+              disabled={hasCheckedIn || att.loading}
+            >
+              <LogIn size={14} className="mr-1.5" />
+              Check In
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={att.handleSelfCheckOut}
+              disabled={!hasCheckedIn || hasCheckedOut || att.loading}
+            >
+              <LogOut size={14} className="mr-1.5" />
+              Check Out
+            </Button>
+          </div>
+
+          {hasCheckedIn && todayRecord && (
+            <div className="sm:hidden w-full pt-2 border-t border-[#D6E4E8] flex flex-wrap items-center gap-2 text-xs text-gray-600">
+              <span>In: <span className="font-medium text-[#17324D]">{todayRecord.checkIn}</span></span>
+              {hasCheckedOut && (
+                <>
+                  <span>Out: <span className="font-medium text-[#17324D]">{todayRecord.checkOut}</span></span>
+                  <span>Hours: <span className="font-medium text-[#17324D]">{todayRecord.workHours}h</span></span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {hasCheckedIn && todayRecord && (
+          <div className="hidden sm:flex sm:items-center sm:justify-between px-4 py-2 text-xs text-gray-600 bg-[#F8FBFC] rounded-xl border border-[#D6E4E8]">
+            <span>Checked in at <span className="font-medium text-[#17324D]">{todayRecord.checkIn}</span></span>
+            {hasCheckedOut && (
+              <>
+                <span className="mx-2">·</span>
+                <span>Checked out at <span className="font-medium text-[#17324D]">{todayRecord.checkOut}</span></span>
+                <span className="mx-2">·</span>
+                <span>Work hours: <span className="font-medium text-[#17324D]">{todayRecord.workHours}h</span></span>
+              </>
+            )}
+          </div>
+        )}
 
         <MyAttendanceStats
           presentDays={att.presentDays}
@@ -80,6 +155,12 @@ export default function AttendanceView() {
           </>
         }
       />
+
+      {att.error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {att.error}
+        </div>
+      )}
 
       {/* Today snapshot */}
       <TodaySnapshot stats={att.stats} />
@@ -144,6 +225,7 @@ export default function AttendanceView() {
         <CorrectionQueue
           corrections={att.corrections}
           pendingCorrections={att.pendingCorrections}
+          correctionHistory={att.correctionHistory}
           onApprove={att.setConfirmApproveCorrection}
           onReject={att.setConfirmRejectCorrection}
         />
@@ -164,6 +246,7 @@ export default function AttendanceView() {
         open={att.manualOpen}
         onClose={() => att.setManualOpen(false)}
         onSave={att.handleAddManual}
+        employees={att.employees}
       />
 
       {/* Edit attendance record (super admin / HR) */}
@@ -173,6 +256,7 @@ export default function AttendanceView() {
           record={att.editingRecord}
           onClose={() => att.setEditingRecord(null)}
           onSave={att.handleUpdateRecord}
+          onDelete={att.handleDeleteRecord}
         />
       )}
 
@@ -238,7 +322,7 @@ export default function AttendanceView() {
         }
         confirmLabel="Delete"
         confirmIcon={<Trash2 size={16} />}
-        onConfirm={() => { if (att.confirmDeleteHoliday) att.setHolidays((current) => current.filter((x) => x.id !== att.confirmDeleteHoliday!.id)); att.setConfirmDeleteHoliday(null); }}
+        onConfirm={() => { if (att.confirmDeleteHoliday) { att.handleDeleteHoliday(att.confirmDeleteHoliday.id); att.setConfirmDeleteHoliday(null); } }}
       />
     </div>
   );

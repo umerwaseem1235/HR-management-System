@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ArrowLeft, CheckCircle2, Download, Lock, Pencil } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Download, Lock, LockOpen, Pencil } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import SearchBar from '@/components/ui/SearchBar';
 import StatCard from '@/components/ui/StatCard';
@@ -17,17 +17,20 @@ interface RunDetailProps {
   onSearchChange: (v: string) => void;
   empMonthly: EmployeeMonthlyLeaves;
   dailyRateDivisor: number;
+  isSuperAdmin: boolean;
   onBack: () => void;
   onExport: () => void;
   onEditLine: (item: PayrollLineItem) => void;
   onMarkReviewed: () => void;
   onReopen: () => void;
   onFinalizeRequest: () => void;
+  onUnlockRequest: () => void;
 }
 
 export default function RunDetail({
   run, items, search, onSearchChange, empMonthly, dailyRateDivisor,
-  onBack, onExport, onEditLine, onMarkReviewed, onReopen, onFinalizeRequest,
+  isSuperAdmin,
+  onBack, onExport, onEditLine, onMarkReviewed, onReopen, onFinalizeRequest, onUnlockRequest,
 }: RunDetailProps) {
   return (
     <div className="space-y-5">
@@ -64,7 +67,12 @@ export default function RunDetail({
       {run.status === 'Finalized' && (
         <div className="flex items-start gap-3 rounded-xl border border-[#D6E4E8] bg-[#EAF2F4]/60 p-4 text-sm text-[#17324D]">
           <Lock size={18} className="mt-0.5 flex-shrink-0 text-[#0F8B8D]" />
-          <p><span className="font-semibold">Locked.</span> Finalized{run.finalizedOn ? ` on ${run.finalizedOn}` : ''}{run.finalizedBy ? ` by ${run.finalizedBy}` : ''} — no further edits allowed. Payslips are available under the Payslips tab.</p>
+          <div className="flex-1">
+            <p><span className="font-semibold">Locked.</span> Finalized{run.finalizedOn ? ` on ${run.finalizedOn}` : ''}{run.finalizedBy ? ` by ${run.finalizedBy}` : ''} — no further edits allowed. Payslips are available under the Payslips tab.</p>
+            {!isSuperAdmin && (
+              <p className="mt-1 text-xs text-gray-500">Only a Super Admin can unlock this run. Please contact your Super Admin for corrections.</p>
+            )}
+          </div>
         </div>
       )}
 
@@ -139,6 +147,11 @@ export default function RunDetail({
               <Lock size={16} /> Finalize & Lock
             </Button>
           </>
+        )}
+        {run.status === 'Finalized' && isSuperAdmin && (
+          <Button variant="outline" onClick={onUnlockRequest} title="Super Admin only — returns the run to Reviewed">
+            <LockOpen size={16} /> Unlock Run
+          </Button>
         )}
       </div>
     </div>

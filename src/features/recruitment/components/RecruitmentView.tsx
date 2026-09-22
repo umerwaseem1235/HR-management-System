@@ -84,6 +84,7 @@ export default function RecruitmentView() {
         jobs={r.jobs}
         candidates={r.candidates}
         interviews={r.interviews}
+        employees={r.employees}
         candModal={r.candModal}
         onCloseCandModal={() => r.setCandModal(false)}
         onAddCandidate={r.addCandidate}

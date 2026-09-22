@@ -87,8 +87,4 @@ export const EXPENSE_CATEGORIES = [
   'Travel', 'Meals', 'Office Supplies', 'Software', 'Equipment', 'Other'
 ];
 
-export const MOCK_USERS: Array<{ email: string; password: string; name: string; role: UserRole; avatar: string }> = [
-  { email: 'admin@codqor.com', password: 'admin123', name: 'Alex Johnson', role: 'super_admin', avatar: 'AJ' },
-  { email: 'hr@codqor.com', password: 'hr123', name: 'Sarah Williams', role: 'hr_manager', avatar: 'SW' },
-  { email: 'employee@codqor.com', password: 'emp123', name: 'Michael Chen', role: 'employee', avatar: 'MC' },
-];
+

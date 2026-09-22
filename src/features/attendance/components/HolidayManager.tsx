@@ -20,7 +20,7 @@ export default function HolidayManager({
   onDelete: (holiday: Holiday) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="w-full">
       {/* Holiday configuration */}
       <Card>
         <div className="flex items-center justify-between mb-4">
@@ -46,12 +46,24 @@ export default function HolidayManager({
               ]}
             />
           </div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-[#263238]">
+              <input
+                type="checkbox"
+                name="holidayRecurring"
+                defaultChecked
+                className="h-4 w-4 rounded border-[#D6E4E8] accent-[#024fa7]"
+              />
+              Recurring every year
+            </label>
+            <Button type="submit" size="sm" className="cursor-pointer">
+              <Plus size={15} /> Add Holiday
+            </Button>
+          </div>
           {holidayMsg && (
             <p className="mt-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs font-medium text-green-700">{holidayMsg}</p>
           )}
-          <Button type="submit" size="sm" className="mt-3 cursor-pointer">
-            <Plus size={15} /> Add Holiday
-          </Button>
+
         </form>
 
         <div className="overflow-x-auto">

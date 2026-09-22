@@ -112,3 +112,67 @@ export async function getLeaveTypes(): Promise<LeaveType[]> {
     description: db.description,
   }));
 }
+
+export async function createBranch(data: { name: string; city?: string; address?: string }) {
+  const supabase = await createClient();
+  const { error } = await supabase.from('branches').insert([{
+    name: data.name,
+    city: data.city || null,
+    address: data.address || null,
+  }]);
+  if (error) throw new Error(error.message);
+  revalidatePath('/settings');
+}
+
+export async function deleteBranch(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from('branches').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+  revalidatePath('/settings');
+}
+
+export async function createShift(data: { name: string; startTime: string; endTime: string }) {
+  const supabase = await createClient();
+  const { error } = await supabase.from('shifts').insert([{
+    name: data.name,
+    start_time: data.startTime,
+    end_time: data.endTime,
+  }]);
+  if (error) throw new Error(error.message);
+  revalidatePath('/settings');
+}
+
+export async function deleteShift(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from('shifts').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+  revalidatePath('/settings');
+}
+
+export async function createLeaveType(data: {
+  name: string;
+  daysAllowed: number;
+  carryForward?: boolean;
+  color?: string;
+  period?: 'month' | 'year';
+  description?: string;
+}) {
+  const supabase = await createClient();
+  const { error } = await supabase.from('leave_types').insert([{
+    name: data.name,
+    days_allowed: data.daysAllowed,
+    carry_forward: data.carryForward ?? false,
+    color: data.color || '#024fa7',
+    period: data.period || 'year',
+    description: data.description || null,
+  }]);
+  if (error) throw new Error(error.message);
+  revalidatePath('/settings');
+}
+
+export async function deleteLeaveType(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from('leave_types').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+  revalidatePath('/settings');
+}

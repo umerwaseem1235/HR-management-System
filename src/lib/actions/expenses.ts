@@ -134,3 +134,89 @@ export async function deleteExpenseClaim(id: string) {
   if (error) throw new Error(error.message);
   revalidatePath('/expenses');
 }
+
+/* ------------------------------------------------------------------ */
+/*  Approval workflow notifications                                    */
+/* ------------------------------------------------------------------ */
+
+async function loadClaimWithEmployee(supabase: Awaited<ReturnType<typeof createClient>>, claimId: string) {
+  const { data, error } = await supabase
+    .from('expense_claims')
+    .select('id, category, amount, date, description, status, employee_id')
+    .eq('id', claimId)
+    .single();
+  if (error || !data) throw new Error('Expense claim not found');
+
+  const { data: emp } = await supabase
+    .from('employees')
+    .select('id, first_name, last_name, user_id')
+    .eq('id', (data as any).employee_id)
+    .single();
+
+  return { claim: data as any, employee: emp as any };
+}
+
+/**
+ * Notify every Super Admin / HR Manager that a new claim needs review.
+ * Returns the number of notifications created. Simply notifies whoever
+ * exists — an empty admin roster yields 0 instead of an error.
+ */
+export async function notifyAdminsNewClaim(claimId: string): Promise<number> {
+  const supabase = await createClient();
+  const { claim, employee } = await loadClaimWithEmployee(supabase, claimId);
+
+  const employeeName = employee
+    ? `${employee.first_name} ${employee.last_name}`
+    : 'An employee';
+
+  const { data: admins, error: adminErr } = await supabase
+    .from('users')
+    .select('id')
+    .in('role', ['super_admin', 'hr_manager']);
+  if (adminErr) throw new Error(adminErr.message);
+  if (!admins || admins.length === 0) return 0;
+
+  const rows = (admins as any[]).map((a) => ({
+    user_id: a.id,
+    title: 'New Expense Claim',
+    message: `${employeeName} submitted $${Number(claim.amount).toLocaleString()} for ${claim.category} (${claim.date}). Review pending.`,
+    type: 'info',
+    read: false,
+    link: '/expenses',
+  }));
+
+  const { error } = await supabase.from('notifications').insert(rows);
+  if (error) throw new Error(error.message);
+  revalidatePath('/expenses');
+  return rows.length;
+}
+
+/**
+ * Notify the claimant about an approve/reject decision.
+ * Silently skips when the employee record has no linked login account.
+ */
+export async function notifyClaimantDecision(
+  claimId: string,
+  decision: 'Approved' | 'Rejected',
+  actorName: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { claim, employee } = await loadClaimWithEmployee(supabase, claimId);
+
+  const claimantUserId = employee?.user_id;
+  if (!claimantUserId) return false;
+
+  const approved = decision === 'Approved';
+  const { error } = await supabase.from('notifications').insert({
+    user_id: claimantUserId,
+    title: approved ? 'Expense Claim Approved' : 'Expense Claim Rejected',
+    message: approved
+      ? `${actorName} approved your $${Number(claim.amount).toLocaleString()} claim for ${claim.category} (${claim.date}).`
+      : `${actorName} rejected your $${Number(claim.amount).toLocaleString()} claim for ${claim.category} (${claim.date}). Contact HR for details.`,
+    type: approved ? 'success' : 'error',
+    read: false,
+    link: '/expenses',
+  });
+  if (error) throw new Error(error.message);
+  return true;
+}

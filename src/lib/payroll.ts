@@ -22,6 +22,8 @@ export interface SalaryComponent {
 }
 
 export interface PayrollLineItem {
+  /** payroll_items row id — present only for lines loaded from Supabase */
+  id?: string;
   employeeId: string;
   employeeName: string;
   department: string;

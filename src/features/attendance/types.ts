@@ -18,4 +18,16 @@ export interface Holiday {
   name: string;
   date: string;
   type: 'Public' | 'Optional' | 'Company';
+  isRecurring: boolean;
+}
+
+export interface CorrectionHistoryEntry {
+  id: string;
+  correctedBy: string;
+  employeeName: string;
+  date: string;
+  action: 'Manual Correction' | 'Correction Approved';
+  previousValue: string;
+  newValue: string;
+  timestamp: string;
 }

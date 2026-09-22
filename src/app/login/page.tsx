@@ -15,7 +15,7 @@ const DEMO_ACCOUNTS = [
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -43,10 +43,11 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      router.replace('/dashboard');
+    if (isAuthenticated && user) {
+      const redirectPath = user.role === 'employee' ? '/employee/dashboard' : '/dashboard';
+      router.replace(redirectPath);
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +58,8 @@ export default function LoginPage() {
     try {
       const result = await login(email, password);
       if (result.success) {
-        router.push('/dashboard');
+        const redirectPath = user?.role === 'employee' ? '/employee/dashboard' : '/dashboard';
+        router.push(redirectPath);
       } else {
         setError(result.error || 'Invalid email or password. Please try again.');
       }

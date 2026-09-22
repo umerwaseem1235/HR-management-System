@@ -9,15 +9,15 @@ import Avatar from '@/components/ui/Avatar';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { StatusBadge } from '@/components/shared';
 import { UserPlus, Upload, CalendarDays, FileText, ArrowRight, XCircle } from 'lucide-react';
-import { mockEmployees } from '@/lib/mock-data';
 import { DEPARTMENTS, BRANCHES, DESIGNATIONS } from '@/lib/constants';
-import type { Job } from '@/types';
+import type { Employee, Job } from '@/types';
 import { CandidateExt, Interview, Offer, SOURCES, STAGES, INTERVIEW_MODES, today } from '../types';
 
 interface CandidateModalProps {
   jobs: Job[];
   candidates: CandidateExt[];
   interviews: Interview[];
+  employees: Employee[];
   candModal: boolean;
   onCloseCandModal: () => void;
   onAddCandidate: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -51,7 +51,7 @@ interface CandidateModalProps {
 
 export default function CandidateModal(props: CandidateModalProps) {
   const {
-    jobs, candidates, interviews,
+    jobs, candidates, interviews, employees,
     candModal, onCloseCandModal, onAddCandidate,
     detail, onCloseDetail, noteText, onNoteTextChange, onAddNote,
     intModal, onIntModalChange, onCloseIntModal, onScheduleInterview,
@@ -107,7 +107,7 @@ export default function CandidateModal(props: CandidateModalProps) {
           <Select label="Candidate" value={intModal.candidateId} onChange={e => onIntModalChange({ candidateId: e.target.value })} options={candidates.map(c => ({ value: c.id, label: c.name }))} />
           <div className="grid grid-cols-2 gap-3"><Input label="Date" type="date" value={intModal.date} onChange={e => onIntModalChange({ date: e.target.value })} /><Input label="Time" type="time" value={intModal.time} onChange={e => onIntModalChange({ time: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-3"><Select label="Mode" value={intModal.mode} onChange={e => onIntModalChange({ mode: e.target.value })} options={INTERVIEW_MODES.map(m => ({ value: m, label: m }))} /><Input label="Round" value={intModal.round} onChange={e => onIntModalChange({ round: e.target.value })} /></div>
-          <Select label="Interviewer (employee)" value={intModal.interviewer} onChange={e => onIntModalChange({ interviewer: e.target.value })} options={[{ value: '', label: 'Select employee interviewer…' }, ...mockEmployees.map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName} — ${e.designation}` }))]} />
+          <Select label="Interviewer (employee)" value={intModal.interviewer} onChange={e => onIntModalChange({ interviewer: e.target.value })} options={[{ value: '', label: 'Select employee interviewer…' }, ...employees.map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName} — ${e.designation}` }))]} />
           <p className="text-xs text-gray-500">Selected employee will get a notification to take this interview.</p>
           <div className="flex justify-end gap-3"><Button variant="outline" onClick={onCloseIntModal}>Cancel</Button><Button variant="primary" onClick={onScheduleInterview} disabled={!intModal.interviewer || !intModal.date}><CalendarDays size={16} /> Schedule</Button></div>
         </div>}

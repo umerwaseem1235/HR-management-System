@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { mockEmployees } from '@/lib/mock-data';
+import { useEmployeeDirectory } from '@/hooks/useEmployeeDirectory';
 import type { LeaveRequest } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeave } from '@/contexts/LeaveContext';
@@ -42,14 +42,9 @@ export function useLeaveView() {
   const [confirmRejectLeave, setConfirmRejectLeave] = useState<LeaveRequest | null>(null);
   const [confirmDeleteLeave, setConfirmDeleteLeave] = useState<LeaveRequest | null>(null);
 
-  // Resolve the logged-in user to an employee record (same matching as profile page)
-  const employee = useMemo(() => {
-    if (!user) return undefined;
-    return (
-      mockEmployees.find((e) => e.email.toLowerCase() === user.email.toLowerCase()) ||
-      mockEmployees.find((e) => `${e.firstName} ${e.lastName}`.toLowerCase() === user.name.toLowerCase())
-    );
-  }, [user]);
+  // Resolve the logged-in user to a live employee record from Supabase
+  const { findByUser } = useEmployeeDirectory();
+  const employee = useMemo(() => findByUser(user), [findByUser, user]);
 
   // Employees only see their own leave records; admins/HR see everything
   const visibleRequests = useMemo(() => {

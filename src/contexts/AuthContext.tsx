@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { User, UserRole } from '../lib/types';
 import { signIn, signUp, signOut, getCurrentUser } from '@/lib/actions/auth';
 import { createClient } from '@/lib/client';
@@ -20,7 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchUser = async () => {
     const { user, error } = await getCurrentUser();
@@ -46,8 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [supabase]);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     const formData = new FormData();
@@ -75,8 +74,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    await signOut();
-    setUser(null);
+    const result = await signOut();
+    if (result.success) {
+      setUser(null);
+    }
   };
 
   const switchRole = (role: UserRole) => {

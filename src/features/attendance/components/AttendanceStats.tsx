@@ -2,12 +2,17 @@
 
 import { CalendarDays, Clock, UserCheck, UserX } from 'lucide-react';
 import StatCard from '@/components/ui/StatCard';
-import type { mockDashboardStats } from '@/lib/mock-data';
+export interface TodayAttendanceStats {
+  presentToday: number;
+  absentToday: number;
+  lateToday: number;
+  onLeaveToday: number;
+}
 
 const ICON_CLASS = 'text-[#024fa7]';
 const ICON_BG = 'bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]';
 
-export function TodaySnapshot({ stats }: { stats: typeof mockDashboardStats }) {
+export function TodaySnapshot({ stats }: { stats: TodayAttendanceStats }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard title="Present" value={stats.presentToday} icon={<UserCheck size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} change="Today" />

@@ -17,9 +17,15 @@ export default function DocumentsView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Documents"
+        title={d.isEmployee ? 'My Documents' : 'Documents'}
         actions={!d.isEmployee && <Button variant="primary" onClick={d.openUpload} className="cursor-pointer whitespace-nowrap"><Upload size={16} /> Upload</Button>}
       />
+
+      {d.isEmployee && (
+        <p className="text-xs text-gray-500 -mt-3">
+          Showing only your personal documents and company-wide shared files.
+        </p>
+      )}
 
       <Card padding="sm">
         <div className="flex flex-col sm:flex-row gap-3">
@@ -34,7 +40,19 @@ export default function DocumentsView() {
         </div>
       </Card>
 
-      <DocumentList docs={d.filtered} onView={d.setViewDoc} onDownload={d.downloadDoc} />
+      <DocumentList
+        docs={d.filtered}
+        onView={d.setViewDoc}
+        onDownload={d.downloadDoc}
+        onDelete={d.handleDelete}
+        canDelete={!d.isEmployee}
+        emptyTitle={d.isEmployee ? 'No documents for you yet' : 'No documents found'}
+        emptyDescription={
+          d.isEmployee
+            ? 'Your personal documents and company-wide shared files will appear here.'
+            : 'Upload a document or adjust your search filters.'
+        }
+      />
 
       <DocumentUploadModal
         showUpload={d.showUpload}
@@ -50,6 +68,7 @@ export default function DocumentsView() {
         onDocExpiryChange={d.setDocExpiry}
         docFile={d.docFile}
         docError={d.docError}
+        isUploading={d.isUploading}
         onFilePick={d.handleFilePick}
         onRemoveFile={d.removeFile}
         viewDoc={d.viewDoc}

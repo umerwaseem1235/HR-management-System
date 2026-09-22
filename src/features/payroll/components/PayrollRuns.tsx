@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, Calculator, Download, Eye, Trash2 } from 'lucide-react';
+import { AlertTriangle, Calculator, Download, Eye, Trash2, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import SearchBar from '@/components/ui/SearchBar';
 import Select from '@/components/ui/Select';
@@ -15,6 +15,8 @@ interface PayrollRunsProps {
   newYear: string;
   onNewYearChange: (v: string) => void;
   runError: string;
+  runErrorKey: number;
+  onDismissError: () => void;
   onStart: () => void;
   search: string;
   onSearchChange: (v: string) => void;
@@ -26,7 +28,7 @@ interface PayrollRunsProps {
 }
 
 export default function PayrollRuns({
-  runs, newMonth, onNewMonthChange, newYear, onNewYearChange, runError, onStart,
+  runs, newMonth, onNewMonthChange, newYear, onNewYearChange, runError, runErrorKey, onDismissError, onStart,
   search, onSearchChange, monthOptions, yearOptions, onReview, onExport, onDeleteRequest,
 }: PayrollRunsProps) {
   return (
@@ -56,7 +58,13 @@ export default function PayrollRuns({
           </Button>
         </div>
         {runError && (
-          <p className="mt-3 flex items-center gap-2 text-sm text-red-600"><AlertTriangle size={15} /> {runError}</p>
+          <div key={runErrorKey} className="mt-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <AlertTriangle size={15} className="mt-0.5 flex-shrink-0" />
+            <p className="flex-1">{runError}</p>
+            <button onClick={onDismissError} title="Dismiss" aria-label="Dismiss error" className="rounded p-0.5 hover:bg-red-100">
+              <X size={14} />
+            </button>
+          </div>
         )}
       </div>
 
