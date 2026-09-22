@@ -23,6 +23,7 @@ const OFFICE_LOCATION = {
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [checkedIn, setCheckedIn] = useState(false);
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
@@ -32,6 +33,10 @@ export default function EmployeeDashboard() {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { notifications } = useNotifications();
 
   const employeeNotifs = notifications.filter(n => !n.read).slice(0, 3);
@@ -39,6 +44,23 @@ export default function EmployeeDashboard() {
   const visibleLeaveBalances = mockLeaveBalances.filter(
     (lb) => lb.leaveType !== 'Maternity Leave' && lb.leaveType !== 'Paternity Leave'
   );
+
+  if (!mounted) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Welcome!" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <EmployeeStats
+            leaveRemainingTotal={0}
+            lastPayslipNet={0}
+            goalsCompleted={0}
+            goalsTotal={0}
+          />
+          <EmployeeLeaveBalances balances={[]} />
+        </div>
+      </div>
+    );
+  }
 
   const getCurrentPosition = (): Promise<GeolocationPosition> => {
     return new Promise((resolve, reject) => {
@@ -67,8 +89,15 @@ export default function EmployeeDashboard() {
       const today = new Date().toISOString().split('T')[0];
       const checkInTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 
+      const employeeId = user?.employeeId || user?.id || '';
+      if (!employeeId) {
+        setActionError('Unable to identify employee. Please refresh and try again.');
+        setActionLoading(false);
+        return;
+      }
+
       const result = await checkInWithLocation({
-        employeeId: user?.employeeId || user?.id || '',
+        employeeId,
         date: today,
         checkIn: checkInTime,
         latitude,
@@ -118,8 +147,15 @@ export default function EmployeeDashboard() {
       const today = new Date().toISOString().split('T')[0];
       const checkOutTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 
+      const employeeId = user?.employeeId || user?.id || '';
+      if (!employeeId) {
+        setActionError('Unable to identify employee. Please refresh and try again.');
+        setActionLoading(false);
+        return;
+      }
+
       const result = await checkOutWithLocation({
-        employeeId: user?.employeeId || user?.id || '',
+        employeeId,
         date: today,
         checkOut: checkOutTime,
         latitude,
