@@ -100,7 +100,7 @@ export default function EmployeeTable({ employees, onEdit, onDelete, isLoading }
           </tbody>
         </table>
       </div>
-      {employees.length === 0 && (
+      {!isLoading && employees.length === 0 && (
         <div className="p-12 text-center text-gray-500">No employees found matching your criteria.</div>
       )}
     </Card>

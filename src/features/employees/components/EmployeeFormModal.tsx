@@ -74,7 +74,40 @@ export default function EmployeeFormModal({
     if (loginInput) loginInput.value = employeeEmail;
   };
 
-  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Downscale uploads to a 256px JPEG (~20–50KB). Raw phone photos stored
+  // as base64 data URLs weighed megabytes per row and made the employee
+  // list take over a minute to load — this keeps that from ever recurring.
+  const compressImage = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const objectUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const MAX = 256;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas not supported'));
+          return;
+        }
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Could not read the selected image.'));
+      };
+      img.src = objectUrl;
+    });
+
+  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -89,10 +122,11 @@ export default function EmployeeFormModal({
     }
 
     setPhotoError('');
-    const reader = new FileReader();
-    reader.onload = () => setPhotoPreview(String(reader.result));
-    reader.onerror = () => setPhotoError('Could not read the selected image.');
-    reader.readAsDataURL(file);
+    try {
+      setPhotoPreview(await compressImage(file));
+    } catch {
+      setPhotoError('Could not read the selected image.');
+    }
   };
 
   const calculatePasswordStrength = (password: string): number => {

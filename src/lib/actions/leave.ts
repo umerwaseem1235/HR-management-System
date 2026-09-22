@@ -26,7 +26,7 @@ export async function getLeaveRequests(employeeId?: string): Promise<LeaveReques
   const supabase = await createClient();
   let query = supabase
     .from('leave_requests')
-    .select('*, leave_types(name), employees:employees!leave_requests_employee_id_fkey(first_name, last_name, avatar)')
+    .select('*, leave_types(name), employees:employees!leave_requests_employee_id_fkey(first_name, last_name)')
     .order('created_at', { ascending: false });
 
   if (employeeId) {
@@ -39,7 +39,6 @@ export async function getLeaveRequests(employeeId?: string): Promise<LeaveReques
     id: db.id,
     employeeId: db.employee_id,
     employeeName: db.employees ? `${db.employees.first_name} ${db.employees.last_name}` : '',
-    employeeAvatar: db.employees?.avatar,
     leaveType: db.leave_types?.name || '',
     startDate: db.start_date,
     endDate: db.end_date,
@@ -116,7 +115,7 @@ export async function createLeaveRequest(data: {
     reason: data.reason,
     status: 'Pending',
     applied_on: appliedOn,
-  }]).select('*, employees:employees!leave_requests_employee_id_fkey(first_name, last_name, avatar)').single();
+  }]).select('*, employees:employees!leave_requests_employee_id_fkey(first_name, last_name)').single();
 
   if (reqErr) throw new Error(reqErr.message);
 
@@ -143,7 +142,6 @@ export async function createLeaveRequest(data: {
     id: r.id,
     employeeId: r.employee_id,
     employeeName: r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : '',
-    employeeAvatar: r.employees?.avatar,
     leaveType: typeName,
     startDate: r.start_date,
     endDate: r.end_date,

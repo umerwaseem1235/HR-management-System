@@ -23,7 +23,8 @@ export default function EmployeesView() {
     isLoading,
     error,
     editingEmployee,
-    setEditingEmployee,
+    openEditor,
+    closeEditor,
     lookupData,
     isLookupLoading,
     isSubmitting,
@@ -64,7 +65,7 @@ export default function EmployeesView() {
 
       <EmployeeTable
         employees={filtered}
-        onEdit={setEditingEmployee}
+        onEdit={openEditor}
         onDelete={handleDeleteEmployee}
         isLoading={isLoading}
       />
@@ -84,7 +85,7 @@ export default function EmployeesView() {
           key={editingEmployee.id}
           isOpen
           employee={editingEmployee}
-          onClose={() => setEditingEmployee(null)}
+          onClose={closeEditor}
           onSave={handleEditEmployee}
           lookupData={lookupData}
           isLookupLoading={isLookupLoading}

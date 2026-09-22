@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Employee } from '@/lib/types';
-import { getEmployees, getLookupData } from '@/lib/actions/employees';
+import { getEmployee, getEmployees, getLookupData } from '@/lib/actions/employees';
 
 interface LookupItem {
   id: string;
@@ -32,6 +32,8 @@ interface UseEmployeesSupabaseReturn {
   error: string | null;
   editingEmployee: Employee | null;
   setEditingEmployee: (e: Employee | null) => void;
+  openEditor: (e: Employee) => void;
+  closeEditor: () => void;
   lookupData: LookupData | null;
   isLookupLoading: boolean;
   isSubmitting: boolean;
@@ -95,6 +97,31 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
       fetchLookup();
     }
   }, [isAddEmployeeOpen, editingEmployee, fetchLookup]);
+
+  // Token guards the background photo fetch so a late response can never
+  // reopen/populate the editor after it was closed or switched.
+  const editorToken = useRef(0);
+
+  // Open the editor instantly with row data, then fill in the photo (which
+  // the list query omits for speed) in the background once it arrives.
+  const openEditor = useCallback((emp: Employee) => {
+    const token = ++editorToken.current;
+    setEditingEmployee(emp);
+    if (!emp.avatar) {
+      getEmployee(emp.id)
+        .then((full) => {
+          if (editorToken.current === token) setEditingEmployee(full);
+        })
+        .catch(() => {
+          // Keep row data — the editor works, just without the old photo.
+        });
+    }
+  }, []);
+
+  const closeEditor = useCallback(() => {
+    editorToken.current++;
+    setEditingEmployee(null);
+  }, []);
 
   // Filter employees
   useEffect(() => {
@@ -186,6 +213,8 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
     error,
     editingEmployee,
     setEditingEmployee,
+    openEditor,
+    closeEditor,
     lookupData,
     isLookupLoading,
     isSubmitting,

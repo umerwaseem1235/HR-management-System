@@ -146,15 +146,28 @@ async function resolveFKs(
   return resolved;
 }
 
+// Columns for list queries. `avatar` is deliberately excluded: photos are
+// stored as base64 data URLs and a full table scan with avatars weighed
+// tens of megabytes (75s+ loads). The table shows initials via Avatar
+// fallback; the photo loads on demand in getEmployee (detail/edit).
+const EMPLOYEE_LIST_COLUMNS = [
+  'id', 'user_id', 'employee_code', 'first_name', 'last_name', 'email', 'phone',
+  'date_of_birth', 'gender', 'address', 'city', 'country',
+  'emergency_contact_name', 'emergency_contact_phone',
+  'department_id', 'designation_id', 'branch_id', 'shift_id', 'reporting_manager_id',
+  'employment_type', 'joining_date', 'probation_end_date', 'confirmation_date',
+  'status', 'bank_name', 'bank_account', 'tax_id', 'salary',
+  'created_at', 'updated_at',
+].join(', ');
+
 export async function getEmployees(): Promise<Employee[]> {
   const supabase = await createClient();
 
-  // Single query: the joins resolve fine, so no probe query is needed.
-  // (A leftover connectivity check here doubled the cost of every call.)
+  // Single lean query: explicit columns (no avatar) + N:1 joins.
   const { data, error } = await supabase
     .from('employees')
     .select(`
-      *,
+      ${EMPLOYEE_LIST_COLUMNS},
       departments(name),
       designations(name),
       branches(name),
