@@ -16,8 +16,8 @@ import { useNotifications } from '../../contexts/NotificationContext';
 import { checkInWithLocation, checkOutWithLocation } from '@/lib/actions/attendance';
 
 const OFFICE_LOCATION = {
-  latitude: 32.180210165328184,
-  longitude: 74.18567218742997,
+  latitude: 32.17989,
+  longitude: 74.18584,
   radiusMeters: 500,
 };
 

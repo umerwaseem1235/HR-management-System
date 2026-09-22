@@ -17,7 +17,7 @@ comment on column public.attendance.distance_from_office is 'Distance from offic
 -- Office location settings (stored in settings table for easy configuration)
 insert into public.settings (key, value)
 values
-  ('office_latitude', '32.180210165328184'),
-  ('office_longitude', '74.18567218742997'),
+  ('office_latitude', '32.17989'),
+  ('office_longitude', '74.18584'),
   ('office_radius_meters', '500')
 on conflict (key) do update set value = excluded.value;

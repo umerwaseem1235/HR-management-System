@@ -10,8 +10,8 @@ export interface OfficeLocationConfig {
 }
 
 export const DEFAULT_OFFICE_LOCATION: OfficeLocationConfig = {
-  latitude: 32.180210165328184,
-  longitude: 74.18567218742997,
+  latitude: 32.17989,
+  longitude: 74.18584,
   radiusMeters: 500,
 };
 
