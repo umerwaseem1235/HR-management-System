@@ -62,6 +62,14 @@ export default function EmployeeDashboard() {
     );
   }
 
+  const toFriendlyError = (err: unknown, fallback: string) => {
+    const msg = err instanceof Error ? err.message : fallback;
+    if (/Minified React error #441|Server Components render/i.test(msg)) {
+      return 'Check-in could not be saved (server error). Most common cause: the location columns are missing in the database. Please run supabase/migrations/007_attendance_location.sql in Supabase, then try again.';
+    }
+    return msg || fallback;
+  };
+
   const getCurrentPosition = (): Promise<GeolocationPosition> => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -128,7 +136,7 @@ export default function EmployeeDashboard() {
             setActionError('An unknown error occurred while getting location.');
         }
       } else {
-        setActionError(err instanceof Error ? err.message : 'Check-in failed. Please try again.');
+        setActionError(toFriendlyError(err, 'Check-in failed. Please try again.'));
       }
     } finally {
       setActionLoading(false);
@@ -186,7 +194,7 @@ export default function EmployeeDashboard() {
             setActionError('An unknown error occurred while getting location.');
         }
       } else {
-        setActionError(err instanceof Error ? err.message : 'Check-out failed. Please try again.');
+        setActionError(toFriendlyError(err, 'Check-out failed. Please try again.'));
       }
     } finally {
       setActionLoading(false);
