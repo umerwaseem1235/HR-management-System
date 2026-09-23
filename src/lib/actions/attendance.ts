@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/server';
 import { revalidatePath } from 'next/cache';
 import type { AttendanceRecord } from '@/lib/types';
+import { isEarlyHalfDayCheckout } from '@/utils/date';
 import { calculateDistance, getOfficeLocationConfig } from '@/lib/location';
 
 function getLastDayOfMonth(year: number, month: number): number {
@@ -229,6 +230,15 @@ export async function selfCheckInOut(
     if (!existing) updateData.status = 'Present';
   } else {
     updateData.check_out = timeStr;
+    // Early-checkout → Half Day rule: leaving 15+ min before the office
+    // off time counts as half leave (payroll deducts Half Day as 0.5 day).
+    const currentStatus = (existing?.status as string) || 'Present';
+    if (
+      (currentStatus === 'Present' || currentStatus === 'Late') &&
+      isEarlyHalfDayCheckout(timeStr)
+    ) {
+      updateData.status = 'Half Day';
+    }
   }
 
   // Calculate work hours if both check_in and check_out exist
@@ -240,6 +250,10 @@ export async function selfCheckInOut(
     if (outMin > inMin) {
       updateData.work_hours = Math.round(((outMin - inMin) / 60) * 10) / 10;
     }
+  }
+  // Half Day convention across the app is 4 work hours.
+  if (updateData.status === 'Half Day') {
+    updateData.work_hours = 4;
   }
 
   const { data, error } = await supabase
@@ -569,13 +583,20 @@ export async function checkOutWithLocation(data: {
     const status: 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Holiday' | 'Weekend' =
       (existing?.status as 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Holiday' | 'Weekend') || 'Present';
 
+    // Early-checkout → Half Day rule: leaving 15+ min before the office
+    // off time counts as half leave (payroll deducts Half Day as 0.5 day).
+    const finalStatus =
+      (status === 'Present' || status === 'Late') && isEarlyHalfDayCheckout(data.checkOut)
+        ? 'Half Day'
+        : status;
+
     const baseData = {
       employee_id: employeeId,
       date: data.date,
       check_in: checkInTime,
       check_out: data.checkOut,
-      status,
-      work_hours: workHours,
+      status: finalStatus,
+      work_hours: finalStatus === 'Half Day' && finalStatus !== status ? 4 : workHours,
       overtime: 0,
       notes: existing?.notes ?? null,
     };

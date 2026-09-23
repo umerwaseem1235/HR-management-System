@@ -112,7 +112,15 @@ export async function deleteGoal(id: string) {
 export async function getAssets(): Promise<Asset[]> {
   const supabase = await createClient();
   const { data: assets, error: assetErr } = await supabase.from('assets').select('*').order('created_at', { ascending: false });
-  if (assetErr) throw new Error(assetErr.message);
+  if (assetErr) {
+    // Table was dropped by migration 003_drop_assets_ensure_recruitment.
+    // Return empty instead of crashing callers (e.g. EmployeeDetail view).
+    const msg = assetErr.message || '';
+    if ((assetErr as any).code === 'PGRST205' || msg.includes('Could not find the table') || msg.includes('schema cache')) {
+      return [];
+    }
+    throw new Error(assetErr.message);
+  }
 
   const { data: assignments } = await supabase.from('asset_assignments').select('*, employees(first_name, last_name)').is('return_date', null);
 

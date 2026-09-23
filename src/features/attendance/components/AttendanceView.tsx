@@ -32,9 +32,15 @@ export default function AttendanceView() {
     const filteredMine = att.monthlyRecords.filter((r) => !att.statusFilter || r.status === att.statusFilter);
     const searchedMine = filteredMine.filter((r) => !att.search || r.date.toLowerCase().includes(att.search.toLowerCase()));
 
-    // Get today's record for this employee
+    // Get today's record for this employee (match by resolved id first,
+    // fall back to name so legacy rows still show real check-in/out times)
+    const myId = att.employeeId || att.employee?.id || '';
+    const userNameLower = att.user?.name?.toLowerCase() || '';
     const todayRecord = att.attendRecords.find(
-      (r) => r.date === att.viewDate && r.employeeId === att.employee?.id
+      (r) =>
+        r.date === att.viewDate &&
+        ((myId ? r.employeeId === myId : false) ||
+          r.employeeName.toLowerCase() === userNameLower)
     );
     const hasCheckedIn = !!todayRecord?.checkIn;
     const hasCheckedOut = !!todayRecord?.checkOut;

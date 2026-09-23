@@ -1,15 +1,19 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/ui/PageHeader';
 import Button from '@/components/ui/Button';
-import { UserPlus, AlertCircle } from 'lucide-react';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { UserPlus, AlertCircle, Trash2 } from 'lucide-react';
 import EmployeeFilters from './EmployeeFilters';
 import EmployeeTable from './EmployeeTable';
 import EmployeeFormModal from './EmployeeFormModal';
 import { useEmployeesSupabase } from '../hooks/useEmployeesSupabase';
+import type { Employee } from '@/types';
 
 export default function EmployeesView() {
+  const router = useRouter();
   const {
     search,
     setSearch,
@@ -32,6 +36,19 @@ export default function EmployeesView() {
     handleEditEmployee,
     handleDeleteEmployee,
   } = useEmployeesSupabase();
+  const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const confirmDelete = async () => {
+    if (!employeeToDelete) return;
+    setIsDeleting(true);
+    try {
+      await handleDeleteEmployee(employeeToDelete.id);
+      setEmployeeToDelete(null);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -65,8 +82,9 @@ export default function EmployeesView() {
 
       <EmployeeTable
         employees={filtered}
+        onView={(emp) => router.push(`/employees/${emp.id}`)}
         onEdit={openEditor}
-        onDelete={handleDeleteEmployee}
+        onDelete={(id) => setEmployeeToDelete(filtered.find((e) => e.id === id) ?? null)}
         isLoading={isLoading}
       />
 
@@ -93,6 +111,36 @@ export default function EmployeesView() {
           submitError={error}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={!!employeeToDelete}
+        onClose={() => !isDeleting && setEmployeeToDelete(null)}
+        title="Delete Employee?"
+        variant="delete"
+        headline={
+          <>
+            Delete{' '}
+            <span className="font-semibold text-[#17324D]">
+              {employeeToDelete?.firstName} {employeeToDelete?.lastName}
+            </span>
+            {employeeToDelete?.employeeCode ? ` (${employeeToDelete.employeeCode})` : ''}?
+          </>
+        }
+        subline={
+          employeeToDelete
+            ? `${employeeToDelete.department} · ${employeeToDelete.designation} · ${employeeToDelete.email}`
+            : undefined
+        }
+        note={
+          <>
+            This action <span className="font-semibold">cannot be undone</span>. The employee record will be permanently removed.
+          </>
+        }
+        confirmLabel="Delete"
+        confirmIcon={<Trash2 size={16} />}
+        onConfirm={confirmDelete}
+        loading={isDeleting}
+      />
     </div>
   );
 }

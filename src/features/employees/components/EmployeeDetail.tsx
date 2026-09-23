@@ -54,7 +54,7 @@ export default function EmployeeDetail() {
           getAttendanceByEmployee(id),
           getLeaveBalances(id),
           getPayslips(id),
-          getAssets(),
+          getAssets().catch(() => [] as Asset[]),
           getDocuments(),
         ]);
         if (cancelled) return;

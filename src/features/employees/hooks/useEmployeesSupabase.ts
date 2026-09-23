@@ -3,6 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Employee } from '@/lib/types';
 import { getEmployee, getEmployees, getLookupData } from '@/lib/actions/employees';
+import { cachedQuery, invalidateQuery, peekQuery } from '@/lib/query-cache';
+
+export const EMPLOYEES_CACHE_KEY = 'employees';
+export const EMPLOYEE_LOOKUP_CACHE_KEY = 'employees:lookup';
 
 interface LookupItem {
   id: string;
@@ -48,9 +52,10 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>(() => peekQuery<Employee[]>(EMPLOYEES_CACHE_KEY) ?? []);
   const [filtered, setFiltered] = useState<Employee[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Instant first paint when a fresh cache entry exists (recent tab visit).
+  const [isLoading, setIsLoading] = useState(() => peekQuery<Employee[]>(EMPLOYEES_CACHE_KEY) === undefined);
   const [error, setError] = useState<string | null>(null);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [lookupData, setLookupData] = useState<LookupData | null>(null);
@@ -62,7 +67,7 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getEmployees();
+      const data = await cachedQuery(EMPLOYEES_CACHE_KEY, getEmployees);
       setEmployees(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -76,7 +81,7 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
     lookupFetchedRef.current = true;
     setIsLookupLoading(true);
     try {
-      const data = await getLookupData();
+      const data = await cachedQuery(EMPLOYEE_LOOKUP_CACHE_KEY, getLookupData);
       setLookupData(data);
     } catch (err) {
       console.error('Lookup fetch error:', err);
@@ -135,6 +140,13 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
     setFiltered(result);
   }, [search, deptFilter, statusFilter, employees]);
 
+  // Drop cached reads before refetching so mutations are always visible.
+  const refreshEmployees = useCallback(async () => {
+    invalidateQuery(EMPLOYEES_CACHE_KEY);
+    invalidateQuery(EMPLOYEE_LOOKUP_CACHE_KEY);
+    await fetchEmployees();
+  }, [fetchEmployees]);
+
   const handleAddEmployee = async (values: Record<string, string>, photo: string | null) => {
     setError(null);
     setIsSubmitting(true);
@@ -148,7 +160,7 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
         const err = await res.json();
         throw new Error(err.message || 'Failed to create employee');
       }
-      await fetchEmployees();
+      await refreshEmployees();
       setIsAddEmployeeOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create employee');
@@ -172,7 +184,7 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
         const err = await res.json();
         throw new Error(err.message || 'Failed to update employee');
       }
-      await fetchEmployees();
+      await refreshEmployees();
       setEditingEmployee(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update employee');
@@ -183,19 +195,18 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
   };
 
   const handleDeleteEmployee = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this employee?')) return;
     setError(null);
     try {
       const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete employee');
-      await fetchEmployees();
+      await refreshEmployees();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete employee');
     }
   };
 
   const refresh = async () => {
-    await fetchEmployees();
+    await refreshEmployees();
   };
 
   return {

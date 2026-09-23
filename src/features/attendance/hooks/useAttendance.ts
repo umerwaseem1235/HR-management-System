@@ -1,13 +1,13 @@
 'use client';
 
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import type { AttendanceRecord, Employee } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeave } from '@/contexts/LeaveContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { timeToMinutes, toDateStr, todayStr } from '@/utils/date';
 import type { CorrectionHistoryEntry, CorrectionRequest, Holiday } from '../types';
-import { aggregate, calcWorkHours, DEFAULT_LATE_RULE, resolveLateStatus, type LateArrivalRule } from '../utils';
+import { aggregate, calcWorkHours, DEFAULT_LATE_RULE, resolveLateStatus, applyEarlyCheckoutRule, type LateArrivalRule } from '../utils';
 import { createAuditLog, getAuditLogsByModule } from '@/lib/actions/audit';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -38,7 +38,6 @@ function mapAuditToHistory(logs: { id: string; userName: string; action: string;
 // ── Supabase server actions ──────────────────────────────────────────
 import {
   getAllAttendance,
-  getAttendanceByDate,
   getAttendanceByEmployee,
   getAttendanceStats,
   createAttendanceRecord,
@@ -52,6 +51,7 @@ import {
   selfCheckInOut,
 } from '@/lib/actions/attendance';
 import { getEmployees } from '@/lib/actions/employees';
+import { cachedQuery } from '@/lib/query-cache';
 
 export type SummaryMode = 'daily' | 'weekly' | 'monthly';
 
@@ -63,7 +63,7 @@ export interface TodayStats {
 }
 
 export function useAttendance() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { leaveRequests } = useLeave();
   const { addNotification } = useNotifications();
 
@@ -101,11 +101,22 @@ export function useAttendance() {
 
   const isEmployee = user?.role === 'employee';
 
+  // Auth-linked employee id (stable primitive for effect deps).
+  const userEmployeeId = user?.employeeId ?? '';
+
+  // Months fully loaded into attendRecords ('YYYY-MM'). The initial load
+  // covers the current month, so day switches inside it need no refetch.
+  const loadedMonths = useRef<Set<string>>(new Set());
+
   // ── Expose stats (live from Supabase) ──────────────────────────────
   const stats = todayStatsData;
 
   // ── Initial data load ──────────────────────────────────────────────
+  // Waits for auth so the first fetch uses the right role scope, and
+  // employees only load their own records (admin-only resources like the
+  // directory, correction queue, audit history and holidays are skipped).
   useEffect(() => {
+    if (authLoading) return;
     let cancelled = false;
     async function loadData() {
       setLoading(true);
@@ -114,23 +125,37 @@ export function useAttendance() {
         const now = new Date();
         const year = now.getFullYear();
         const month = now.getMonth() + 1; // 1-indexed for server action
+        const prefix = `${year}-${String(month).padStart(2, '0')}`;
 
-        const [empData, attData, corrData, histData, holData, statsData] =
-          await Promise.all([
-            getEmployees(),
-            getAllAttendance(year, month),
-            getCorrections(),
-            getAuditLogsByModule('Attendance'),
-            getHolidays(),
+        if (isEmployee) {
+          const [attData, statsData] = await Promise.all([
+            userEmployeeId
+              ? getAttendanceByEmployee(userEmployeeId, year, month)
+              : getAllAttendance(year, month),
             getAttendanceStats(),
           ]);
-        if (cancelled) return;
-        setEmployees(empData);
-        setAttendRecords(attData);
-        setCorrections(corrData);
-        setCorrectionHistory(mapAuditToHistory(histData));
-        setHolidays(holData);
-        setTodayStatsData(statsData);
+          if (cancelled) return;
+          setAttendRecords(attData);
+          setTodayStatsData(statsData);
+        } else {
+          const [empData, attData, corrData, histData, holData, statsData] =
+            await Promise.all([
+              cachedQuery('employees', getEmployees),
+              getAllAttendance(year, month),
+              getCorrections(),
+              getAuditLogsByModule('Attendance'),
+              getHolidays(),
+              getAttendanceStats(),
+            ]);
+          if (cancelled) return;
+          setEmployees(empData);
+          setAttendRecords(attData);
+          setCorrections(corrData);
+          setCorrectionHistory(mapAuditToHistory(histData));
+          setHolidays(holData);
+          setTodayStatsData(statsData);
+        }
+        loadedMonths.current.add(prefix);
       } catch (err: any) {
         if (cancelled) return;
         console.error('Failed to load attendance data:', err);
@@ -141,29 +166,44 @@ export function useAttendance() {
     }
     loadData();
     return () => { cancelled = true; };
-  }, []);
+  }, [authLoading, isEmployee, userEmployeeId]);
 
-  // ── Re-fetch day records when viewDate changes ─────────────────────
+  // ── Load other months on demand (admin daily log / summaries) ────────
+  // Fetches the whole month so summaries stay correct; months already
+  // loaded (e.g. the initial current month) are skipped entirely.
   useEffect(() => {
+    const prefix = viewDate.slice(0, 7);
+    if (loadedMonths.current.has(prefix)) return;
     let cancelled = false;
-    async function loadDayRecords() {
+    async function loadMonthRecords() {
       try {
-        const dayData = await getAttendanceByDate(viewDate);
+        const y = Number(viewDate.slice(0, 4));
+        const m = Number(viewDate.slice(5, 7));
+        if (!Number.isFinite(y) || !Number.isFinite(m)) return;
+        const monthData = await getAllAttendance(y, m);
         if (cancelled) return;
-        // Merge day records into attendRecords — replace records for this date
+        loadedMonths.current.add(prefix);
+        // Merge month records in — replace rows for this month, keep the rest
         setAttendRecords((prev) => {
-          const otherDates = prev.filter((r) => r.date !== viewDate);
-          return [...otherDates, ...dayData];
+          const ids = new Set(monthData.map((r) => r.id));
+          const keys = new Set(monthData.map((r) => `${r.employeeId}|${r.date}`));
+          const outside = prev.filter(
+            (r) => !r.date.startsWith(prefix) && !ids.has(r.id) && !keys.has(`${r.employeeId}|${r.date}`),
+          );
+          return [...outside, ...monthData];
         });
       } catch (err: any) {
-        console.error('Failed to load day records:', err);
+        console.error('Failed to load month records:', err);
       }
     }
-    loadDayRecords();
+    loadMonthRecords();
     return () => { cancelled = true; };
   }, [viewDate]);
 
   // ── Employee resolution ────────────────────────────────────────────
+  // Primary: the auth-linked employee id from getCurrentUser
+  // (employees.user_id). Fallbacks cover legacy rows where user_id was
+  // never backfilled — match by email, then by full name.
   const employee = useMemo(() => {
     if (!user) return undefined;
     return (
@@ -177,6 +217,11 @@ export function useAttendance() {
       )
     );
   }, [user, employees]);
+
+  // Reliable id for the logged-in employee — never depend on the
+  // employees list alone (it can be stale/filtered); user.employeeId
+  // comes straight from the employees.user_id link.
+  const resolvedEmployeeId = user?.employeeId ?? employee?.id ?? '';
 
   // ── Employee monthly stats ─────────────────────────────────────────
   const {
@@ -206,16 +251,22 @@ export function useAttendance() {
     };
     if (!user || !isEmployee) return empty;
 
-    const empId = employee?.id ?? '';
+    const empId = resolvedEmployeeId;
+    const userNameLower = user.name.toLowerCase();
     const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+
+    // Filter real DB records for this employee + month.
+    // Match by id first; fall back to name so legacy rows (no user_id
+    // link) still show instead of an empty table.
+    const isMine = (employeeId: string, employeeName: string) =>
+      (empId ? employeeId === empId : false) ||
+      employeeName.toLowerCase() === userNameLower;
 
     // Filter real DB records for this employee + month
     const monthlyRecords = attendRecords
       .filter(
         (a) =>
-          (empId
-            ? a.employeeId === empId
-            : a.employeeName.toLowerCase() === user.name.toLowerCase()) &&
+          isMine(a.employeeId, a.employeeName) &&
           a.date.startsWith(monthPrefix),
       )
       .sort((a, b) => (a.date < b.date ? 1 : -1));
@@ -242,9 +293,7 @@ export function useAttendance() {
     leaveRequests
       .filter(
         (l) =>
-          (empId
-            ? l.employeeId === empId
-            : l.employeeName.toLowerCase() === user.name.toLowerCase()) &&
+          isMine(l.employeeId, l.employeeName) &&
           l.status === 'Approved',
       )
       .forEach((l) => {
@@ -270,9 +319,10 @@ export function useAttendance() {
       absentDays,
       lateDays,
       halfDayDays,
-      leavesTaken: attendanceLeaveDates.size + approvedLeaveDays,
+      // Each Half Day (incl. auto-marked early checkouts) counts as 0.5 leave.
+      leavesTaken: Math.round((attendanceLeaveDates.size + approvedLeaveDays + halfDayDays * 0.5) * 10) / 10,
     };
-  }, [user, isEmployee, employee, leaveRequests, attendRecords]);
+  }, [user, isEmployee, resolvedEmployeeId, leaveRequests, attendRecords]);
 
   // ── Admin: daily records for selected date ─────────────────────────
   const dayRecords = attendRecords.filter((r) => r.date === viewDate);
@@ -381,13 +431,19 @@ export function useAttendance() {
   );
 
   // ── Employee Self Check-In / Check-Out ──────────────────────────────────
+  // Uses the resolved employee id (auth link first) so the buttons work
+  // even when the employees list hasn't matched this user, and writes
+  // the real current time via the server action.
   const handleSelfCheckIn = useCallback(async () => {
-    if (!employee?.id) return;
+    if (!resolvedEmployeeId) {
+      setError('Unable to identify your employee record. Please sign in again or contact HR.');
+      return;
+    }
     try {
-      const newRecord = await selfCheckInOut(employee.id, todayStr(), 'check_in');
+      const newRecord = await selfCheckInOut(resolvedEmployeeId, todayStr(), 'check_in');
       // Update local state
       setAttendRecords((current) => {
-        const without = current.filter((r) => !(r.employeeId === employee.id && r.date === todayStr()));
+        const without = current.filter((r) => !(r.employeeId === resolvedEmployeeId && r.date === todayStr()));
         return [newRecord, ...without];
       });
       await refreshStats();
@@ -395,14 +451,17 @@ export function useAttendance() {
       console.error('Failed to check in:', err);
       setError(err.message || 'Failed to check in');
     }
-  }, [employee, refreshStats]);
+  }, [resolvedEmployeeId, refreshStats]);
 
   const handleSelfCheckOut = useCallback(async () => {
-    if (!employee?.id) return;
+    if (!resolvedEmployeeId) {
+      setError('Unable to identify your employee record. Please sign in again or contact HR.');
+      return;
+    }
     try {
-      const newRecord = await selfCheckInOut(employee.id, todayStr(), 'check_out');
+      const newRecord = await selfCheckInOut(resolvedEmployeeId, todayStr(), 'check_out');
       setAttendRecords((current) => {
-        const without = current.filter((r) => !(r.employeeId === employee.id && r.date === todayStr()));
+        const without = current.filter((r) => !(r.employeeId === resolvedEmployeeId && r.date === todayStr()));
         return [newRecord, ...without];
       });
       await refreshStats();
@@ -410,7 +469,7 @@ export function useAttendance() {
       console.error('Failed to check out:', err);
       setError(err.message || 'Failed to check out');
     }
-  }, [employee, refreshStats]);
+  }, [resolvedEmployeeId, refreshStats]);
 
   // ── Manual entry (Supabase) ────────────────────────────────────────
   const handleAddManual = useCallback(
@@ -425,8 +484,10 @@ export function useAttendance() {
       const emp = employees.find((e) => e.id === values.employeeId);
       if (!emp) return;
 
-      // Apply the late-arrival rule so manual entries respect it.
-      const finalStatus = applyLateRule(values.checkIn, values.status);
+      // Apply the late-arrival rule so manual entries respect it, then the
+      // early-checkout rule (15+ min before off time = Half Day / half leave).
+      const lateAdjusted = applyLateRule(values.checkIn, values.status);
+      const finalStatus = applyEarlyCheckoutRule(values.checkOut, lateAdjusted);
       const workHours = calcWorkHours(
         values.checkIn,
         values.checkOut,
@@ -472,8 +533,10 @@ export function useAttendance() {
         notes: string;
       },
     ) => {
-      // Apply the late-arrival rule so edits respect it.
-      const finalStatus = applyLateRule(values.checkIn, values.status);
+      // Apply the late-arrival rule so edits respect it, then the
+      // early-checkout rule (15+ min before off time = Half Day / half leave).
+      const lateAdjusted = applyLateRule(values.checkIn, values.status);
+      const finalStatus = applyEarlyCheckoutRule(values.checkOut, lateAdjusted);
       const workHours = calcWorkHours(
         values.checkIn,
         values.checkOut,
@@ -741,6 +804,7 @@ export function useAttendance() {
     handleSelfCheckOut,
     // Employee reference
     employee,
+    employeeId: resolvedEmployeeId,
   };
 }
 

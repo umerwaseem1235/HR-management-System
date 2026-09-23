@@ -1,5 +1,5 @@
 import type { AttendanceRecord } from '@/types';
-import { timeToMinutes } from '@/utils/date';
+import { timeToMinutes, EARLY_CHECKOUT_HALF_DAY_MINUTES } from '@/utils/date';
 
 export const STANDARD_START = '09:00';
 export const STANDARD_END = '18:00';
@@ -159,4 +159,26 @@ export function earlyLeave(rec: AttendanceRecord): number {
   if (!rec.checkIn || !rec.checkOut) return 0;
   const diff = timeToMinutes(STANDARD_END) - timeToMinutes(rec.checkOut);
   return diff > 0 ? diff : 0;
+}
+
+// ── Early-checkout → Half Day rule ────────────────────────────────────
+// Checking out EARLY_CHECKOUT_HALF_DAY_MINUTES (15) or more before the
+// office off time counts as half leave: status becomes 'Half Day', which
+// payroll already deducts as 0.5 day (see attendanceImpact) and the
+// employee monthly stats count as 0.5 leave taken.
+export function resolveEarlyCheckoutStatus(
+  checkOut: string,
+  standardEnd: string = STANDARD_END,
+): { isHalfDay: boolean; minutesEarly: number } {
+  if (!checkOut) return { isHalfDay: false, minutesEarly: 0 };
+  const mins = Math.max(0, timeToMinutes(standardEnd) - timeToMinutes(checkOut));
+  return { isHalfDay: mins >= EARLY_CHECKOUT_HALF_DAY_MINUTES, minutesEarly: mins };
+}
+
+/** Applies the early-checkout rule on top of a chosen status.
+ *  Explicit non-attendance statuses (Absent/Leave/Holiday/Weekend) are never overridden. */
+export function applyEarlyCheckoutRule(checkOut: string, chosenStatus: string): string {
+  if (!checkOut) return chosenStatus;
+  if (['Absent', 'Leave', 'Holiday', 'Weekend'].includes(chosenStatus)) return chosenStatus;
+  return resolveEarlyCheckoutStatus(checkOut).isHalfDay ? 'Half Day' : chosenStatus;
 }
