@@ -45,7 +45,7 @@ export default function MonthlyLeaves({
           />
         </div>
         <div className="sm:w-64">
-          <label className="block text-sm font-medium text-[#263238] mb-1.5">Company default fine ($)</label>
+          <label className="block text-sm font-medium text-[#263238] mb-1.5">Company default fine (PKR)</label>
           <NumberField
             value={fineDefault}
             step="10"

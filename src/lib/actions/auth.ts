@@ -60,7 +60,43 @@ export async function signIn(formData: FormData) {
 export async function signOut(): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
   const { error } = await supabase.auth.signOut();
+  // NOTE: no redirect() here — redirect() throws and would prevent the
+  // caller from clearing client-side auth state. The client navigates itself.
   if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function updatePassword(
+  oldPassword: string,
+  newPassword: string,
+): Promise<{ success: boolean; error?: string }> {
+  if (!oldPassword) {
+    return { success: false, error: 'Please enter your old password.' };
+  }
+  if (!newPassword || newPassword.length < 8) {
+    return { success: false, error: 'New password must be at least 8 characters long.' };
+  }
+  if (oldPassword === newPassword) {
+    return { success: false, error: 'Old password and new password should not be same.' };
+  }
+  const supabase = await createClient();
+  const { data: authData, error: userError } = await supabase.auth.getUser();
+  const email = authData.user?.email;
+  if (userError || !email) {
+    return { success: false, error: 'Not authenticated. Please log in again.' };
+  }
+  // Re-authenticate: verifies the old password is correct.
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password: oldPassword,
+  });
+  if (signInError) {
+    return { success: false, error: 'Old password is not correct.' };
+  }
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) {
+    return { success: false, error: error.message };
+  }
   return { success: true };
 }
 

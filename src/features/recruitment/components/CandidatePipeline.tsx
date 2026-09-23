@@ -8,9 +8,9 @@ import Avatar from '@/components/ui/Avatar';
 import Select from '@/components/ui/Select';
 import EmptyState from '@/components/ui/EmptyState';
 import { StatusBadge } from '@/components/shared';
-import { Star, Eye, CalendarDays, FileText, ArrowRight, XCircle } from 'lucide-react';
+import { Eye, Pencil, Trash2, Download, CalendarDays, FileText, ArrowRight, XCircle } from 'lucide-react';
 import type { Candidate, Job } from '@/types';
-import { CandidateExt, Interview, Offer, STAGES } from '../types';
+import { CandidateExt, Interview, Offer, STAGES, cvDisplayName } from '../types';
 
 interface CandidatePipelineProps {
   panel: 'candidates' | 'pipeline' | 'interviews' | 'offers' | 'analytics';
@@ -23,10 +23,12 @@ interface CandidatePipelineProps {
   onPipeFilterChange: (value: string) => void;
   onStageChange: (id: string, stage: Candidate['stage']) => void;
   onViewCandidate: (cand: CandidateExt) => void;
+  onEditCandidate: (cand: CandidateExt) => void;
+  onDeleteCandidate: (cand: CandidateExt) => void;
+  onDownloadResume: (path?: string | null) => void;
   onScheduleInterview: (candidateId: string) => void;
   onRecordOffer: (candidateId: string) => void;
   onConvert: (cand: CandidateExt) => void;
-  onFeedback: (id: string) => void;
   onCancelInterview: (iv: Interview) => void;
   onViewOffer: (cand: CandidateExt, offer: Offer) => void;
   onOfferStatusChange: (offer: Offer, status: Offer['status']) => void;
@@ -36,8 +38,8 @@ export default function CandidatePipeline(props: CandidatePipelineProps) {
   const {
     panel, candidates, jobs, interviews, offers, analytics,
     pipeFilter, onPipeFilterChange, onStageChange,
-    onViewCandidate, onScheduleInterview, onRecordOffer, onConvert,
-    onFeedback, onCancelInterview, onViewOffer, onOfferStatusChange,
+    onViewCandidate, onEditCandidate, onDeleteCandidate, onDownloadResume, onScheduleInterview, onRecordOffer, onConvert,
+    onCancelInterview, onViewOffer, onOfferStatusChange,
   } = props;
 
   if (panel === 'candidates') {
@@ -54,16 +56,18 @@ export default function CandidatePipeline(props: CandidatePipelineProps) {
             </div>
             <div className="w-full sm:w-[300px] shrink-0 space-y-2">
               <div className="flex items-center justify-end gap-2 min-h-[24px]">
-                {cand.rating
-                  ? <span className="inline-flex items-center gap-1 text-yellow-500 text-xs font-semibold"><Star size={13} fill="currentColor" />{cand.rating}</span>
-                  : <span className="inline-flex items-center gap-1 text-xs font-semibold invisible"><Star size={13} />0</span>}
                 <StatusBadge status={cand.stage} />
               </div>
               <Select value={cand.stage} onChange={e => onStageChange(cand.id, e.target.value as Candidate['stage'])} options={STAGES.map(s => ({ value: s, label: s }))} />
               <div className="flex items-center justify-end gap-2">
                 <button title="View profile & history" onClick={() => onViewCandidate(cand)} className="p-1.5 rounded-lg bg-[#EAF2F4] text-[#0F8B8D] hover:bg-[#D6E4E8] cursor-pointer"><Eye size={15} /></button>
+                {cand.resume
+                  ? <button title={`Download CV (${cvDisplayName(cand.resume)})`} onClick={() => onDownloadResume(cand.resume)} className="p-1.5 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100 cursor-pointer"><Download size={15} /></button>
+                  : null}
+                <button title="Edit candidate" onClick={() => onEditCandidate(cand)} className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer"><Pencil size={15} /></button>
                 <button title="Schedule interview" onClick={() => onScheduleInterview(cand.id)} className="p-1.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 cursor-pointer"><CalendarDays size={15} /></button>
                 <button title="Record offer" onClick={() => onRecordOffer(cand.id)} className="p-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 cursor-pointer"><FileText size={15} /></button>
+                <button title="Delete candidate" onClick={() => onDeleteCandidate(cand)} className="p-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 cursor-pointer"><Trash2 size={15} /></button>
                 {cand.stage === 'Hired'
                   ? <button title="Convert to employee" onClick={() => onConvert(cand)} className="inline-flex items-center gap-1 rounded-lg bg-[#17324D] px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-[#0F8B8D] cursor-pointer"><ArrowRight size={13} /> To Employee</button>
                   : null}
@@ -116,11 +120,9 @@ export default function CandidatePipeline(props: CandidatePipelineProps) {
               <div className="flex-1">
                 <p className="text-sm font-semibold text-[#17324D]">{cand?.name || iv.candidateId} · {iv.round}</p>
                 <p className="text-xs text-gray-500">{iv.date} {iv.time} · {iv.mode} · {iv.interviewer}</p>
-                {iv.feedback && <p className="text-xs text-gray-600 mt-1">Feedback: {iv.feedback} {iv.rating ? `(${iv.rating}/5)` : ''}</p>}
               </div>
               <Badge variant={iv.status === 'Scheduled' ? 'warning' : iv.status === 'Completed' ? 'success' : 'neutral'}>{iv.status}</Badge>
               {iv.status === 'Scheduled' && <div className="flex gap-1.5">
-                <Button variant="outline" size="sm" onClick={() => onFeedback(iv.id)}>Feedback</Button>
                 <button title="Cancel interview" onClick={() => onCancelInterview(iv)} className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"><XCircle size={15} /></button>
               </div>}
             </div>
@@ -140,7 +142,7 @@ export default function CandidatePipeline(props: CandidatePipelineProps) {
           return (
             <div key={o.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border border-[#D6E4E8]">
               <div className="flex-1">
-                <p className="text-sm font-semibold text-[#17324D]">{cand.name} · ${o.salary.toLocaleString()}</p>
+                <p className="text-sm font-semibold text-[#17324D]">{cand.name} · PKR {o.salary.toLocaleString()}</p>
                 <p className="text-xs text-gray-500">Joining {o.joiningDate} · {o.notes || cand.jobTitle}</p>
               </div>
               <Badge variant={o.status === 'Accepted' ? 'success' : o.status === 'Rejected' ? 'danger' : 'info'}>{o.status}</Badge>

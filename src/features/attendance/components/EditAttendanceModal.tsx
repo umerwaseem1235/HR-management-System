@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
 import Button from '@/components/ui/Button';
@@ -9,23 +9,34 @@ import Modal from '@/components/ui/Modal';
 import Select from '@/components/ui/Select';
 import type { AttendanceRecord } from '@/types';
 import { timeToMinutes } from '@/utils/date';
-import { ADMIN_STATUS_OPTIONS } from '../utils';
+import { ADMIN_STATUS_OPTIONS, formatDuration, resolveLateStatus, type LateArrivalRule } from '../utils';
 
 export default function EditAttendanceModal({
   record,
   onClose,
   onSave,
   onDelete,
+  lateRule,
 }: {
   record: AttendanceRecord;
   onClose: () => void;
   onSave: (id: string, values: { checkIn: string; checkOut: string; status: string; notes: string }) => void;
   onDelete?: (id: string) => void;
+  lateRule?: LateArrivalRule;
 }) {
   const [checkIn, setCheckIn] = useState(record.checkIn || '');
   const [checkOut, setCheckOut] = useState(record.checkOut || '');
   const [status, setStatus] = useState<string>(record.status);
+  const [statusTouched, setStatusTouched] = useState(false);
   const [notes, setNotes] = useState(record.notes || '');
+
+  const suggestion = lateRule && checkIn ? resolveLateStatus(checkIn, lateRule) : null;
+
+  useEffect(() => {
+    if (!suggestion || !lateRule?.enabled || statusTouched) return;
+    if (['Present', 'Late', 'Half Day'].includes(status)) setStatus(suggestion.status);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkIn]);
 
   const inMin = checkIn ? timeToMinutes(checkIn) : 0;
   const outMin = checkOut ? timeToMinutes(checkOut) : 0;
@@ -57,7 +68,7 @@ export default function EditAttendanceModal({
           <Select
             label="Status"
             value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            onChange={(e) => { setStatus(e.target.value); setStatusTouched(true); }}
             options={ADMIN_STATUS_OPTIONS}
             required
           />
@@ -67,6 +78,12 @@ export default function EditAttendanceModal({
           </div>
           <Input label="Check In" type="time" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
           <Input label="Check Out" type="time" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
+          {suggestion && lateRule?.enabled && suggestion.minutesLate > 0 && (
+            <p className="sm:col-span-2 text-xs leading-relaxed text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2.5">
+              Late-arrival rule: {formatDuration(suggestion.minutesLate)} late → auto-marked{' '}
+              <span className="font-semibold">{suggestion.status}</span>.
+            </p>
+          )}
           <div className="sm:col-span-2">
             <Input label="Notes" placeholder="Reason for correction (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>

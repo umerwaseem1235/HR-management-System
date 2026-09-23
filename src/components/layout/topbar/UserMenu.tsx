@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronDown, User, Settings, LogOut } from 'lucide-react';
+import { ChevronDown, User, Settings, KeyRound, LogOut } from 'lucide-react';
 import { ROLE_LABELS } from '../../../lib/constants';
 import type { User as AuthUser } from '../../../lib/types';
 
@@ -52,10 +52,21 @@ export function UserMenu({ user, open, onToggle, onNavigate, onLogout }: UserMen
             onClick={() => onNavigate('/settings')}
             className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-[#263238] transition-colors hover:bg-[#EAF2F4]"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
-              <Settings size={15} />
-            </span>
-            Settings
+            {user.role === 'super_admin' ? (
+              <>
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
+                  <Settings size={15} />
+                </span>
+                Settings
+              </>
+            ) : (
+              <>
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
+                  <KeyRound size={15} />
+                </span>
+                Change Password
+              </>
+            )}
           </button>
           <div className="my-1.5 border-t border-[#D6E4E8]/60" />
           <button

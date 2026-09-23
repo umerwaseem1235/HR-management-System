@@ -1,6 +1,6 @@
-/** Formats a number as USD with no decimals: 5500 -> "$5,500". */
+/** Formats a number as PKR with no decimals: 5500 -> "PKR 5,500". */
 export function formatCurrency(n: number): string {
-  return `$${Math.round(n).toLocaleString()}`;
+  return `PKR ${Math.round(n).toLocaleString()}`;
 }
 
 /** "Sarah Williams" -> "SW". */

@@ -25,6 +25,7 @@ export default function RecruitmentView() {
         </div>} />
 
       {r.success && <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"><CheckCircle2 size={16} /><span className="flex-1">{r.success}</span><button onClick={() => r.setSuccess('')} className="font-semibold hover:underline cursor-pointer">Dismiss</button></div>}
+      {r.jobsError && <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><CheckCircle2 size={16} /><span className="flex-1">{r.jobsError}</span><button onClick={() => r.setJobsError('')} className="font-semibold hover:underline cursor-pointer">Dismiss</button></div>}
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <StatCard title="Free Positions" value={r.jobs.filter(j => j.status === 'Open').reduce((s, j) => s + j.vacancies, 0)} iconName="openVacancies" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
@@ -37,13 +38,17 @@ export default function RecruitmentView() {
         <div className="px-6 pt-4"><Tabs tabs={r.tabs} activeTab={r.activeTab} onChange={r.setActiveTab} /></div>
         <div className="p-6">
           {r.activeTab === 'jobs' && (
-            <JobList
-              jobs={r.jobs}
-              onEdit={r.openEditJob}
-              onClose={r.closeJob}
-              onReopen={r.reopenJob}
-              onDelete={(job) => r.setConfirmDeleteJob(job)}
-            />
+            r.jobsLoading ? (
+              <p className="text-sm text-gray-500">Loading free positions…</p>
+            ) : (
+              <JobList
+                jobs={r.jobs}
+                onEdit={r.openEditJob}
+                onClose={r.closeJob}
+                onReopen={r.reopenJob}
+                onDelete={(job) => r.setConfirmDeleteJob(job)}
+              />
+            )
           )}
 
           {(r.activeTab === 'candidates' || r.activeTab === 'pipeline' || r.activeTab === 'interviews' || r.activeTab === 'offers' || r.activeTab === 'analytics') && (
@@ -58,10 +63,12 @@ export default function RecruitmentView() {
               onPipeFilterChange={r.setPipeFilter}
               onStageChange={(id, stage) => r.moveStage(id, stage)}
               onViewCandidate={r.openDetail}
+              onEditCandidate={r.openEditCandidate}
+              onDeleteCandidate={(cand) => r.setConfirmDeleteCand(cand)}
+              onDownloadResume={r.downloadResume}
               onScheduleInterview={r.openInterviewFor}
               onRecordOffer={r.openOfferFor}
               onConvert={r.openConvertFor}
-              onFeedback={r.openFeedbackFor}
               onCancelInterview={(iv) => r.setConfirmCancelInterview(iv)}
               onViewOffer={(cand, offer) => r.setOfferView({ cand, offer })}
               onOfferStatusChange={r.changeOfferStatus}
@@ -75,6 +82,7 @@ export default function RecruitmentView() {
         onJobModalChange={(patch) => r.setJobModal(prev => prev ? { ...prev, ...patch } : prev)}
         onClose={() => r.setJobModal(null)}
         onSubmit={r.saveJob}
+        isSaving={r.isSavingJob}
         confirmDeleteJob={r.confirmDeleteJob}
         onCloseDeleteConfirm={() => r.setConfirmDeleteJob(null)}
         onConfirmDelete={(job) => r.deleteJob(job.id)}
@@ -88,8 +96,17 @@ export default function RecruitmentView() {
         candModal={r.candModal}
         onCloseCandModal={() => r.setCandModal(false)}
         onAddCandidate={r.addCandidate}
+        editCandModal={r.editCandModal}
+        onEditCandChange={(patch) => r.setEditCandModal(prev => prev ? { ...prev, ...patch } : prev)}
+        onCloseEditCand={() => r.setEditCandModal(null)}
+        onSaveEditCand={r.saveEditCandidate}
+        isSavingCand={r.isSavingCand}
+        confirmDeleteCand={r.confirmDeleteCand}
+        onCloseDeleteCandConfirm={() => r.setConfirmDeleteCand(null)}
+        onConfirmDeleteCand={(cand) => r.removeCandidate(cand.id)}
         detail={r.detail}
         onCloseDetail={() => r.setDetail(null)}
+        onDownloadResume={r.downloadResume}
         noteText={r.noteText}
         onNoteTextChange={r.setNoteText}
         onAddNote={r.addDetailNote}
@@ -97,10 +114,6 @@ export default function RecruitmentView() {
         onIntModalChange={(patch) => r.setIntModal(prev => prev ? { ...prev, ...patch } : prev)}
         onCloseIntModal={() => r.setIntModal(null)}
         onScheduleInterview={r.scheduleInterview}
-        fbModal={r.fbModal}
-        onFbModalChange={(patch) => r.setFbModal(prev => prev ? { ...prev, ...patch } : prev)}
-        onCloseFbModal={() => r.setFbModal(null)}
-        onSaveFeedback={r.saveFeedback}
         offerModal={r.offerModal}
         onOfferModalChange={(patch) => r.setOfferModal(prev => prev ? { ...prev, ...patch } : prev)}
         onCloseOfferModal={() => r.setOfferModal(null)}

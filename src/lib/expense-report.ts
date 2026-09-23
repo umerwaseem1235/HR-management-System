@@ -16,7 +16,7 @@ function pdfHeader(doc: jsPDF, title: string, subtitle: string): void {
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
-  doc.text('CodeQor HRMS', 14, 13);
+  doc.text('CodQor HRMS', 14, 13);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.text('Human Resource Management', 14, 20);
@@ -71,10 +71,10 @@ export function expenseReportToPDF(claims: ExpenseClaim[], periodLabel: string):
 
   y = pdfSection(doc, 'SUMMARY', y);
   const summary: Array<[string, string]> = [
-    ['Total claimed', `$${Math.round(total).toLocaleString()}`],
-    ['Pending', `$${Math.round(sumBy('Pending')).toLocaleString()}`],
-    ['Approved', `$${Math.round(sumBy('Approved')).toLocaleString()}`],
-    ['Reimbursed', `$${Math.round(sumBy('Reimbursed')).toLocaleString()}`],
+    ['Total claimed', `PKR ${Math.round(total).toLocaleString()}`],
+    ['Pending', `PKR ${Math.round(sumBy('Pending')).toLocaleString()}`],
+    ['Approved', `PKR ${Math.round(sumBy('Approved')).toLocaleString()}`],
+    ['Reimbursed', `PKR ${Math.round(sumBy('Reimbursed')).toLocaleString()}`],
   ];
   doc.setFontSize(10);
   for (const [label, value] of summary) {
@@ -142,7 +142,7 @@ export function expenseReportToPDF(claims: ExpenseClaim[], periodLabel: string):
       claim.category,
       claim.date,
       claim.description.length > 30 ? `${claim.description.slice(0, 28)}…` : claim.description,
-      `$${Math.round(claim.amount).toLocaleString()}`,
+      `PKR ${Math.round(claim.amount).toLocaleString()}`,
       claim.status,
     ];
     let x = 16;
@@ -163,7 +163,7 @@ export function expenseReportToPDF(claims: ExpenseClaim[], periodLabel: string):
   doc.setFontSize(9);
   doc.setTextColor(...NAVY);
   doc.text('TOTAL', 16, y);
-  doc.text(`$${Math.round(total).toLocaleString()}`, 194, y, { align: 'right' });
+  doc.text(`PKR ${Math.round(total).toLocaleString()}`, 194, y, { align: 'right' });
 
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(8);

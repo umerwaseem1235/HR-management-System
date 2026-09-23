@@ -15,6 +15,7 @@ interface ReportPreviewProps {
   tab: TabId;
   title: string;
   rowCount: number;
+  isLoading?: boolean;
   attPage: AttendanceDayRow[];
   progPage: ProgressEntry[];
   taskPage: DailyWork[];
@@ -41,7 +42,7 @@ interface ReportPreviewProps {
 }
 
 export default function ReportPreview({
-  tab, title, rowCount, attPage, progPage, taskPage,
+  tab, title, rowCount, isLoading, attPage, progPage, taskPage,
   attendanceRows, progressRows, taskRows, scopeName, from, to,
   pageSize, onPageSizeChange, safePage, totalPages, start, end,
   onFirst, onPrev, onSelectPage, onNext, onLast,
@@ -66,7 +67,23 @@ export default function ReportPreview({
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#D6E4E8]">
-                {attPage.map((r, i) => (
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={`skeleton-${i}`} className="animate-pulse">
+                      <td className="px-6 py-4"><div className="h-4 w-8 rounded bg-[#EAF2F4]" /></td>
+                      <td className="px-6 py-4">
+                        <div className="h-4 w-24 rounded bg-[#EAF2F4]" />
+                        <div className="mt-1.5 h-3 w-16 rounded bg-[#EAF2F4]" />
+                      </td>
+                      <td className="px-6 py-4"><div className="h-4 w-14 rounded bg-[#EAF2F4]" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-14 rounded bg-[#EAF2F4]" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-16 rounded bg-[#EAF2F4]" /></td>
+                      <td className="px-6 py-4"><div className="h-6 w-20 rounded-full bg-[#EAF2F4]" /></td>
+                      <td className="px-6 py-4"><div className="h-8 w-8 rounded-lg bg-[#EAF2F4]" /></td>
+                    </tr>
+                  ))
+                ) : (
+                  attPage.map((r, i) => (
                   <tr key={r.date} className="hover:bg-[#EAF2F4]/50">
                     <td className="px-6 py-4 text-sm text-gray-500">{(safePage - 1) * pageSize + i + 1}</td>
                     <td className="px-6 py-4">
@@ -83,7 +100,8 @@ export default function ReportPreview({
                       </button>
                     </td>
                   </tr>
-                ))}
+                  ))
+                )}
               </tbody>
             </table>
           )}
@@ -93,6 +111,7 @@ export default function ReportPreview({
               <thead>
                 <tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
                   <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">#</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Employee Name</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Project</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Progress Note</th>
@@ -103,6 +122,7 @@ export default function ReportPreview({
                 {progPage.map((e, i) => (
                   <tr key={e.id} className="hover:bg-[#EAF2F4]/50">
                     <td className="px-6 py-4 text-sm text-gray-500">{(safePage - 1) * pageSize + i + 1}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-[#263238] whitespace-nowrap">{e.employeeName || '—'}</td>
                     <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{slash(e.submissionDate)}</td>
                     <td className="px-6 py-4 text-sm font-medium text-[#263238] whitespace-nowrap">{e.projectName}</td>
                     <td className="px-6 py-4 text-sm text-gray-600 max-w-md">
@@ -158,11 +178,15 @@ export default function ReportPreview({
             </table>
           )}
 
-          {rowCount === 0 && (
+          {rowCount === 0 && !isLoading && (
             <div className="p-6">
               <EmptyState
                 title="No records found"
-                description="No records in this range. Adjust the dates or search and fetch again."
+                description={tab === 'attendance'
+                  ? 'No attendance records in the database for this employee and range. Mark attendance first, then fetch again.'
+                  : tab === 'progress'
+                    ? 'No progress entries in the database for this employee and range.'
+                    : 'No records in this range. Adjust the dates or search and fetch again.'}
               />
             </div>
           )}
@@ -212,7 +236,7 @@ export default function ReportPreview({
       {/* Print document (browser Print → Save as PDF) */}
       <div className="report-print-area">
         <div style={{ textAlign: 'center', marginBottom: 4 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>CodeQor HRMS</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>CodQor HRMS</h1>
           <h2 style={{ fontSize: 13, fontWeight: 600, margin: '6px 0 0' }}>{title}</h2>
           <p style={{ fontSize: 11, margin: '4px 0 0' }}>
             From: {from} <span style={{ margin: '0 12px' }}>To: {to}</span> <span>Employee: {scopeName}</span>
@@ -286,7 +310,7 @@ export default function ReportPreview({
             </tbody>
           </table>
         )}
-        <p style={{ fontSize: 10, marginTop: 8 }}>Generated {new Date().toISOString().slice(0, 16).replace('T', ' ')} · {rowCount} records · CodeQor HRMS</p>
+        <p style={{ fontSize: 10, marginTop: 8 }}>Generated {new Date().toISOString().slice(0, 16).replace('T', ' ')} · {rowCount} records · CodQor HRMS</p>
       </div>
     </>
   );

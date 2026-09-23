@@ -44,7 +44,7 @@ export default function ExpenseModal({
           options={[{ value: '', label: 'Select Category' }, ...EXPENSE_CATEGORIES.map((c) => ({ value: c, label: c }))]}
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="Amount ($)" type="number" min="0" step="0.01" placeholder="0.00" value={amount} onChange={(e) => onAmountChange(e.target.value)} error={errors.amount} />
+          <Input label="Amount (PKR)" type="number" min="0" step="0.01" placeholder="0.00" value={amount} onChange={(e) => onAmountChange(e.target.value)} error={errors.amount} />
           <Input label="Date" type="date" value={date} onChange={(e) => onDateChange(e.target.value)} error={errors.date} />
         </div>
         <div>

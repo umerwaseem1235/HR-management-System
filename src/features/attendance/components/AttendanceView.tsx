@@ -19,6 +19,7 @@ import AttendanceSummary from './AttendanceSummary';
 import CorrectionQueue from './CorrectionQueue';
 import EditAttendanceModal from './EditAttendanceModal';
 import HolidayManager from './HolidayManager';
+import LateArrivalRules from './LateArrivalRules';
 import ManualEntryModal from './ManualEntryModal';
 
 export default function AttendanceView() {
@@ -116,6 +117,7 @@ export default function AttendanceView() {
           presentDays={att.presentDays}
           absentDays={att.absentDays}
           lateDays={att.lateDays}
+          halfDayDays={att.halfDayDays}
           leavesTaken={att.leavesTaken}
           monthLabel={att.monthLabel}
         />
@@ -142,6 +144,8 @@ export default function AttendanceView() {
   //              SUPER ADMIN / HR VIEW (professional)
   // ============================================================
 
+  const halfDayToday = att.dayRecords.filter((r) => r.status === 'Half Day').length;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -151,6 +155,7 @@ export default function AttendanceView() {
             <Badge variant="success">{att.stats.presentToday} Present</Badge>
             <Badge variant="danger">{att.stats.absentToday} Absent</Badge>
             <Badge variant="warning">{att.stats.lateToday} Late</Badge>
+            <Badge variant="warning">{halfDayToday} Half Day</Badge>
             <Badge variant="info">{att.stats.onLeaveToday} On Leave</Badge>
           </>
         }
@@ -163,7 +168,7 @@ export default function AttendanceView() {
       )}
 
       {/* Today snapshot */}
-      <TodaySnapshot stats={att.stats} />
+      <TodaySnapshot stats={att.stats} halfDayToday={halfDayToday} />
 
       <Card padding="none">
         <div className="px-6 pt-4">
@@ -203,6 +208,7 @@ export default function AttendanceView() {
             viewDate={att.viewDate}
             logSearch={att.logSearch}
             onEdit={att.setEditingRecord}
+            graceMinutes={att.lateRule.graceMinutes}
           />
         </>
       )}
@@ -231,7 +237,7 @@ export default function AttendanceView() {
         />
       )}
 
-      {/* ---------------- CONFIG ---------------- */}
+      {/* ---------------- CONFIG (HOLIDAYS ONLY) ---------------- */}
       {att.activeTab === 'config' && (
         <HolidayManager
           holidays={att.holidays}
@@ -241,12 +247,20 @@ export default function AttendanceView() {
         />
       )}
 
+      {/* ---------------- RULES (LATE-ARRIVAL, SEPARATE TAB) ---------------- */}
+      {att.activeTab === 'rules' && (
+        <div className="max-w-2xl">
+          <LateArrivalRules rule={att.lateRule} onRuleChange={att.setLateRule} />
+        </div>
+      )}
+
       {/* Manual attendance entry modal */}
       <ManualEntryModal
         open={att.manualOpen}
         onClose={() => att.setManualOpen(false)}
         onSave={att.handleAddManual}
         employees={att.employees}
+        lateRule={att.lateRule}
       />
 
       {/* Edit attendance record (super admin / HR) */}
@@ -257,6 +271,7 @@ export default function AttendanceView() {
           onClose={() => att.setEditingRecord(null)}
           onSave={att.handleUpdateRecord}
           onDelete={att.handleDeleteRecord}
+          lateRule={att.lateRule}
         />
       )}
 

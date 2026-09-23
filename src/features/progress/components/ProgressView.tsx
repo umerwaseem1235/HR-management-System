@@ -34,7 +34,7 @@ export default function ProgressView() {
           <SearchBar
             value={v.query}
             onChange={(val) => { v.setQuery(val); v.setPage(1); }}
-            placeholder="Search by project name…"
+            placeholder={v.isEmployee ? 'Search by project name…' : 'Search by employee, project name…'}
             className="flex-1"
           />
           <div className="grid grid-cols-2 gap-3 lg:w-auto">

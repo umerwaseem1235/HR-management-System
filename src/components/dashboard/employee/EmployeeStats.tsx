@@ -22,7 +22,7 @@ export default function EmployeeStats({
   const items: StatGridItem[] = [
     { title: 'Working Days', value: '22/23', iconName: 'time', iconColor: STAT_ICON_COLOR, iconBg: STAT_ICON_BG },
     { title: 'Leave Balance', value: `${leaveRemainingTotal} days`, iconName: 'onLeaveToday', iconColor: STAT_ICON_COLOR, iconBg: STAT_ICON_BG },
-    { title: 'Last Payslip', value: `$${lastPayslipNet.toLocaleString()}`, iconName: 'payroll', iconColor: STAT_ICON_COLOR, iconBg: STAT_ICON_BG },
+    { title: 'Last Payslip', value: `PKR ${lastPayslipNet.toLocaleString()}`, iconName: 'payroll', iconColor: STAT_ICON_COLOR, iconBg: STAT_ICON_BG },
     { title: 'Goals Progress', value: `${goalsCompleted}/${goalsTotal}`, iconName: 'goals', iconColor: STAT_ICON_COLOR, iconBg: STAT_ICON_BG },
   ];
 

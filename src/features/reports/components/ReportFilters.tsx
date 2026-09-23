@@ -7,10 +7,11 @@ import Input from '@/components/ui/Input';
 import SearchBar from '@/components/ui/SearchBar';
 import Select from '@/components/ui/Select';
 import type { Employee } from '@/types';
+import type { ReportEmployeeOption } from '@/lib/actions/reports';
 import type { TabId } from '../types';
 
 interface ReportFiltersProps {
-  employees: Employee[];
+  employees: (Employee | ReportEmployeeOption)[];
   tab: TabId;
   fetchLabel: string;
   draftFrom: string;
@@ -19,6 +20,7 @@ interface ReportFiltersProps {
   onDraftToChange: (v: string) => void;
   isEmployee: boolean;
   empId: string;
+  employeesLoading?: boolean;
   onEmpIdChange: (v: string) => void;
   query: string;
   onQueryChange: (v: string) => void;
@@ -29,7 +31,7 @@ interface ReportFiltersProps {
 
 export default function ReportFilters({
   employees, tab, fetchLabel, draftFrom, onDraftFromChange, draftTo, onDraftToChange,
-  isEmployee, empId, onEmpIdChange, query, onQueryChange, queryPlaceholder,
+  isEmployee, empId, employeesLoading, onEmpIdChange, query, onQueryChange, queryPlaceholder,
   onFetch, onPrint,
 }: ReportFiltersProps) {
   return (
@@ -46,7 +48,9 @@ export default function ReportFilters({
                 label="Employee"
                 value={empId}
                 onChange={(e) => { onEmpIdChange(e.target.value); }}
-                options={employees.map((e) => ({ value: e.id, label: `${e.firstName} ${e.lastName}` }))}
+                options={employeesLoading
+                  ? [{ value: empId, label: 'Loading…' }]
+                  : employees.map((e) => ({ value: e.id, label: `${(e as Employee).firstName ?? (e as ReportEmployeeOption).firstName} ${(e as Employee).lastName ?? (e as ReportEmployeeOption).lastName}`.trim() || (e as ReportEmployeeOption).email || (e as Employee).email || e.id }))}
               />
             </div>
           )}

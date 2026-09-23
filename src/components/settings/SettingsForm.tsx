@@ -4,56 +4,70 @@ import React, { useEffect, useState } from 'react';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import { Save } from 'lucide-react';
-import { getSettings, updateSetting } from '../../lib/actions/settings';
-
-const FIELDS = [
-  { key: 'company_name', label: 'Company Name', fallback: 'CodQor Inc.' },
-  { key: 'reg_no', label: 'Registration No.', fallback: 'REG-2018-001' },
-  { key: 'email', label: 'Email', fallback: 'contact@codqor.com' },
-  { key: 'phone', label: 'Phone', fallback: '+1-555-0000' },
-  { key: 'address', label: 'Address', fallback: '100 Tech Avenue, New York, NY', span: true },
-  { key: 'website', label: 'Website', fallback: 'https://codqor.com' },
-  { key: 'tax_id', label: 'Tax ID', fallback: 'TAX-123456' },
-];
+import { COMPANY_DEFAULTS, type CompanySettings } from '@/lib/company-settings';
+import { getCompanySettings, saveCompanySettings } from '@/lib/actions/settings';
 
 export default function SettingsForm() {
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [form, setForm] = useState<CompanySettings>(COMPANY_DEFAULTS);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    async function load() {
       try {
-        const data = await getSettings();
-        if (!cancelled) setValues(data);
+        const data = await getCompanySettings();
+        if (!cancelled) setForm(data);
       } catch (err) {
-        if (!cancelled) setMessage({ kind: 'error', text: 'Failed to load company settings.' });
+        if (!cancelled) setMessage({ kind: 'error', text: err instanceof Error ? err.message : 'Failed to load company settings.' });
       } finally {
         if (!cancelled) setIsLoading(false);
       }
-    })();
-    return () => { cancelled = true; };
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const handleSave = async () => {
-    setIsSaving(true);
+  const set = (field: keyof CompanySettings) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
     setMessage(null);
+    if (!form.companyName.trim()) {
+      setMessage({ kind: 'error', text: 'Company name is required.' });
+      return;
+    }
+    setIsSaving(true);
     try {
-      await Promise.all(
-        FIELDS.map((f) => updateSetting(f.key, values[f.key] ?? f.fallback)),
-      );
-      setMessage({ kind: 'success', text: 'Company information saved.' });
+      await saveCompanySettings(form);
+      setMessage({ kind: 'success', text: 'Company information saved — applied across the system.' });
     } catch (err) {
-      setMessage({ kind: 'error', text: err instanceof Error ? err.message : 'Failed to save.' });
+      setMessage({ kind: 'error', text: err instanceof Error ? err.message : 'Failed to save. Please try again.' });
     } finally {
       setIsSaving(false);
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl space-y-5 animate-pulse">
+        <div className="h-5 w-48 rounded bg-[#EAF2F4]" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-10 rounded-lg bg-[#EAF2F4]" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-2xl space-y-5">
+    <form onSubmit={handleSave} className="max-w-2xl space-y-5">
       <h3 className="text-base font-semibold text-[#17324D]">Company Information</h3>
       {message && (
         <div className={`rounded-lg border px-4 py-2.5 text-sm ${
@@ -65,22 +79,19 @@ export default function SettingsForm() {
         </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {FIELDS.map((f) => (
-          <Input
-            key={f.key}
-            label={f.label}
-            value={isLoading ? '' : (values[f.key] ?? f.fallback)}
-            onChange={(e) => setValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
-            disabled={isLoading || isSaving}
-            className={f.span ? 'sm:col-span-2' : ''}
-          />
-        ))}
+        <Input label="Company Name" value={form.companyName} onChange={set('companyName')} disabled={isSaving} />
+        <Input label="Registration No." value={form.regNo} onChange={set('regNo')} disabled={isSaving} />
+        <Input label="Email" value={form.email} onChange={set('email')} disabled={isSaving} />
+        <Input label="Phone" value={form.phone} onChange={set('phone')} disabled={isSaving} />
+        <Input label="Address" value={form.address} onChange={set('address')} className="sm:col-span-2" disabled={isSaving} />
+        <Input label="Website" value={form.website} onChange={set('website')} disabled={isSaving} />
+        <Input label="Tax ID" value={form.taxId} onChange={set('taxId')} disabled={isSaving} />
       </div>
       <div className="flex justify-end pt-4">
-        <Button variant="primary" onClick={handleSave} disabled={isLoading} loading={isSaving}>
+        <Button variant="primary" type="submit" loading={isSaving}>
           <Save size={16} /> Save Changes
         </Button>
       </div>
-    </div>
+    </form>
   );
 }

@@ -57,10 +57,12 @@ export function useProgressView() {
 
   const isEmployee = user?.role === 'employee';
 
-  // Employees only see their own progress; admins/HR see everything
+  // Employees only see their own progress; admins/HR see everything.
+  // Prefer the real employee record linked to the login (real UUID from DB).
   const visible = useMemo(() => {
     if (!isEmployee) return entries;
     if (!user) return [];
+    if (user.employeeId) return entries.filter((e) => e.employeeId === user.employeeId);
     return entries.filter((e) =>
       employee ? e.employeeId === employee.id : e.employeeName.toLowerCase() === user.name.toLowerCase(),
     );
@@ -70,7 +72,7 @@ export function useProgressView() {
     const q = query.trim().toLowerCase();
     return visible
       .filter((e) => {
-        if (q && !`${e.projectName} ${e.description}`.toLowerCase().includes(q)) return false;
+        if (q && !`${e.employeeName} ${e.projectName} ${e.description}`.toLowerCase().includes(q)) return false;
         if (fromDate && e.submissionDate < fromDate) return false;
         if (toDate && e.submissionDate > toDate) return false;
         return true;
@@ -127,7 +129,7 @@ export function useProgressView() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     const nextErrors: Record<string, string> = {};
@@ -137,26 +139,40 @@ export function useProgressView() {
     setFormErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    if (editingId) {
-      updateEntry(editingId, {
-        projectName: projectName.trim(),
-        submissionDate,
-        description: description.trim(),
-      });
-    } else {
-      addEntry({
-        projectName: projectName.trim(),
-        submissionDate,
-        description: description.trim(),
-        employeeId: employee?.id ?? user.id,
-        employeeName: employee ? `${employee.firstName} ${employee.lastName}` : user.name,
-      });
+    try {
+      if (editingId) {
+        await updateEntry(editingId, {
+          projectName: projectName.trim(),
+          submissionDate,
+          description: description.trim(),
+        });
+      } else {
+        await addEntry({
+          projectName: projectName.trim(),
+          submissionDate,
+          description: description.trim(),
+          // Prefer the real employee record linked to the login (real UUID) —
+          // the server also re-resolves this, satisfying the FK + RLS policy.
+          employeeId: user.employeeId ?? employee?.id ?? user.id,
+          employeeName: employee ? `${employee.firstName} ${employee.lastName}` : user.name,
+        });
+      }
+    } catch (err) {
+      // Keep the modal open with data intact so nothing is lost — user can retry.
+      setFormErrors({ submit: err instanceof Error ? err.message : 'Failed to save progress. Please try again.' });
+      return;
     }
     closeForm();
   };
 
-  const confirmDelete = () => {
-    if (confirmDeleteEntry) deleteEntry(confirmDeleteEntry.id);
+  const confirmDelete = async () => {
+    if (!confirmDeleteEntry) return;
+    try {
+      await deleteEntry(confirmDeleteEntry.id);
+    } catch (err) {
+      console.error('Failed to delete progress entry:', err);
+      return;
+    }
     setConfirmDeleteEntry(null);
   };
 

@@ -7,7 +7,7 @@ import { useLeave } from '@/contexts/LeaveContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { timeToMinutes, toDateStr, todayStr } from '@/utils/date';
 import type { CorrectionHistoryEntry, CorrectionRequest, Holiday } from '../types';
-import { aggregate, calcWorkHours } from '../utils';
+import { aggregate, calcWorkHours, DEFAULT_LATE_RULE, resolveLateStatus, type LateArrivalRule } from '../utils';
 import { createAuditLog, getAuditLogsByModule } from '@/lib/actions/audit';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -97,6 +97,7 @@ export function useAttendance() {
   const [confirmRejectCorrection, setConfirmRejectCorrection] = useState<CorrectionRequest | null>(null);
   const [confirmDeleteHoliday, setConfirmDeleteHoliday] = useState<Holiday | null>(null);
   const [logSearch, setLogSearch] = useState('');
+  const [lateRule, setLateRule] = useState<LateArrivalRule>(DEFAULT_LATE_RULE);
 
   const isEmployee = user?.role === 'employee';
 
@@ -184,6 +185,7 @@ export function useAttendance() {
     presentDays,
     absentDays,
     lateDays,
+    halfDayDays,
     leavesTaken,
   } = useMemo(() => {
     const now = new Date();
@@ -199,6 +201,7 @@ export function useAttendance() {
       presentDays: 0,
       absentDays: 0,
       lateDays: 0,
+      halfDayDays: 0,
       leavesTaken: 0,
     };
     if (!user || !isEmployee) return empty;
@@ -225,6 +228,9 @@ export function useAttendance() {
     ).length;
     const lateDays = monthlyRecords.filter(
       (r) => r.status === 'Late',
+    ).length;
+    const halfDayDays = monthlyRecords.filter(
+      (r) => r.status === 'Half Day',
     ).length;
     const attendanceLeaveDates = new Set(
       monthlyRecords.filter((r) => r.status === 'Leave').map((r) => r.date),
@@ -263,6 +269,7 @@ export function useAttendance() {
       presentDays,
       absentDays,
       lateDays,
+      halfDayDays,
       leavesTaken: attendanceLeaveDates.size + approvedLeaveDays,
     };
   }, [user, isEmployee, employee, leaveRequests, attendRecords]);
@@ -313,6 +320,7 @@ export function useAttendance() {
       count: pendingCorrections.length,
     },
     { id: 'config', label: 'Holidays' },
+    { id: 'rules', label: 'Rules' },
   ];
 
   const agg = aggregate(summaryCounts);
@@ -338,6 +346,15 @@ export function useAttendance() {
       setCorrectionHistory(mapAuditToHistory(histData));
     } catch { /* ignore */ }
   }, []);
+
+  // ── Late-arrival rule: auto-mark status from check-in time ───────────
+  // Remote (late-rule) feature applied on top of the Supabase-backed
+  // handlers below — explicit non-attendance statuses are never overridden.
+  const applyLateRule = (checkIn: string, chosenStatus: string): string => {
+    if (!lateRule.enabled || !checkIn) return chosenStatus;
+    if (['Absent', 'Leave', 'Holiday', 'Weekend'].includes(chosenStatus)) return chosenStatus;
+    return resolveLateStatus(checkIn, lateRule).status;
+  };
 
   // Log an HR attendance correction to the audit trail (Correction History).
   // userId is only stored when it is a real Supabase auth UUID; mock/demo
@@ -408,10 +425,12 @@ export function useAttendance() {
       const emp = employees.find((e) => e.id === values.employeeId);
       if (!emp) return;
 
+      // Apply the late-arrival rule so manual entries respect it.
+      const finalStatus = applyLateRule(values.checkIn, values.status);
       const workHours = calcWorkHours(
         values.checkIn,
         values.checkOut,
-        values.status,
+        finalStatus,
       );
 
       try {
@@ -420,7 +439,7 @@ export function useAttendance() {
           date: values.date,
           checkIn: values.checkIn,
           checkOut: values.checkOut,
-          status: values.status as AttendanceRecord['status'],
+          status: finalStatus as AttendanceRecord['status'],
           workHours,
           overtime: 0,
           notes: values.notes || undefined,
@@ -439,7 +458,7 @@ export function useAttendance() {
         setError(err.message || 'Failed to save attendance record');
       }
     },
-    [employees, refreshStats],
+    [employees, lateRule, refreshStats],
   );
 
   // ── Edit record (Supabase) ─────────────────────────────────────────
@@ -453,10 +472,12 @@ export function useAttendance() {
         notes: string;
       },
     ) => {
+      // Apply the late-arrival rule so edits respect it.
+      const finalStatus = applyLateRule(values.checkIn, values.status);
       const workHours = calcWorkHours(
         values.checkIn,
         values.checkOut,
-        values.status,
+        finalStatus,
       );
       // Capture the pre-edit snapshot for the correction-history audit trail
       const before = attendRecords.find((r) => r.id === id);
@@ -464,7 +485,7 @@ export function useAttendance() {
         await updateAttendanceRecord(id, {
           checkIn: values.checkIn,
           checkOut: values.checkOut,
-          status: values.status,
+          status: finalStatus,
           workHours,
           notes: values.notes,
         });
@@ -475,7 +496,7 @@ export function useAttendance() {
                   ...r,
                   checkIn: values.checkIn,
                   checkOut: values.checkOut,
-                  status: values.status as AttendanceRecord['status'],
+                  status: finalStatus as AttendanceRecord['status'],
                   workHours,
                   notes: values.notes || undefined,
                 }
@@ -490,7 +511,7 @@ export function useAttendance() {
             before.employeeName,
             before.date,
             summarizeAttendance(before.status, before.checkIn, before.checkOut),
-            summarizeAttendance(values.status, values.checkIn, values.checkOut),
+            summarizeAttendance(finalStatus, values.checkIn, values.checkOut),
           );
         }
       } catch (err: any) {
@@ -498,7 +519,7 @@ export function useAttendance() {
         setError(err.message || 'Failed to update attendance record');
       }
     },
-    [attendRecords, logCorrection, refreshStats],
+    [attendRecords, lateRule, logCorrection, refreshStats],
   );
 
   // ── Delete record (Supabase) ─────────────────────────────────────────
@@ -665,6 +686,7 @@ export function useAttendance() {
     presentDays,
     absentDays,
     lateDays,
+    halfDayDays,
     leavesTaken,
     // Filters
     search,
@@ -697,6 +719,8 @@ export function useAttendance() {
     setConfirmDeleteHoliday,
     logSearch,
     setLogSearch,
+    lateRule,
+    setLateRule,
     attendRecords,
     dayRecords,
     filteredDayRecords,

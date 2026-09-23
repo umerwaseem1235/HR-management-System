@@ -76,6 +76,11 @@ export interface AttendanceRecord {
   workHours: number;
   overtime: number;
   notes?: string;
+  checkInLat?: number;
+  checkInLng?: number;
+  checkOutLat?: number;
+  checkOutLng?: number;
+  distanceFromOffice?: number;
 }
 
 export interface LeaveType {

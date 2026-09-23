@@ -66,7 +66,7 @@ function pdfAmountRow(
   doc.setFont('helvetica', opts?.bold ? 'bold' : 'normal');
   doc.setFontSize(10);
   doc.text(label, 17, y);
-  doc.text(`$${Math.round(amount).toLocaleString()}`, 193, y, { align: 'right' });
+  doc.text(`PKR ${Math.round(amount).toLocaleString()}`, 193, y, { align: 'right' });
   return y + 8;
 }
 
@@ -167,12 +167,12 @@ export function runSummaryToPDF(run: PayrollRun): Blob {
     doc.setTextColor(...DARK);
     const vals = [
       item.employeeName,
-      `$${item.basicSalary.toLocaleString()}`,
-      `$${item.totalAllowances.toLocaleString()}`,
-      `$${item.totalDeductions.toLocaleString()}`,
-      `$${item.leaveDeduction.toLocaleString()}`,
-      `$${item.grossSalary.toLocaleString()}`,
-      `$${item.netSalary.toLocaleString()}`,
+      `PKR ${item.basicSalary.toLocaleString()}`,
+      `PKR ${item.totalAllowances.toLocaleString()}`,
+      `PKR ${item.totalDeductions.toLocaleString()}`,
+      `PKR ${item.leaveDeduction.toLocaleString()}`,
+      `PKR ${item.grossSalary.toLocaleString()}`,
+      `PKR ${item.netSalary.toLocaleString()}`,
     ];
     let x = 16;
     vals.forEach((v, ci) => {
@@ -191,7 +191,7 @@ export function runSummaryToPDF(run: PayrollRun): Blob {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(...NAVY);
-  const totals = ['', '', '', `$${run.totalDeductions.toLocaleString()}`, '', `$${run.totalGross.toLocaleString()}`, `$${run.totalNet.toLocaleString()}`];
+  const totals = ['', '', '', `PKR ${run.totalDeductions.toLocaleString()}`, '', `PKR ${run.totalGross.toLocaleString()}`, `PKR ${run.totalNet.toLocaleString()}`];
   let x = 16;
   doc.text('TOTALS', x, y);
   totals.forEach((v, ci) => {

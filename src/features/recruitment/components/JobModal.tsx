@@ -16,13 +16,14 @@ interface JobModalProps {
   onJobModalChange: (patch: Partial<JobModalState>) => void;
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
+  isSaving?: boolean;
   confirmDeleteJob: Job | null;
   onCloseDeleteConfirm: () => void;
   onConfirmDelete: (job: Job) => void;
 }
 
 export default function JobModal({
-  jobModal, onJobModalChange, onClose, onSubmit,
+  jobModal, onJobModalChange, onClose, onSubmit, isSaving,
   confirmDeleteJob, onCloseDeleteConfirm, onConfirmDelete,
 }: JobModalProps) {
   return (
@@ -44,7 +45,7 @@ export default function JobModal({
               <Input label="Closing Date" type="date" value={jobModal.closingDate} onChange={e => onJobModalChange({ closingDate: e.target.value })} />
               <Select label="Status" value={jobModal.status} onChange={e => onJobModalChange({ status: e.target.value as Job['status'] })} options={['Open', 'On Hold', 'Closed'].map(s => ({ value: s, label: s }))} />
             </div>
-            <div className="flex justify-end gap-3 pt-2 border-t border-[#D6E4E8]"><Button variant="outline" type="button" onClick={onClose}>Cancel</Button><Button type="submit"><Briefcase size={16} /> Save Note</Button></div>
+            <div className="flex justify-end gap-3 pt-2 border-t border-[#D6E4E8]"><Button variant="outline" type="button" onClick={onClose} disabled={isSaving}>Cancel</Button><Button type="submit" loading={isSaving}><Briefcase size={16} /> {isSaving ? 'Saving…' : 'Save Note'}</Button></div>
           </form>
         )}
       </Modal>

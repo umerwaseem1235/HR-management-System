@@ -3,12 +3,15 @@
 import { useEffect, useMemo, useState } from 'react';
 // NOTE: jspdf is loaded lazily inside handleDownloadPDF so the reports page
 // renders without the PDF library in its initial bundle.
+import { downloadTabReport } from '@/lib/reports-pdf';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProgress } from '@/contexts/ProgressContext';
 import { useWork } from '@/contexts/WorkContext';
 import { useEmployeeDirectory } from '@/hooks/useEmployeeDirectory';
 import { getAllAttendance } from '@/lib/actions/attendance';
-import type { AttendanceRecord, DailyWork } from '@/types';
+import { getAttendanceReport, getReportEmployees, type ReportEmployeeOption } from '@/lib/actions/reports';
+import type { AttendanceRecord } from '@/lib/types';
+import type { DailyWork } from '@/types';
 import type { AttendanceDayRow, TabId } from '../types';
 
 /* ================= Helpers ================= */
@@ -83,6 +86,50 @@ function recordToDayRow(r: AttendanceRecord): AttendanceDayRow {
   };
 }
 
+function toMinutes(t: string | null | undefined): number | null {
+  if (!t) return null;
+  const m = t.match(/(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  return Number(m[1]) * 60 + Number(m[2]);
+}
+
+function formatHours(checkIn: string | null | undefined, checkOut: string | null | undefined, workHours: number | null | undefined): string {
+  const inM = toMinutes(checkIn);
+  const outM = toMinutes(checkOut);
+  if (inM !== null && outM !== null && outM > inM) {
+    const diff = outM - inM;
+    return `${Math.floor(diff / 60)}h ${diff % 60}m`;
+  }
+  if (workHours && workHours > 0) {
+    const h = Math.floor(workHours);
+    const mins = Math.round((workHours - h) * 60);
+    return mins > 0 ? `${h}h ${mins}m` : `${h}h`;
+  }
+  return '—';
+}
+
+/** Map a real DB attendance record to a report table row. */
+function toDayRow(r: AttendanceRecord): AttendanceDayRow {
+  const d = new Date(`${r.date}T00:00:00`);
+  const weekday = isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' });
+  return {
+    date: r.date,
+    weekday,
+    clockIn: r.checkIn || '—',
+    clockOut: r.checkOut || '—',
+    hours: formatHours(r.checkIn, r.checkOut, r.workHours),
+    status: (r.status as AttendanceDayRow['status']) ?? 'Present',
+  };
+}
+
+/**
+ * @deprecated Reports now load real attendance from the database
+ * (`getAttendanceReport`). Kept only so old imports don't break.
+ */
+export function buildAttendanceDays(_empId: string, _from: string, _to: string): AttendanceDayRow[] {
+  return [];
+}
+
 export const PRINT_STATUS_COLOR: Record<string, string> = {
   Present: '#15803d',
   Late: '#dc2626',
@@ -113,20 +160,51 @@ export function useReports() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  // Real employees from the database (no dummy data).
+  const [reportEmployees, setReportEmployees] = useState<ReportEmployeeOption[]>([]);
+  const [employeesLoading, setEmployeesLoading] = useState(true);
   const [empId, setEmpId] = useState('');
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [viewDay, setViewDay] = useState<AttendanceDayRow | null>(null);
   const [viewNote, setViewNote] = useState<{ project: string; date: string; html: string } | null>(null);
   const [viewTask, setViewTask] = useState<DailyWork | null>(null);
+
+  // Real attendance rows from the database for the selected range.
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
 
   const [downloading, setDownloading] = useState(false);
 
   const employee = useMemo(() => findByUser(user), [findByUser, user]);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadEmployees() {
+      try {
+        const list = await getReportEmployees();
+        if (cancelled) return;
+        setReportEmployees(list);
+        // Default the dropdown to the first real employee.
+        setEmpId((prev) => prev || list[0]?.id || '');
+      } catch (err) {
+        console.error('Failed to load report employees:', err);
+      } finally {
+        if (!cancelled) setEmployeesLoading(false);
+      }
+    }
+    loadEmployees();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const isEmployee = user?.role === 'employee';
-  const scopeId = isEmployee ? (employee?.id ?? '') : empId;
-  const scopeEmployee = employees.find((e) => e.id === scopeId);
-  const scopeName = scopeEmployee ? `${scopeEmployee.firstName} ${scopeEmployee.lastName}` : (isEmployee ? (user?.name ?? '') : '');
+  // Employees always see their own real record (directory lookup with auth
+  // fallback); admins/HR see the selected real employee.
+  const scopeId = isEmployee ? (employee?.id ?? user?.employeeId ?? '') : empId;
+  const scopeEmployee = reportEmployees.find((e) => e.id === scopeId) ?? employees.find((e) => e.id === scopeId);
+  const scopeName = scopeEmployee
+    ? `${scopeEmployee.firstName} ${scopeEmployee.lastName}`.trim()
+    : (isEmployee ? (user?.name ?? '') : '');
 
   // Default the admin scope picker to the first live employee
   useEffect(() => {
@@ -161,7 +239,29 @@ export function useReports() {
     setPage(1);
   };
 
-  /* ---- Attendance rows (real records only — no synthetic data) ---- */
+  /* ---- Attendance rows (REAL database records, real records only — no synthetic data) ---- */
+  useEffect(() => {
+    let cancelled = false;
+    async function loadAttendance() {
+      if (!scopeId || !from || !to || from > to) {
+        return;
+      }
+      setAttendanceLoading(true);
+      try {
+        const rows = await getAttendanceReport(scopeId, from, to);
+        if (!cancelled && rows.length > 0) setAttendanceRecords(rows);
+      } catch (err) {
+        console.error('Failed to load attendance report:', err);
+      } finally {
+        if (!cancelled) setAttendanceLoading(false);
+      }
+    }
+    loadAttendance();
+    return () => {
+      cancelled = true;
+    };
+  }, [scopeId, from, to]);
+
   const attendanceRows = useMemo(() => {
     const q = query.trim().toLowerCase();
     return attendanceRecords
@@ -171,7 +271,7 @@ export function useReports() {
         if (to && r.date > to) return false;
         return true;
       })
-      .map(recordToDayRow)
+      .map(toDayRow)
       .filter((r) => {
         if (q && !`${r.date} ${r.weekday} ${r.status} ${r.clockIn} ${r.clockOut}`.toLowerCase().includes(q)) return false;
         return true;
@@ -179,26 +279,36 @@ export function useReports() {
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
   }, [attendanceRecords, scopeId, scopeName, from, to, query]);
 
-  /* ---- Progress rows (real entries) ---- */
+  /* ---- Progress rows (real entries from ProgressContext / DB) ---- */
   const progressRows = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const scope = scopeName.trim().toLowerCase();
     return progressEntries
       .filter((e) => {
-        if (e.employeeId !== scopeId && e.employeeName.toLowerCase() !== scopeName.toLowerCase()) return false;
+        if (scopeId || scope) {
+          const idMatch = scopeId ? e.employeeId === scopeId : false;
+          const nameMatch = scope ? e.employeeName.toLowerCase() === scope : false;
+          if (!idMatch && !nameMatch) return false;
+        }
         if (from && e.submissionDate < from) return false;
         if (to && e.submissionDate > to) return false;
-        if (q && !`${e.projectName} ${stripHtml(e.description)} ${e.submissionDate}`.toLowerCase().includes(q)) return false;
+        if (q && !`${e.employeeName} ${e.projectName} ${stripHtml(e.description)} ${e.submissionDate}`.toLowerCase().includes(q)) return false;
         return true;
       })
       .sort((a, b) => (a.submissionDate < b.submissionDate ? -1 : a.submissionDate > b.submissionDate ? 1 : 0));
   }, [progressEntries, scopeId, scopeName, from, to, query]);
 
-  /* ---- Task rows (daily work) ---- */
+  /* ---- Task rows (daily work, real DB) ---- */
   const taskRows = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const scope = scopeName.trim().toLowerCase();
     return workItems
       .filter((w) => {
-        if (w.employeeId !== scopeId && w.employeeName.toLowerCase() !== scopeName.toLowerCase()) return false;
+        if (scopeId || scope) {
+          const idMatch = scopeId ? w.employeeId === scopeId : false;
+          const nameMatch = scope ? w.employeeName.toLowerCase() === scope : false;
+          if (!idMatch && !nameMatch) return false;
+        }
         if (from && w.date < from) return false;
         if (to && w.date > to) return false;
         if (q && !`${w.title} ${w.description} ${w.date} ${w.status}`.toLowerCase().includes(q)) return false;
@@ -333,7 +443,7 @@ export function useReports() {
   };
 
   return {
-    user, isEmployee, employee, employees, scopeId, scopeName,
+    user, isEmployee, employee, scopeEmployee, employees, reportEmployees, employeesLoading, attendanceLoading, scopeId, scopeName,
     tab, switchTab, tabMeta,
     draftFrom, setDraftFrom, draftTo, setDraftTo,
     from, to, query, setQuery, page, setPage, pageSize, setPageSize,

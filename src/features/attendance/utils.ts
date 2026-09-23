@@ -5,6 +5,55 @@ export const STANDARD_START = '09:00';
 export const STANDARD_END = '18:00';
 export const STANDARD_GRACE_MINUTES = 15;
 
+/** Late-arrival → Half Day rule (configurable by admin, stored in settings).
+ *  Strict by default: grace 0 means even 1 minute late is marked Half Day.
+ *  Set the threshold above grace to keep an intermediate Late band. */
+export interface LateArrivalRule {
+  /** Arriving within these minutes after start = Present. */
+  graceMinutes: number;
+  /** Late beyond these minutes after start = Half Day. Equal to grace = any lateness is Half Day. */
+  halfDayAfterMinutes: number;
+  /** Master switch — when off, no auto Half Day is applied. */
+  enabled: boolean;
+}
+
+export const DEFAULT_LATE_RULE: LateArrivalRule = {
+  graceMinutes: 0,
+  halfDayAfterMinutes: 0,
+  enabled: true,
+};
+
+export type AutoStatus = 'Present' | 'Late' | 'Half Day';
+
+export function resolveLateStatus(
+  checkIn: string,
+  rule: LateArrivalRule,
+  standardStart: string = STANDARD_START,
+): { status: AutoStatus; minutesLate: number } {
+  const inMin = checkIn ? timeToMinutes(checkIn) : 0;
+  const startMin = timeToMinutes(standardStart);
+  const minutesLate = inMin ? Math.max(0, inMin - startMin) : 0;
+  if (!rule.enabled || !inMin) return { status: 'Present', minutesLate };
+  if (minutesLate <= rule.graceMinutes) return { status: 'Present', minutesLate };
+  if (minutesLate > rule.halfDayAfterMinutes) return { status: 'Half Day', minutesLate };
+  return { status: 'Late', minutesLate };
+}
+
+export function addMinutes(time: string, mins: number): string {
+  const total = timeToMinutes(time) + mins;
+  const h = Math.floor(total / 60) % 24;
+  const m = total % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+export function formatDuration(mins: number): string {
+  if (mins <= 0) return '0m';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h === 0) return `${m}m`;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+
 export const STATUS_OPTIONS = [
   { value: '', label: 'All Status' },
   { value: 'Present', label: 'Present' },
@@ -100,9 +149,9 @@ export function calcWorkHours(checkIn: string, checkOut: string, status: string)
   return 0;
 }
 
-export function lateBy(rec: AttendanceRecord): number {
+export function lateBy(rec: AttendanceRecord, graceMinutes: number = STANDARD_GRACE_MINUTES): number {
   if (!rec.checkIn) return 0;
-  const diff = timeToMinutes(rec.checkIn) - (timeToMinutes(STANDARD_START) + STANDARD_GRACE_MINUTES);
+  const diff = timeToMinutes(rec.checkIn) - (timeToMinutes(STANDARD_START) + Math.max(0, graceMinutes));
   return diff > 0 ? diff : 0;
 }
 

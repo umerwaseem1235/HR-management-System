@@ -38,6 +38,9 @@ export default function ProgressList({
           <thead>
             <tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
               <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">#</th>
+              {!isEmployee && (
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Employee Name</th>
+              )}
               <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Project Name</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Submission Date</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Actions</th>
@@ -47,6 +50,9 @@ export default function ProgressList({
             {pageRows.map((entry, idx) => (
               <tr key={entry.id} className="hover:bg-[#EAF2F4]/50">
                 <td className="px-6 py-4 text-sm text-gray-500">{(safePage - 1) * pageSize + idx + 1}</td>
+                {!isEmployee && (
+                  <td className="px-6 py-4 text-sm font-medium text-[#263238]">{entry.employeeName || '—'}</td>
+                )}
                 <td className="px-6 py-4 text-sm font-medium text-[#263238]">{entry.projectName}</td>
                 <td className="px-6 py-4 text-sm text-gray-500">{formatSubmission(entry.submissionDate)}</td>
                 <td className="px-6 py-4">

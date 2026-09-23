@@ -4,15 +4,8 @@ import { createClient } from '@/lib/server';
 import { revalidatePath } from 'next/cache';
 import type { Job, Candidate } from '@/lib/types';
 
-export async function getJobs(): Promise<Job[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('jobs')
-    .select('*, departments(name), branches(name)')
-    .order('created_at', { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return (data || []).map((db: any) => ({
+function mapJob(db: any): Job {
+  return {
     id: db.id,
     title: db.title,
     department: db.departments?.name || '',
@@ -23,7 +16,18 @@ export async function getJobs(): Promise<Job[]> {
     postedDate: db.posted_date,
     closingDate: db.closing_date,
     description: db.description,
-  }));
+  };
+}
+
+export async function getJobs(): Promise<Job[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('jobs')
+    .select('*, departments(name), branches(name)')
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data || []).map(mapJob);
 }
 
 export async function getJob(id: string): Promise<Job> {
@@ -50,9 +54,9 @@ export async function getJob(id: string): Promise<Job> {
   };
 }
 
-export async function createJob(data: any) {
+export async function createJob(data: any): Promise<Job> {
   const supabase = await createClient();
-  const { error } = await supabase.from('jobs').insert([{
+  const { data: row, error } = await supabase.from('jobs').insert([{
     title: data.title,
     department_id: data.departmentId,
     branch_id: data.branchId,
@@ -62,14 +66,15 @@ export async function createJob(data: any) {
     closing_date: data.closingDate,
     description: data.description,
     applicants: 0
-  }]);
+  }]).select('*, departments(name), branches(name)').single();
   if (error) throw new Error(error.message);
   revalidatePath('/recruitment');
+  return mapJob(row);
 }
 
-export async function updateJob(id: string, data: any) {
+export async function updateJob(id: string, data: any): Promise<Job> {
   const supabase = await createClient();
-  const { error } = await supabase.from('jobs').update({
+  const { data: row, error } = await supabase.from('jobs').update({
     title: data.title,
     department_id: data.departmentId,
     branch_id: data.branchId,
@@ -78,9 +83,10 @@ export async function updateJob(id: string, data: any) {
     posted_date: data.postedDate,
     closing_date: data.closingDate,
     description: data.description,
-  }).eq('id', id);
+  }).eq('id', id).select('*, departments(name), branches(name)').single();
   if (error) throw new Error(error.message);
   revalidatePath('/recruitment');
+  return mapJob(row);
 }
 
 export async function deleteJob(id: string) {
@@ -117,18 +123,18 @@ export async function getCandidates(jobId?: string): Promise<Candidate[]> {
 
 export async function createCandidate(data: any) {
   const supabase = await createClient();
-  const { error: candidateErr } = await supabase.from('candidates').insert([{
+  const { data: row, error: candidateErr } = await supabase.from('candidates').insert([{
     name: data.name,
     email: data.email,
     phone: data.phone,
     job_id: data.jobId,
     stage: data.stage || 'Applied',
-    applied_date: data.appliedDate || new Date().toISOString(),
+    applied_date: data.appliedDate || new Date().toISOString().slice(0, 10),
     resume: data.resume,
     notes: data.notes,
     rating: data.rating,
     source: data.source || 'Other',
-  }]);
+  }]).select('*, jobs(title)').single();
   if (candidateErr) throw new Error(candidateErr.message);
 
   // Increment applicants
@@ -138,6 +144,21 @@ export async function createCandidate(data: any) {
   }
 
   revalidatePath('/recruitment');
+  const r = row as any;
+  return {
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    phone: r.phone,
+    jobId: r.job_id,
+    jobTitle: r.jobs?.title || data.jobTitle || '',
+    stage: r.stage,
+    appliedDate: r.applied_date,
+    resume: r.resume,
+    notes: r.notes,
+    rating: r.rating,
+    source: r.source || 'Other',
+  };
 }
 
 export async function updateCandidateStage(id: string, stage: string) {
@@ -223,9 +244,41 @@ export async function addCandidateHistory(candidateId: string, action: string, n
 }
 
 /* ------------------------------------------------------------------ */
-/*  Interviews                                                         */
+/*  Interviews (union of both sides)                                   */
 /* ------------------------------------------------------------------ */
 
+// The interviewer dropdown still uses demo employee ids like "1", which are
+// not valid UUIDs. The name is always stored as text; the id link is only
+// stored when it is a real UUID so the insert never fails on uuid syntax.
+function toUuidOrNull(value: unknown): string | null {
+  if (typeof value !== 'string' || value.length === 0) return null;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+    ? value
+    : null;
+}
+
+function mapInterview(db: any) {
+  return {
+    id: db.id,
+    candidateId: db.candidate_id,
+    candidateName: db.candidates?.name || '',
+    date: db.date,
+    time: db.time || '10:00',
+    mode: db.mode || 'In-person',
+    // HEAD schema stores the name in `interviewer_name`, THEIRS in `interviewer`.
+    interviewer: db.interviewer_name ?? db.interviewer ?? '',
+    interviewerId: db.interviewer_id,
+    round: db.round || 'Round 1',
+    status: db.status || 'Scheduled',
+    feedback: db.feedback || undefined,
+    rating: db.rating ?? undefined,
+  };
+}
+
+function isMissingColumn(error: any, ...cols: string[]): boolean {
+  const msg = (error as any)?.message;
+  return typeof msg === 'string' && cols.some((c) => msg.includes(c));
+}
 export async function getInterviews() {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -233,20 +286,7 @@ export async function getInterviews() {
     .select('*, candidates(name)')
     .order('date', { ascending: true });
   if (error) throw new Error(error.message);
-  return (data || []).map((row: any) => ({
-    id: row.id,
-    candidateId: row.candidate_id,
-    candidateName: row.candidates?.name || '',
-    date: row.date,
-    time: row.time,
-    mode: row.mode,
-    interviewer: row.interviewer_name,
-    interviewerId: row.interviewer_id || undefined,
-    round: row.round,
-    status: row.status,
-    feedback: row.feedback || undefined,
-    rating: row.rating ?? undefined,
-  }));
+  return (data || []).map(mapInterview);
 }
 
 export async function scheduleInterview(data: {
@@ -259,39 +299,136 @@ export async function scheduleInterview(data: {
   round: string;
 }) {
   const supabase = await createClient();
-  const { data: row, error } = await supabase
+  const base = {
+    candidate_id: data.candidateId,
+    date: data.date,
+    time: data.time || '10:00',
+    mode: data.mode,
+    interviewer_id: toUuidOrNull(data.interviewerId),
+    round: data.round || 'Round 1',
+    status: 'Scheduled',
+  };
+  // HEAD schema names the column `interviewer_name`; fall back to `interviewer`
+  // for schema variants created by the 004 migration.
+  let { data: row, error } = await supabase
     .from('interviews')
-    .insert([{
-      candidate_id: data.candidateId,
-      date: data.date,
-      time: data.time || '10:00',
-      mode: data.mode,
-      interviewer_name: data.interviewer,
-      interviewer_id: data.interviewerId || null,
-      round: data.round || 'Round 1',
-      status: 'Scheduled',
-    }])
+    .insert([{ ...base, interviewer_name: data.interviewer }])
     .select('id')
     .single();
+  if (error && isMissingColumn(error, 'interviewer_name')) {
+    ({ data: row, error } = await supabase
+      .from('interviews')
+      .insert([{ ...base, interviewer: data.interviewer }])
+      .select('id')
+      .single());
+  }
   if (error) throw new Error(error.message);
   revalidatePath('/recruitment');
-  return row.id as string;
+  return (row as any)?.id as string;
 }
 
-export async function updateInterview(id: string, data: { status?: string; feedback?: string; rating?: number }) {
+export async function createInterview(data: any) {
   const supabase = await createClient();
-  const { error } = await supabase.from('interviews').update({
-    ...(data.status ? { status: data.status } : {}),
-    ...(data.feedback !== undefined ? { feedback: data.feedback || null } : {}),
-    ...(data.rating !== undefined ? { rating: data.rating } : {}),
-  }).eq('id', id);
+  const base = {
+    candidate_id: data.candidateId,
+    date: data.date,
+    time: data.time || '10:00',
+    mode: data.mode || 'In-person',
+    interviewer_id: toUuidOrNull(data.interviewerId),
+    round: data.round || 'Round 1',
+    status: data.status || 'Scheduled',
+  };
+  // THEIRS schema names the column `interviewer`; fall back to `interviewer_name`
+  // for schema variants created by the 005_ext migration.
+  let { data: row, error } = await supabase
+    .from('interviews')
+    .insert([{ ...base, interviewer: data.interviewer || '' }])
+    .select('*, candidates(name)')
+    .single();
+  if (error && isMissingColumn(error, 'interviewer') && !isMissingColumn(error, 'interviewer_name')) {
+    ({ data: row, error } = await supabase
+      .from('interviews')
+      .insert([{ ...base, interviewer_name: data.interviewer || '' }])
+      .select('*, candidates(name)')
+      .single());
+  }
   if (error) throw new Error(error.message);
   revalidatePath('/recruitment');
+  return mapInterview(row);
+}
+
+export async function updateInterview(
+  id: string,
+  data: {
+    status?: string;
+    feedback?: string;
+    rating?: number;
+    date?: string;
+    time?: string;
+    mode?: string;
+    interviewer?: string;
+    interviewerId?: string | null;
+    round?: string;
+  }
+) {
+  const supabase = await createClient();
+  const patch: Record<string, any> = {};
+  if (data.date !== undefined) patch.date = data.date;
+  if (data.time !== undefined) patch.time = data.time;
+  if (data.mode !== undefined) patch.mode = data.mode;
+  if (data.interviewer !== undefined) {
+    // Write both spellings; the retry below drops whichever the schema rejects.
+    patch.interviewer = data.interviewer;
+    patch.interviewer_name = data.interviewer;
+  }
+  if (data.interviewerId !== undefined) patch.interviewer_id = toUuidOrNull(data.interviewerId);
+  if (data.round !== undefined) patch.round = data.round;
+  if (data.status !== undefined) patch.status = data.status;
+  if (data.feedback !== undefined) patch.feedback = data.feedback || null;
+  if (data.rating !== undefined) patch.rating = data.rating;
+
+  let { data: row, error } = await supabase
+    .from('interviews')
+    .update(patch as any)
+    .eq('id', id)
+    .select('*, candidates(name)')
+    .single();
+
+  if (error && isMissingColumn(error, 'interviewer', 'interviewer_name', 'feedback', 'rating')) {
+    // Schema variant without these columns (e.g. after
+    // 005_drop_interview_feedback_rating): strip the unknown keys and retry once.
+    const msg: string = error.message;
+    if (msg.includes('interviewer_name')) delete patch.interviewer_name;
+    else if (msg.includes('interviewer')) delete patch.interviewer;
+    if (msg.includes('feedback')) delete patch.feedback;
+    if (msg.includes('rating')) delete patch.rating;
+    ({ data: row, error } = await supabase
+      .from('interviews')
+      .update(patch as any)
+      .eq('id', id)
+      .select('*, candidates(name)')
+      .single());
+  }
+  if (error) throw new Error(error.message);
+  revalidatePath('/recruitment');
+  return mapInterview(row);
 }
 
 /* ------------------------------------------------------------------ */
-/*  Offers                                                             */
+/*  Offers (one row per candidate)                                     */
 /* ------------------------------------------------------------------ */
+
+function mapOffer(db: any) {
+  return {
+    id: db.id,
+    candidateId: db.candidate_id,
+    candidateName: db.candidates?.name || '',
+    salary: Number(db.salary) || 0,
+    joiningDate: db.joining_date || '',
+    status: db.status || 'Sent',
+    notes: db.notes || undefined,
+  };
+}
 
 export async function getOffers() {
   const supabase = await createClient();
@@ -300,15 +437,7 @@ export async function getOffers() {
     .select('*, candidates(name)')
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
-  return (data || []).map((row: any) => ({
-    id: row.id,
-    candidateId: row.candidate_id,
-    candidateName: row.candidates?.name || '',
-    salary: Number(row.salary) || 0,
-    joiningDate: row.joining_date || '',
-    status: row.status,
-    notes: row.notes || undefined,
-  }));
+  return (data || []).map(mapOffer);
 }
 
 export async function saveOffer(data: { candidateId: string; salary: number; joiningDate: string; notes?: string }) {
@@ -324,11 +453,39 @@ export async function saveOffer(data: { candidateId: string; salary: number; joi
   revalidatePath('/recruitment');
 }
 
-export async function updateOfferStatus(id: string, status: string) {
+export async function upsertOffer(data: any) {
   const supabase = await createClient();
-  const { error } = await supabase.from('offers').update({ status }).eq('id', id);
+  const { data: row, error } = await supabase.from('offers').upsert([{
+    candidate_id: data.candidateId,
+    salary: data.salary || 0,
+    joining_date: data.joiningDate || null,
+    status: data.status || 'Sent',
+    notes: data.notes || '',
+  }], { onConflict: 'candidate_id' }).select('*, candidates(name)').single();
   if (error) throw new Error(error.message);
   revalidatePath('/recruitment');
+  return mapOffer(row);
+}
+
+export async function updateOfferStatus(idOrCandidateId: string, status: string) {
+  // Union of both sides: HEAD callers pass the offer id, THEIRS pass the candidate id.
+  const supabase = await createClient();
+  let { data: row, error } = await supabase.from('offers')
+    .update({ status })
+    .eq('id', idOrCandidateId)
+    .select('*, candidates(name)')
+    .maybeSingle();
+  if (!error && !row) {
+    ({ data: row, error } = await supabase.from('offers')
+      .update({ status })
+      .eq('candidate_id', idOrCandidateId)
+      .select('*, candidates(name)')
+      .maybeSingle());
+  }
+  if (error) throw new Error(error.message);
+  if (!row) throw new Error('Offer not found');
+  revalidatePath('/recruitment');
+  return mapOffer(row);
 }
 
 /* ------------------------------------------------------------------ */

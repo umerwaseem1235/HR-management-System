@@ -22,7 +22,7 @@ export default function EmployeePayslips({ payslips }: { payslips: Payslip[] }) 
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm font-bold text-[#17324D]">${slip.netSalary.toLocaleString()}</p>
+              <p className="text-sm font-bold text-[#17324D]">PKR {slip.netSalary.toLocaleString()}</p>
               <Badge variant="success" size="sm">Paid</Badge>
             </div>
           </div>

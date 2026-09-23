@@ -257,6 +257,11 @@ export interface Database {
           work_hours: number | null;
           overtime: number | null;
           notes: string | null;
+          check_in_lat: number | null;
+          check_in_lng: number | null;
+          check_out_lat: number | null;
+          check_out_lng: number | null;
+          distance_from_office: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -270,6 +275,11 @@ export interface Database {
           work_hours?: number | null;
           overtime?: number | null;
           notes?: string | null;
+          check_in_lat?: number | null;
+          check_in_lng?: number | null;
+          check_out_lat?: number | null;
+          check_out_lng?: number | null;
+          distance_from_office?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -283,6 +293,11 @@ export interface Database {
           work_hours?: number | null;
           overtime?: number | null;
           notes?: string | null;
+          check_in_lat?: number | null;
+          check_in_lng?: number | null;
+          check_out_lat?: number | null;
+          check_out_lng?: number | null;
+          distance_from_office?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -732,7 +747,7 @@ export interface Database {
           resume: string | null;
           notes: string | null;
           rating: number | null;
-          source: string;
+          source: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -747,7 +762,7 @@ export interface Database {
           resume?: string | null;
           notes?: string | null;
           rating?: number | null;
-          source?: string;
+          source?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -762,7 +777,7 @@ export interface Database {
           resume?: string | null;
           notes?: string | null;
           rating?: number | null;
-          source?: string;
+          source?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -773,12 +788,15 @@ export interface Database {
           id: string;
           candidate_id: string;
           date: string;
-          time: string;
-          mode: string;
-          interviewer_name: string;
+          time: string | null;
+          mode: string | null;
+          // Union: 004 migration names it `interviewer`, 005_ext names it `interviewer_name`.
+          interviewer: string | null;
+          interviewer_name: string | null;
           interviewer_id: string | null;
-          round: string;
-          status: string;
+          round: string | null;
+          status: string | null;
+          // Removed by 005_drop_interview_feedback_rating on some projects; kept nullable.
           feedback: string | null;
           rating: number | null;
           created_at: string;
@@ -788,12 +806,13 @@ export interface Database {
           id?: string;
           candidate_id: string;
           date: string;
-          time?: string;
-          mode?: string;
-          interviewer_name?: string;
+          time?: string | null;
+          mode?: string | null;
+          interviewer?: string | null;
+          interviewer_name?: string | null;
           interviewer_id?: string | null;
-          round?: string;
-          status?: string;
+          round?: string | null;
+          status?: string | null;
           feedback?: string | null;
           rating?: number | null;
           created_at?: string;
@@ -803,12 +822,13 @@ export interface Database {
           id?: string;
           candidate_id?: string;
           date?: string;
-          time?: string;
-          mode?: string;
-          interviewer_name?: string;
+          time?: string | null;
+          mode?: string | null;
+          interviewer?: string | null;
+          interviewer_name?: string | null;
           interviewer_id?: string | null;
-          round?: string;
-          status?: string;
+          round?: string | null;
+          status?: string | null;
           feedback?: string | null;
           rating?: number | null;
           created_at?: string;
@@ -820,9 +840,9 @@ export interface Database {
         Row: {
           id: string;
           candidate_id: string;
-          salary: number;
+          salary: number | null;
           joining_date: string | null;
-          status: string;
+          status: string | null;
           notes: string | null;
           created_at: string;
           updated_at: string;
@@ -830,9 +850,9 @@ export interface Database {
         Insert: {
           id?: string;
           candidate_id: string;
-          salary?: number;
+          salary?: number | null;
           joining_date?: string | null;
-          status?: string;
+          status?: string | null;
           notes?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -840,9 +860,9 @@ export interface Database {
         Update: {
           id?: string;
           candidate_id?: string;
-          salary?: number;
+          salary?: number | null;
           joining_date?: string | null;
-          status?: string;
+          status?: string | null;
           notes?: string | null;
           created_at?: string;
           updated_at?: string;
