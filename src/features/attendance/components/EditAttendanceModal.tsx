@@ -8,7 +8,7 @@ import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import Select from '@/components/ui/Select';
 import type { AttendanceRecord } from '@/types';
-import { timeToMinutes } from '@/utils/date';
+import { timeToMinutes, formatWorkHours } from '@/utils/date';
 import { ADMIN_STATUS_OPTIONS, formatDuration, resolveLateStatus, type LateArrivalRule } from '../utils';
 
 export default function EditAttendanceModal({
@@ -61,7 +61,7 @@ export default function EditAttendanceModal({
           <Avatar name={record.employeeName} size="sm" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-[#17324D]">{record.employeeName}</p>
-            <p className="text-xs text-gray-500">{record.date} · currently {record.status} · {record.workHours}h</p>
+            <p className="text-xs text-gray-500">{record.date} · currently {record.status} · {formatWorkHours(record.workHours)}</p>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

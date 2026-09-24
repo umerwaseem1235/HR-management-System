@@ -10,7 +10,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import SearchBar from '@/components/ui/SearchBar';
 import Tabs from '@/components/ui/Tabs';
 import { FilterBar } from '@/components/shared';
-import { todayStr } from '@/utils/date';
+import { todayStr, formatWorkHours } from '@/utils/date';
 import { useAttendance } from '../hooks/useAttendance';
 import { STATUS_OPTIONS } from '../utils';
 import { DailyLogTable, MyAttendanceTable } from './AttendanceTable';
@@ -50,6 +50,12 @@ export default function AttendanceView() {
         <PageHeader
           title="My Attendance"
         />
+
+        {att.error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {att.error}
+          </div>
+        )}
 
         {/* Inline Check In / Check Out — compact, professional */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-xl border border-[#D6E4E8] bg-white">
@@ -98,7 +104,7 @@ export default function AttendanceView() {
               {hasCheckedOut && (
                 <>
                   <span>Out: <span className="font-medium text-[#17324D]">{todayRecord.checkOut}</span></span>
-                  <span>Hours: <span className="font-medium text-[#17324D]">{todayRecord.workHours}h</span></span>
+                  <span>Hours: <span className="font-medium text-[#17324D]">{formatWorkHours(todayRecord.workHours)}</span></span>
                 </>
               )}
             </div>
@@ -113,7 +119,7 @@ export default function AttendanceView() {
                 <span className="mx-2">·</span>
                 <span>Checked out at <span className="font-medium text-[#17324D]">{todayRecord.checkOut}</span></span>
                 <span className="mx-2">·</span>
-                <span>Work hours: <span className="font-medium text-[#17324D]">{todayRecord.workHours}h</span></span>
+                <span>Work hours: <span className="font-medium text-[#17324D]">{formatWorkHours(todayRecord.workHours)}</span></span>
               </>
             )}
           </div>

@@ -84,6 +84,7 @@ export function EditBalanceModal({
   balanceTotal,
   setBalanceTotal,
   balanceErrors,
+  saving,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -92,6 +93,7 @@ export function EditBalanceModal({
   balanceTotal: string;
   setBalanceTotal: (v: string) => void;
   balanceErrors: Record<string, string>;
+  saving?: boolean;
 }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Edit Balance — ${balanceType}`}>
@@ -107,11 +109,11 @@ export function EditBalanceModal({
         />
         <p className="text-xs text-gray-500">Remaining days are recalculated automatically (total − used).</p>
         <div className="flex justify-end gap-3 pt-4 border-t border-medium-gray">
-          <Button variant="outline" type="button" onClick={onClose}>
+          <Button variant="outline" type="button" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button variant="primary" type="submit">
-            <Send size={16} /> Save Changes
+          <Button variant="primary" type="submit" loading={saving} disabled={saving}>
+            <Send size={16} /> {saving ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
       </form>

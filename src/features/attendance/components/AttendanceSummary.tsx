@@ -8,6 +8,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import Input from '@/components/ui/Input';
 import StatCard from '@/components/ui/StatCard';
 import type { AttendanceRecord } from '@/types';
+import { formatWorkHours } from '@/utils/date';
 import { aggregate, type AttendanceAggregate } from '../utils';
 import type { SummaryMode } from '../hooks/useAttendance';
 
@@ -81,7 +82,7 @@ export default function AttendanceSummary({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <h3 className="text-base font-semibold text-[#17324D]">{summaryLabel}</h3>
           <div className="flex gap-2">
-            <Badge variant="default">{agg.totalHours.toFixed(1)}h Work Hours</Badge>
+            <Badge variant="default">{formatWorkHours(agg.totalHours)} Work Hours</Badge>
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
@@ -128,7 +129,7 @@ export default function AttendanceSummary({
                     <td className="px-6 py-3 text-sm text-red-600">{dAgg.absent}</td>
                     <td className="px-6 py-3 text-sm text-orange-600">{dAgg.late}</td>
                     <td className="px-6 py-3 text-sm text-yellow-600">{dAgg.halfDay}</td>
-                    <td className="px-6 py-3 text-sm text-[#263238]">{dAgg.totalHours.toFixed(1)}h</td>
+                    <td className="px-6 py-3 text-sm text-[#263238]">{formatWorkHours(dAgg.totalHours)}</td>
                   </tr>
                 );
               })}

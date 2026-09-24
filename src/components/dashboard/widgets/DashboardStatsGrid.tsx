@@ -22,6 +22,7 @@ export default function DashboardStatsGrid({
           <StatCard
             title={item.title}
             value={item.value}
+            change={item.change}
             iconName={item.iconName}
             iconColor={item.iconColor}
             iconBg={item.iconBg}

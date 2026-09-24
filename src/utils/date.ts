@@ -23,6 +23,12 @@ export function minutesToHrs(min: number): string {
   return m ? `${h}h ${m}m` : `${h}h`;
 }
 
+/** Decimal work hours -> "6h 30m" (6.5 -> "6h 30m", 8 -> "8h"). 0/invalid -> "0h". */
+export function formatWorkHours(hours: number | null | undefined): string {
+  const total = Math.round((Number(hours) || 0) * 60);
+  return total <= 0 ? '0h' : minutesToHrs(total);
+}
+
 /** Inclusive day count between two YYYY-MM-DD dates. */
 export function daysBetweenInclusive(start: string, end: string): number {
   const ms = new Date(end).getTime() - new Date(start).getTime();

@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getEmployeeByUserId } from '@/lib/actions/employees';
+import { cachedQuery, peekStaleQuery } from '@/lib/query-cache';
 import type { Employee, User } from '../lib/types';
 
 export interface EmployeeResolution {
@@ -18,23 +19,54 @@ export interface EmployeeResolution {
   isLoading: boolean;
 }
 
+const employeeCacheKey = (userId: string) => `employee-by-user:${userId}`;
+
 export function useEmployee(): EmployeeResolution {
   const { user } = useAuth();
-  const [employee, setEmployee] = useState<Employee | undefined>();
-  const [isLoading, setIsLoading] = useState(true);
+  // Paint last-known record instantly on remount (module switch back).
+  const [employee, setEmployee] = useState<Employee | undefined>(() => {
+    const cached = user?.id
+      ? peekStaleQuery<Employee | null>(employeeCacheKey(user.id))
+      : undefined;
+    return cached ?? undefined;
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    const cached = user?.id
+      ? peekStaleQuery<Employee | null>(employeeCacheKey(user.id))
+      : undefined;
+    return cached === undefined;
+  });
 
   useEffect(() => {
-    setIsLoading(true);
-    if (user?.id) {
-      getEmployeeByUserId(user.id)
-        .then((emp) => setEmployee(emp || undefined))
-        .catch((err) => {
-          console.error('Failed to resolve employee for user:', err);
-        })
-        .finally(() => setIsLoading(false));
-    } else {
+    if (!user?.id) {
+      setEmployee(undefined);
       setIsLoading(false);
+      return;
     }
+    const key = employeeCacheKey(user.id);
+    const cached = peekStaleQuery<Employee | null>(key);
+    if (cached !== undefined) {
+      setEmployee(cached ?? undefined);
+      setIsLoading(false);
+    } else {
+      setEmployee(undefined);
+      setIsLoading(true);
+    }
+
+    let cancelled = false;
+    cachedQuery(key, () => getEmployeeByUserId(user.id))
+      .then((emp) => {
+        if (!cancelled) setEmployee(emp ?? undefined);
+      })
+      .catch((err) => {
+        console.error('Failed to resolve employee for user:', err);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   const employeeId = employee?.id ?? user?.employeeId ?? user?.id ?? '';

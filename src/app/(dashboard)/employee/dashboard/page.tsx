@@ -3,13 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEmployee } from '@/hooks/useEmployee';
 import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
 
 export default function EmployeeDashboardPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { employee, isLoading } = useEmployee();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -22,7 +20,10 @@ export default function EmployeeDashboardPage() {
     }
   }, [mounted, authLoading, isAuthenticated]);
 
-  if (!mounted || authLoading) {
+  // Gate on auth only — AuthContext persists across module switches, so
+  // returning here renders the dashboard (with cached data) immediately
+  // instead of flashing the spinner. `mounted` is kept for the redirect.
+  if (authLoading) {
     return (
       <>
         <div className="flex items-center justify-center h-64">

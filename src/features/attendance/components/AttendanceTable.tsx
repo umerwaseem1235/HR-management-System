@@ -7,7 +7,7 @@ import Card from '@/components/ui/Card';
 import EmptyState from '@/components/ui/EmptyState';
 import { StatusBadge } from '@/components/shared';
 import type { AttendanceRecord } from '@/types';
-import { minutesToHrs } from '@/utils/date';
+import { minutesToHrs, formatWorkHours } from '@/utils/date';
 import { earlyLeave, lateBy } from '../utils';
 
 export function MyAttendanceTable({ records, monthLabel }: { records: AttendanceRecord[]; monthLabel: string }) {
@@ -32,7 +32,7 @@ export function MyAttendanceTable({ records, monthLabel }: { records: Attendance
                 <td className="px-6 py-4 text-sm text-[#263238]">{att.checkIn || '—'}</td>
                 <td className="px-6 py-4 text-sm text-[#263238]">{att.checkOut || '—'}</td>
                 <td className="px-6 py-4"><StatusBadge status={att.status} /></td>
-                <td className="px-6 py-4 text-sm text-[#263238]">{att.workHours}h</td>
+                <td className="px-6 py-4 text-sm text-[#263238]">{formatWorkHours(att.workHours)}</td>
               </tr>
             ))}
           </tbody>
@@ -96,7 +96,7 @@ export function DailyLogTable({
                   <td className="px-6 py-4 text-sm text-[#263238]">{att.checkIn || '—'}</td>
                   <td className="px-6 py-4 text-sm text-[#263238]">{att.checkOut || '—'}</td>
                   <td className="px-6 py-4"><StatusBadge status={att.status} /></td>
-                  <td className="px-6 py-4 text-sm text-[#263238]">{att.workHours}h</td>
+                  <td className="px-6 py-4 text-sm text-[#263238]">{formatWorkHours(att.workHours)}</td>
                   <td className="px-6 py-4">
                     {lb > 0 ? <Badge variant="warning">{minutesToHrs(lb)}</Badge> : <span className="text-sm text-gray-400">—</span>}
                   </td>

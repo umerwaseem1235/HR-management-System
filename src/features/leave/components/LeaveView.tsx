@@ -82,6 +82,7 @@ export default function LeaveView() {
         balanceTotal={lv.balanceTotal}
         setBalanceTotal={lv.setBalanceTotal}
         balanceErrors={lv.balanceErrors}
+        saving={lv.isSavingBalance}
       />
 
       <BalanceViewModal
