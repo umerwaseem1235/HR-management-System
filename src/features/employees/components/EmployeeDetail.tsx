@@ -19,6 +19,7 @@ import { getAssets } from '@/lib/actions/performance';
 import { getDocuments } from '@/lib/actions/documents';
 import type { Asset, AttendanceRecord, Employee, LeaveBalance, Payslip } from '@/lib/types';
 import type { DocumentRecord } from '@/lib/actions/documents';
+import { formatWorkHours } from '@/utils/date';
 
 const InfoRow = ({ label, value }: { label: string; value: string }) => (
   <div className="flex flex-col sm:flex-row sm:items-center py-3 border-b border-[#D6E4E8] last:border-0">
@@ -54,7 +55,7 @@ export default function EmployeeDetail() {
           getAttendanceByEmployee(id),
           getLeaveBalances(id),
           getPayslips(id),
-          getAssets(),
+          getAssets().catch(() => [] as Asset[]),
           getDocuments(),
         ]);
         if (cancelled) return;
@@ -191,7 +192,7 @@ export default function EmployeeDetail() {
                           <td className="px-4 py-3 text-sm">{att.checkIn || '—'}</td>
                           <td className="px-4 py-3 text-sm">{att.checkOut || '—'}</td>
                           <td className="px-4 py-3"><Badge variant={att.status === 'Present' ? 'success' : att.status === 'Late' ? 'warning' : 'danger'} size="sm">{att.status}</Badge></td>
-                          <td className="px-4 py-3 text-sm">{att.workHours}h</td>
+                          <td className="px-4 py-3 text-sm">{formatWorkHours(att.workHours)}</td>
                         </tr>
                       ))}
                     </tbody>

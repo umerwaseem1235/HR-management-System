@@ -10,7 +10,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import SearchBar from '@/components/ui/SearchBar';
 import Tabs from '@/components/ui/Tabs';
 import { FilterBar } from '@/components/shared';
-import { todayStr } from '@/utils/date';
+import { todayStr, formatWorkHours } from '@/utils/date';
 import { useAttendance } from '../hooks/useAttendance';
 import { STATUS_OPTIONS } from '../utils';
 import { DailyLogTable, MyAttendanceTable } from './AttendanceTable';
@@ -32,9 +32,15 @@ export default function AttendanceView() {
     const filteredMine = att.monthlyRecords.filter((r) => !att.statusFilter || r.status === att.statusFilter);
     const searchedMine = filteredMine.filter((r) => !att.search || r.date.toLowerCase().includes(att.search.toLowerCase()));
 
-    // Get today's record for this employee
+    // Get today's record for this employee (match by resolved id first,
+    // fall back to name so legacy rows still show real check-in/out times)
+    const myId = att.employeeId || att.employee?.id || '';
+    const userNameLower = att.user?.name?.toLowerCase() || '';
     const todayRecord = att.attendRecords.find(
-      (r) => r.date === att.viewDate && r.employeeId === att.employee?.id
+      (r) =>
+        r.date === att.viewDate &&
+        ((myId ? r.employeeId === myId : false) ||
+          r.employeeName.toLowerCase() === userNameLower)
     );
     const hasCheckedIn = !!todayRecord?.checkIn;
     const hasCheckedOut = !!todayRecord?.checkOut;
@@ -44,6 +50,12 @@ export default function AttendanceView() {
         <PageHeader
           title="My Attendance"
         />
+
+        {att.error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {att.error}
+          </div>
+        )}
 
         {/* Inline Check In / Check Out — compact, professional */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-xl border border-[#D6E4E8] bg-white">
@@ -92,7 +104,7 @@ export default function AttendanceView() {
               {hasCheckedOut && (
                 <>
                   <span>Out: <span className="font-medium text-[#17324D]">{todayRecord.checkOut}</span></span>
-                  <span>Hours: <span className="font-medium text-[#17324D]">{todayRecord.workHours}h</span></span>
+                  <span>Hours: <span className="font-medium text-[#17324D]">{formatWorkHours(todayRecord.workHours)}</span></span>
                 </>
               )}
             </div>
@@ -107,7 +119,7 @@ export default function AttendanceView() {
                 <span className="mx-2">·</span>
                 <span>Checked out at <span className="font-medium text-[#17324D]">{todayRecord.checkOut}</span></span>
                 <span className="mx-2">·</span>
-                <span>Work hours: <span className="font-medium text-[#17324D]">{todayRecord.workHours}h</span></span>
+                <span>Work hours: <span className="font-medium text-[#17324D]">{formatWorkHours(todayRecord.workHours)}</span></span>
               </>
             )}
           </div>

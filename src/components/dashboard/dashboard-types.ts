@@ -23,6 +23,8 @@ export interface TrendPoint {
 export interface StatGridItem {
   title: string;
   value: string | number;
+  /** Small subtitle under the value (e.g. the month the figure covers). */
+  change?: string;
   iconName?: ComponentProps<typeof StatCard>['iconName'];
   iconColor?: string;
   iconBg?: string;

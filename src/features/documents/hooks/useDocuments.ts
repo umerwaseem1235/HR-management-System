@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/client';
 import { DocumentItem } from '../types';
 import { createDocument, deleteDocument, getDocumentDownloadUrl, getDocuments } from '@/lib/actions/documents';
+<<<<<<< HEAD
 import { createResourceCache } from '@/lib/resource-cache';
 
 const DOCUMENTS_BUCKET = 'documents';
@@ -21,6 +22,14 @@ export function warmDocumentsCache(): void {
     // Never let a prefetch break the page.
   }
 }
+=======
+import { cachedQuery, invalidateQuery, peekStaleQuery } from '@/lib/query-cache';
+
+const DOCUMENTS_BUCKET = 'documents';
+
+// Shared list cache — one entry for the whole documents module.
+const DOCUMENTS_CACHE_KEY = 'documents';
+>>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
 
 function slugify(value: string): string {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'general';
@@ -31,10 +40,22 @@ export function useDocuments() {
   const { user: authUser } = useAuth();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
+<<<<<<< HEAD
   // Lazy-init from the module cache so a warm revisit paints on the very
   // first render instead of flashing a loader before the effect runs.
   const [docs, setDocs] = useState<DocumentItem[]>(() => documentsCache.get() ?? []);
   const [isLoading, setIsLoading] = useState(() => documentsCache.get() === null);
+=======
+  // Stale-while-revalidate seeds: paint the last visit's list on the first
+  // frame when navigating back — no empty "No documents" flash. (The cache is
+  // always empty during SSR/hydration, so this stays hydration-safe.)
+  const [docs, setDocs] = useState<DocumentItem[]>(
+    () => peekStaleQuery<DocumentItem[]>(DOCUMENTS_CACHE_KEY) ?? [],
+  );
+  const [isLoading, setIsLoading] = useState(
+    () => peekStaleQuery<DocumentItem[]>(DOCUMENTS_CACHE_KEY) === undefined,
+  );
+>>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
   const [loadError, setLoadError] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [viewDoc, setViewDoc] = useState<DocumentItem | null>(null);
@@ -49,10 +70,18 @@ export function useDocuments() {
   const [isUploading, setIsUploading] = useState(false);
 
   const refresh = useCallback(async () => {
-    setIsLoading(true);
+    // Only surface the loading state when there is nothing painted yet; a
+    // cached list stays visible while cachedQuery revalidates in the background.
+    if (peekStaleQuery<DocumentItem[]>(DOCUMENTS_CACHE_KEY) === undefined) {
+      setIsLoading(true);
+    }
     setLoadError('');
     try {
+<<<<<<< HEAD
       setDocs(await documentsCache.load(getDocuments, { force: true }));
+=======
+      setDocs(await cachedQuery(DOCUMENTS_CACHE_KEY, getDocuments));
+>>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'Failed to load documents');
     } finally {
@@ -152,6 +181,7 @@ export function useDocuments() {
         fileName: docFileObj.name,
         uploadedBy: authUser?.name || user?.name,
       });
+      invalidateQuery(DOCUMENTS_CACHE_KEY);
       await refresh();
       setShowUpload(false);
       resetUpload();
@@ -166,6 +196,7 @@ export function useDocuments() {
     const target = docs.find((d) => d.id === id);
     if (!confirm(`Delete document "${target?.name || 'this document'}"? This cannot be undone.`)) return;
     await deleteDocument(id);
+    invalidateQuery(DOCUMENTS_CACHE_KEY);
     await refresh();
   };
 

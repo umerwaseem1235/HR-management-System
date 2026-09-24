@@ -1,8 +1,11 @@
 'use server';
 
 import { createClient } from '@/lib/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import type { AttendanceRecord } from '@/lib/types';
+import type { Database } from '@/lib/supabase/database.types';
+import { isEarlyHalfDayCheckout } from '@/utils/date';
 import { calculateDistance, getOfficeLocationConfig } from '@/lib/location';
 
 function getLastDayOfMonth(year: number, month: number): number {
@@ -332,6 +335,89 @@ export async function deleteAttendanceRecord(id: string) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Midnight rule: auto-close days left open overnight                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Best-effort close of one employee's stale open days (checked in but never
+ * checked out, date before `beforeDate`). Marks them 'Half Day' (4h) and
+ * never touches days already checked out. Swallows errors so it can run
+ * inside interactive check-in/out flows without breaking them.
+ */
+async function closeStaleOpenDays(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  employeeId: string,
+  beforeDate: string,
+): Promise<number> {
+  try {
+    const { data: stale } = await supabase
+      .from('attendance')
+      .select('id')
+      .eq('employee_id', employeeId)
+      .lt('date', beforeDate)
+      .not('check_in', 'is', null)
+      .is('check_out', null)
+      .in('status', ['Present', 'Late']);
+    if (!stale?.length) return 0;
+    const { error } = await supabase
+      .from('attendance')
+      .update({ status: 'Half Day', work_hours: 4 })
+      .in('id', stale.map((r: any) => r.id));
+    if (error) return 0;
+    return stale.length;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Midnight auto-close (session-independent).
+ *
+ * Closes every attendance row dated before `asOfDate` (default: today) that
+ * has a check-in but no check-out, marking it 'Half Day' so it counts as
+ * half leave in stats and payroll. Rows already checked out are never
+ * touched. Runs with the service role so it works from a scheduler with no
+ * user session (logged out / browser closed).
+ */
+export async function autoCloseOpenAttendance(
+  asOfDate?: string,
+): Promise<{ closed: number; date: string }> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const secret = process.env.SUPABASE_SECRET_KEY;
+  if (!url || !secret) {
+    throw new Error(
+      'SUPABASE_SECRET_KEY missing. Add it (server-only, no NEXT_PUBLIC prefix) to .env.local and restart, then retry.',
+    );
+  }
+  const svc = createServiceClient<Database>(url, secret);
+  const today = asOfDate ?? new Date().toISOString().slice(0, 10);
+
+  const { data: open, error: fetchErr } = await svc
+    .from('attendance')
+    .select('id')
+    .lt('date', today)
+    .not('check_in', 'is', null)
+    .is('check_out', null)
+    .in('status', ['Present', 'Late']);
+  if (fetchErr) throw new Error(fetchErr.message);
+  if (!open?.length) return { closed: 0, date: today };
+
+  const ids = open.map((r: any) => r.id);
+  const { error: updErr } = await svc
+    .from('attendance')
+    .update({ status: 'Half Day', work_hours: 4 })
+    .in('id', ids);
+  if (updErr) throw new Error(updErr.message);
+
+  try {
+    revalidatePath('/attendance');
+  } catch {
+    // ignore revalidation errors (e.g. cron context)
+  }
+  return { closed: ids.length, date: today };
+}
+
+/* ------------------------------------------------------------------ */
 /*  Employee Self Check-In / Check-Out                                 */
 /* ------------------------------------------------------------------ */
 
@@ -350,8 +436,22 @@ export async function selfCheckInOut(
     .eq('date', date)
     .single();
 
+  // Lazy midnight rule: close this employee's older open days as Half Day
+  // first, so a missed checkout never blocks a fresh check-in and stale
+  // rows are corrected even if the midnight scheduler hasn't run yet.
+  await closeStaleOpenDays(supabase, employeeId, date);
+
   const now = new Date();
   const timeStr = now.toTimeString().slice(0, 5); // HH:MM
+
+  // Day-close rule: once checked out, the day is locked — no re-check-in
+  // (and no second checkout) via self-service. Corrections go through HR.
+  if (existing?.check_out) {
+    if (action === 'check_in') {
+      throw new Error('You have already checked out for today. Check-in is closed for the day — please contact HR if this is a mistake.');
+    }
+    throw new Error('You have already checked out for today.');
+  }
 
   const updateData: Record<string, any> = {};
   if (action === 'check_in') {
@@ -360,6 +460,15 @@ export async function selfCheckInOut(
     if (!existing) updateData.status = 'Present';
   } else {
     updateData.check_out = timeStr;
+    // Early-checkout → Half Day rule: leaving 15+ min before the office
+    // off time counts as half leave (payroll deducts Half Day as 0.5 day).
+    const currentStatus = (existing?.status as string) || 'Present';
+    if (
+      (currentStatus === 'Present' || currentStatus === 'Late') &&
+      isEarlyHalfDayCheckout(timeStr)
+    ) {
+      updateData.status = 'Half Day';
+    }
   }
 
   // Calculate work hours if both check_in and check_out exist
@@ -371,6 +480,12 @@ export async function selfCheckInOut(
     if (outMin > inMin) {
       updateData.work_hours = Math.round(((outMin - inMin) / 60) * 10) / 10;
     }
+  }
+  // Keep the ACTUAL elapsed hours when both times are valid (e.g. 10:14 →
+  // 16:44 = 6.5h). The 4-hour value is only a Half Day fallback for days with
+  // no usable in/out pair; `status` alone drives the 0.5-day payroll deduction.
+  if (updateData.status === 'Half Day' && updateData.work_hours == null) {
+    updateData.work_hours = 4;
   }
 
   const { data, error } = await supabase
@@ -577,9 +692,23 @@ export async function checkInWithLocation(data: {
       return { success: false, error: 'Employee record not found. Please contact HR.' };
     }
 
+    // Day-close rule: once checked out, check-in is closed for the day.
+    const { data: todayExisting } = await supabase
+      .from('attendance')
+      .select('check_in, check_out')
+      .eq('employee_id', employeeId)
+      .eq('date', data.date)
+      .maybeSingle();
+    if (todayExisting?.check_out) {
+      return { success: false, error: 'You have already checked out for today. Check-in is closed for the day — please contact HR if this is a mistake.' };
+    }
+
     const now = new Date();
     const checkInTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     const status: 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Holiday' | 'Weekend' = 'Present';
+
+    // Lazy midnight rule: close this employee's older open days as Half Day.
+    await closeStaleOpenDays(supabase, employeeId, data.date);
 
     const baseData = {
       employee_id: employeeId,
@@ -685,6 +814,12 @@ export async function checkOutWithLocation(data: {
       .eq('date', data.date)
       .maybeSingle();
 
+    // Day-close rule: a second checkout is rejected — the day is locked
+    // after the first checkout. Corrections go through HR.
+    if (existing?.check_out) {
+      return { success: false, error: 'You have already checked out for today. Please contact HR if this needs correction.' };
+    }
+
     const checkInTime = existing?.check_in;
     let workHours = 0;
     if (checkInTime) {
@@ -700,13 +835,22 @@ export async function checkOutWithLocation(data: {
     const status: 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Holiday' | 'Weekend' =
       (existing?.status as 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Holiday' | 'Weekend') || 'Present';
 
+    // Early-checkout → Half Day rule: leaving 15+ min before the office
+    // off time counts as half leave (payroll deducts Half Day as 0.5 day).
+    const finalStatus =
+      (status === 'Present' || status === 'Late') && isEarlyHalfDayCheckout(data.checkOut)
+        ? 'Half Day'
+        : status;
+
     const baseData = {
       employee_id: employeeId,
       date: data.date,
       check_in: checkInTime,
       check_out: data.checkOut,
-      status,
-      work_hours: workHours,
+      status: finalStatus,
+      // Keep the actual elapsed hours when the times are valid; only fall back
+      // to the 4-hour Half Day convention when no usable in/out pair exists.
+      work_hours: workHours > 0 ? workHours : finalStatus === 'Half Day' ? 4 : 0,
       overtime: 0,
       notes: existing?.notes ?? null,
     };

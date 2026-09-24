@@ -8,6 +8,70 @@ import type { LeaveRequest, LeaveBalance, LeaveType } from '@/lib/types';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * Guarantees one balance row per (active employee, leave type) for `year`,
+ * creating missing rows with usage computed from this year's requests.
+ * Without this, each January starts with zero rows: quota cards render
+ * stale fallbacks and admin quota edits appear to do nothing.
+ */
+async function ensureYearBalances(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  year: number,
+): Promise<void> {
+  const [{ data: employees }, { data: types }, { data: existing }] = await Promise.all([
+    supabase.from('employees').select('id').eq('status', 'Active'),
+    supabase.from('leave_types').select('id, days_allowed'),
+    supabase.from('leave_balances').select('employee_id, leave_type_id').eq('year', year),
+  ]);
+  if (!employees?.length || !types?.length) return;
+
+  const have = new Set((existing || []).map((r: any) => `${r.employee_id}|${r.leave_type_id}`));
+  const missing: { employee_id: string; leave_type_id: string; total: number }[] = [];
+  for (const t of types as any[]) {
+    for (const e of employees as any[]) {
+      if (!have.has(`${e.id}|${t.id}`)) {
+        missing.push({ employee_id: e.id, leave_type_id: t.id, total: t.days_allowed ?? 0 });
+      }
+    }
+  }
+  if (missing.length === 0) return;
+
+  // Real usage for the rows about to be created (approved → used, pending → pending).
+  const neededTypeIds = [...new Set(missing.map((m) => m.leave_type_id))];
+  const { data: reqs } = await supabase
+    .from('leave_requests')
+    .select('employee_id, leave_type_id, start_date, days, status')
+    .in('leave_type_id', neededTypeIds)
+    .in('status', ['Approved', 'Pending'])
+    .gte('start_date', `${year}-01-01`)
+    .lt('start_date', `${year + 1}-01-01`);
+
+  const usage = new Map<string, { used: number; pending: number }>();
+  for (const r of (reqs || []) as any[]) {
+    const k = `${r.employee_id}|${r.leave_type_id}`;
+    const u = usage.get(k) || { used: 0, pending: 0 };
+    if (r.status === 'Approved') u.used += r.days || 0;
+    else u.pending += r.days || 0;
+    usage.set(k, u);
+  }
+
+  const rows = missing.map((m) => {
+    const u = usage.get(`${m.employee_id}|${m.leave_type_id}`) || { used: 0, pending: 0 };
+    return {
+      employee_id: m.employee_id,
+      leave_type_id: m.leave_type_id,
+      year,
+      total: m.total,
+      used: u.used,
+      remaining: Math.max(0, m.total - u.used),
+      pending: u.pending,
+    };
+  });
+
+  const { error } = await supabase.from('leave_balances').insert(rows);
+  if (error) throw new Error(error.message);
+}
+
 export async function getLeaveTypes(): Promise<LeaveType[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -57,16 +121,23 @@ export async function getLeaveRequests(employeeId?: string): Promise<LeaveReques
 
 export async function getLeaveBalances(employeeId?: string, year?: number): Promise<LeaveBalance[]> {
   const supabase = await createClient();
+  // Balances are always read for one year (default: current). Without this,
+  // rows from past years merge into the totals and quota edits appear lost.
+  const targetYear = year ?? new Date().getFullYear();
+  // Best-effort: a new year starts with zero rows, which renders as empty /
+  // stale-constant cards. Creating them on read keeps every consumer correct.
+  try {
+    await ensureYearBalances(supabase, targetYear);
+  } catch (err) {
+    console.error('ensureYearBalances failed:', err);
+  }
   let query = supabase
     .from('leave_balances')
-    .select('*, leave_types(name)');
+    .select('*, leave_types(name)')
+    .eq('year', targetYear);
 
   if (employeeId) {
     query = query.eq('employee_id', employeeId);
-  }
-
-  if (year) {
-    query = query.eq('year', year);
   }
 
   const { data, error } = await query;
@@ -323,4 +394,71 @@ export async function updateLeaveBalance(employeeId: string, leaveTypeId: string
   }, { onConflict: 'employee_id,leave_type_id,year' });
   if (error) throw new Error(error.message);
   revalidatePath('/leave');
+}
+
+/**
+ * Admin quota edit: sets the yearly total for EVERY employee's balance row
+ * of one leave type (e.g. Annual Leave 20 → 24).
+ *
+ * The bound that matters is per-person usage: the new total must cover the
+ * highest `used` value of any single employee — NOT the company-wide sum.
+ * (Comparing against the summed aggregate is what wrongly blocked raising
+ * 20 → 24 with "already used days (120)".) The type's `days_allowed` policy
+ * is updated too so quota stays consistent for future balance rows.
+ */
+export async function setLeaveTypeBalanceTotal(leaveType: string, total: number): Promise<void> {
+  if (!Number.isFinite(total) || total < 0) {
+    throw new Error('Enter a valid number of days (0 or more).');
+  }
+  const supabase = await createClient();
+  const currentYear = new Date().getFullYear();
+
+  // Rows may not exist yet (e.g. quota edited before anyone's balances were
+  // read this year) — create them first so the new total materializes.
+  try {
+    await ensureYearBalances(supabase, currentYear);
+  } catch (err) {
+    console.error('ensureYearBalances failed:', err);
+  }
+
+  const { data: typeRow, error: typeErr } = await supabase
+    .from('leave_types')
+    .select('id, name')
+    .eq('name', leaveType)
+    .single();
+  if (typeErr || !typeRow) throw new Error(`Leave type "${leaveType}" was not found.`);
+
+  const { data: rows, error: rowsErr } = await supabase
+    .from('leave_balances')
+    .select('id, used')
+    .eq('leave_type_id', (typeRow as any).id)
+    .eq('year', currentYear);
+  if (rowsErr) throw new Error(rowsErr.message);
+
+  const maxUsed = (rows || []).reduce((m: number, r: any) => Math.max(m, r.used || 0), 0);
+  if (total < maxUsed) {
+    throw new Error(
+      `Total cannot be less than already used days (${maxUsed}) — at least one employee has used ${maxUsed} day${maxUsed === 1 ? '' : 's'}.`,
+    );
+  }
+
+  if ((rows || []).length > 0) {
+    for (const r of rows as any[]) {
+      const used = r.used || 0;
+      const { error: rowErr } = await supabase
+        .from('leave_balances')
+        .update({ total, remaining: total - used })
+        .eq('id', r.id);
+      if (rowErr) throw new Error(rowErr.message);
+    }
+  }
+
+  const { error: typeUpdErr } = await supabase
+    .from('leave_types')
+    .update({ days_allowed: Math.floor(total) })
+    .eq('id', (typeRow as any).id);
+  if (typeUpdErr) throw new Error(typeUpdErr.message);
+
+  revalidatePath('/leave');
+  revalidatePath('/settings');
 }

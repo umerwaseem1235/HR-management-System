@@ -2,8 +2,16 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Employee } from '@/lib/types';
+<<<<<<< HEAD
 import { getEmployee, getEmployeeAvatars, getEmployees, getLookupData } from '@/lib/actions/employees';
 import { createResourceCache } from '@/lib/resource-cache';
+=======
+import { getEmployee, getEmployees, getLookupData } from '@/lib/actions/employees';
+import { cachedQuery, invalidateQuery, peekQuery } from '@/lib/query-cache';
+
+export const EMPLOYEES_CACHE_KEY = 'employees';
+export const EMPLOYEE_LOOKUP_CACHE_KEY = 'employees:lookup';
+>>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
 
 interface LookupItem {
   id: string;
@@ -54,9 +62,10 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>(() => peekQuery<Employee[]>(EMPLOYEES_CACHE_KEY) ?? []);
   const [filtered, setFiltered] = useState<Employee[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Instant first paint when a fresh cache entry exists (recent tab visit).
+  const [isLoading, setIsLoading] = useState(() => peekQuery<Employee[]>(EMPLOYEES_CACHE_KEY) === undefined);
   const [error, setError] = useState<string | null>(null);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [lookupData, setLookupData] = useState<LookupData | null>(null);
@@ -91,9 +100,14 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
     setIsLoading(true);
     setError(null);
     try {
+<<<<<<< HEAD
       const data = await employeesCache.load(getEmployees, options);
       applyRoster(data);
       setReady(true);
+=======
+      const data = await cachedQuery(EMPLOYEES_CACHE_KEY, getEmployees);
+      setEmployees(data);
+>>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -120,7 +134,11 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
     lookupFetchedRef.current = true;
     setIsLookupLoading(true);
     try {
+<<<<<<< HEAD
       const data = await lookupCache.load(getLookupData);
+=======
+      const data = await cachedQuery(EMPLOYEE_LOOKUP_CACHE_KEY, getLookupData);
+>>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
       setLookupData(data);
     } catch (err) {
       console.error('Lookup fetch error:', err);
@@ -200,6 +218,13 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
     setFiltered(result);
   }, [search, deptFilter, statusFilter, employees]);
 
+  // Drop cached reads before refetching so mutations are always visible.
+  const refreshEmployees = useCallback(async () => {
+    invalidateQuery(EMPLOYEES_CACHE_KEY);
+    invalidateQuery(EMPLOYEE_LOOKUP_CACHE_KEY);
+    await fetchEmployees();
+  }, [fetchEmployees]);
+
   const handleAddEmployee = async (values: Record<string, string>, photo: string | null) => {
     setError(null);
     setIsSubmitting(true);
@@ -213,7 +238,11 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
         const err = await res.json();
         throw new Error(err.message || 'Failed to create employee');
       }
+<<<<<<< HEAD
       await fetchEmployees({ force: true });
+=======
+      await refreshEmployees();
+>>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
       setIsAddEmployeeOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create employee');
@@ -237,7 +266,11 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
         const err = await res.json();
         throw new Error(err.message || 'Failed to update employee');
       }
+<<<<<<< HEAD
       await fetchEmployees({ force: true });
+=======
+      await refreshEmployees();
+>>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
       setEditingEmployee(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update employee');
@@ -248,19 +281,26 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
   };
 
   const handleDeleteEmployee = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this employee?')) return;
     setError(null);
     try {
       const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete employee');
+<<<<<<< HEAD
       await fetchEmployees({ force: true });
+=======
+      await refreshEmployees();
+>>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete employee');
     }
   };
 
   const refresh = async () => {
+<<<<<<< HEAD
     await fetchEmployees({ force: true });
+=======
+    await refreshEmployees();
+>>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
   };
 
   return {

@@ -10,7 +10,7 @@ import {
   updateLeaveStatus as updateLeaveStatusAction, 
   updateLeaveRequest as updateLeaveRequestAction, 
   deleteLeaveRequest as deleteLeaveRequestAction, 
-  updateLeaveBalance as updateLeaveBalanceAction 
+  setLeaveTypeBalanceTotal as setLeaveTypeBalanceTotalAction 
 } from '@/lib/actions/leave';
 
 const RETIRED_TYPE_MAP: Record<string, string> = {
@@ -81,7 +81,8 @@ interface LeaveContextType {
   updateLeaveStatus: (id: string, status: 'Approved' | 'Rejected', approvedBy?: string, comments?: string) => Promise<void>;
   updateLeaveRequest: (id: string, input: { leaveType: string; startDate: string; endDate: string; days: number; reason: string }) => Promise<void>;
   deleteLeaveRequest: (id: string) => Promise<void>;
-  updateLeaveBalance: (leaveType: string, total: number, used: number) => void;
+  /** Admin quota edit — persists the new yearly total for every balance row of a type. */
+  updateLeaveBalance: (leaveType: string, total: number) => Promise<void>;
   ensureLoaded: () => void;
 }
 
@@ -146,12 +147,15 @@ export function LeaveProvider({ children }: { children: ReactNode }) {
     setLeaveRequests((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
-  const updateLeaveBalance = useCallback((leaveType: string, total: number, used: number) => {
-    setLeaveBalances((prev) =>
-      prev.map((b) =>
-        b.leaveType === leaveType ? { ...b, total, used, remaining: Math.max(0, total - used) } : b
-      )
-    );
+  const updateLeaveBalance = useCallback(async (leaveType: string, total: number) => {
+    await setLeaveTypeBalanceTotalAction(leaveType, total);
+    // Re-read so every card reflects the persisted totals (no stale sums).
+    const [requests, balances] = await Promise.all([
+      getLeaveRequests(),
+      getLeaveBalances(),
+    ]);
+    setLeaveRequests(sanitizeRequests(requests));
+    setLeaveBalances(sanitizeBalances(balances));
   }, []);
 
   const value = useMemo(

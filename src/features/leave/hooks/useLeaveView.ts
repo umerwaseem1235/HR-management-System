@@ -40,6 +40,7 @@ export function useLeaveView() {
   const [balanceType, setBalanceType] = useState('');
   const [balanceTotal, setBalanceTotal] = useState('');
   const [balanceErrors, setBalanceErrors] = useState<Record<string, string>>({});
+  const [isSavingBalance, setIsSavingBalance] = useState(false);
 
   const [confirmApproveLeave, setConfirmApproveLeave] = useState<LeaveRequest | null>(null);
   const [confirmRejectLeave, setConfirmRejectLeave] = useState<LeaveRequest | null>(null);
@@ -128,20 +129,29 @@ export function useLeaveView() {
     setBalanceErrors({});
   };
 
-  const handleBalanceSubmit = (e: React.FormEvent) => {
+  const handleBalanceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const nextErrors: Record<string, string> = {};
     const total = parseInt(balanceTotal, 10);
-    const current = leaveBalances.find((b) => b.leaveType === balanceType);
     if (!balanceTotal) nextErrors.balanceTotal = 'Total days is required.';
     else if (isNaN(total) || total < 0) nextErrors.balanceTotal = 'Enter a valid number of days (0 or more).';
-    else if (current && total < current.used)
-      nextErrors.balanceTotal = `Total cannot be less than already used days (${current.used}).`;
     setBalanceErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0 || !balanceType || !current) return;
+    if (Object.keys(nextErrors).length > 0 || !balanceType) return;
 
-    updateLeaveBalance(balanceType, total, current.used);
-    closeBalanceModal();
+    // NOTE: no local "total vs used" check here on purpose. The balance row
+    // shown to admins aggregates every employee, so comparing the new quota
+    // against the summed usage wrongly blocked raises (e.g. 20 → 24 vs a
+    // company-wide sum of 120). The real bound — the highest single-employee
+    // usage — is enforced server-side by setLeaveTypeBalanceTotal.
+    setIsSavingBalance(true);
+    try {
+      await updateLeaveBalance(balanceType, total);
+      closeBalanceModal();
+    } catch (err) {
+      setBalanceErrors({ balanceTotal: err instanceof Error ? err.message : 'Failed to save balance.' });
+    } finally {
+      setIsSavingBalance(false);
+    }
   };
 
   const goToRequestLeave = () => router.push('/leave/request');
@@ -209,6 +219,7 @@ export function useLeaveView() {
     setBalanceTotal,
     balanceErrors,
     setBalanceErrors,
+    isSavingBalance,
     confirmApproveLeave,
     setConfirmApproveLeave,
     confirmRejectLeave,

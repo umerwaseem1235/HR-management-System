@@ -7,23 +7,29 @@ const STAT_ICON_BG = 'bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]';
 const STAT_ICON_COLOR = '#024fa7';
 
 interface EmployeeStatsProps {
-  leaveRemainingTotal: number;
+  leavesTakenMonth: number;
+  workingDaysWorked: number | string;
   lastPayslipNet: number;
-  goalsCompleted: number;
-  goalsTotal: number;
+  lastPayslipLabel: string;
+  progressPosts: number;
+  monthLabel: string;
 }
 
 export default function EmployeeStats({
-  leaveRemainingTotal,
+  leavesTakenMonth,
+  workingDaysWorked,
   lastPayslipNet,
-  goalsCompleted,
-  goalsTotal,
+  lastPayslipLabel,
+  progressPosts,
+  monthLabel,
 }: EmployeeStatsProps) {
+  const leavesLabel = `${leavesTakenMonth} ${leavesTakenMonth === 1 ? 'day' : 'days'}`;
+  const postsLabel = `${progressPosts} ${progressPosts === 1 ? 'post' : 'posts'}`;
   const items: StatGridItem[] = [
-    { title: 'Working Days', value: '22/23', iconName: 'time', iconColor: STAT_ICON_COLOR, iconBg: STAT_ICON_BG },
-    { title: 'Leave Balance', value: `${leaveRemainingTotal} days`, iconName: 'onLeaveToday', iconColor: STAT_ICON_COLOR, iconBg: STAT_ICON_BG },
-    { title: 'Last Payslip', value: `PKR ${lastPayslipNet.toLocaleString()}`, iconName: 'payroll', iconColor: STAT_ICON_COLOR, iconBg: STAT_ICON_BG },
-    { title: 'Goals Progress', value: `${goalsCompleted}/${goalsTotal}`, iconName: 'goals', iconColor: STAT_ICON_COLOR, iconBg: STAT_ICON_BG },
+    { title: 'Working Days', value: `${workingDaysWorked}`, change: monthLabel, iconName: 'time', iconColor: STAT_ICON_COLOR, iconBg: STAT_ICON_BG },
+    { title: 'Leaves', value: leavesLabel, change: monthLabel, iconName: 'onLeaveToday', iconColor: STAT_ICON_COLOR, iconBg: STAT_ICON_BG },
+    { title: 'Last Payslip', value: `PKR ${lastPayslipNet.toLocaleString()}`, change: lastPayslipLabel, iconName: 'payroll', iconColor: STAT_ICON_COLOR, iconBg: STAT_ICON_BG },
+    { title: 'Progress Updates', value: postsLabel, change: monthLabel, iconName: 'goals', iconColor: STAT_ICON_COLOR, iconBg: STAT_ICON_BG },
   ];
 
   return (

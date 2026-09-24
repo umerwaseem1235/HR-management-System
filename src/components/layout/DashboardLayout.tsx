@@ -15,7 +15,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { isAuthenticated, isLoading } = useAuthRedirect();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Default to hover mode (collapsed to icons, expands on hover) after
+  // login; the hamburger pins it open (hover off). Preference persists
+  // across sessions. The shell stays mounted across module switches, so
+  // this also persists while navigating.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('hrms_sidebar_mode') !== 'pinned';
+    } catch {
+      return true;
+    }
+  });
+
+  const handleToggleCollapse = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('hrms_sidebar_mode', next ? 'hover' : 'pinned');
+      } catch {
+        // Storage unavailable — keep in-memory state only.
+      }
+      return next;
+    });
+  };
 
   // Warm sibling module caches during dashboard idle time so switching
   // modules later paints instantly. Runs once after the first paint.
@@ -45,7 +67,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
         collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+        onToggleCollapse={handleToggleCollapse}
       />
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar
