@@ -199,17 +199,26 @@ export function buildRunItems(
     const unpaidTotal = unpaidDays + absentDays;
     const leaveDeduction = Math.round((basicSalary / DAILY_RATE_DIVISOR) * unpaidTotal);
 
+    // Apply the fine only if the employee has unpaid absences (exceeding the paid leave limit)
+    const baseFine = employeeFines[emp.id] ?? fineDefault;
+    const applicableFine = unpaidTotal > 0 ? baseFine : 0;
+    
+    const finalDeductions = deductions.map(d => ({ name: d.name, amount: d.amount }));
+    if (applicableFine > 0) {
+      finalDeductions.push({ name: 'Absence Fine', amount: applicableFine });
+    }
+
     return recalcLine({
       employeeId: emp.id,
       employeeName: `${emp.firstName} ${emp.lastName}`,
       department: emp.department,
       basicSalary,
       allowances: allowances.map(a => ({ name: a.name, amount: a.amount })),
-      deductions: deductions.map(d => ({ name: d.name, amount: d.amount })),
+      deductions: finalDeductions,
       paidLeaveDays: paidDays,
       unpaidLeaveDays: unpaidDays,
       absentDays,
-      leaveDeduction: leaveDeduction + (employeeFines[emp.id] ?? fineDefault),
+      leaveDeduction,
       grossSalary: 0,
       totalAllowances: 0,
       totalDeductions: 0,

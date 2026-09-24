@@ -277,3 +277,79 @@ export async function deleteLeaveType(id: string) {
   if (error) throw new Error(error.message);
   revalidatePath('/settings');
 }
+
+/* ------------------------------------------------------------------ */
+/*  Optimized single-call loader                                       */
+/* ------------------------------------------------------------------ */
+
+export interface SettingsSnapshot {
+  company: CompanySettings;
+  departments: Department[];
+  branches: Branch[];
+  shifts: { id: string; name: string; startTime: string; endTime: string }[];
+  leaveTypes: LeaveType[];
+}
+
+/**
+ * Single round trip for the settings page.
+ *
+ * Before: company form + 4 list tabs each fired their own server action on
+ * mount, so opening Settings (or switching tabs after navigating away and
+ * back) ran up to 5 sequential client→server round trips. Now: one action
+ * fans everything out concurrently; the client caches the snapshot (SWR) so
+ * returning to Settings paints instantly.
+ */
+export async function getSettingsData(): Promise<SettingsSnapshot> {
+  const supabase = await createClient();
+  const [companyRes, departmentsRes, branchesRes, shiftsRes, leaveTypesRes] = await Promise.all([
+    supabase.from('settings').select('key, value').in('key', Object.values(COMPANY_KEY_MAP)),
+    supabase.from('departments').select('*').order('name'),
+    supabase.from('branches').select('*').order('name'),
+    supabase.from('shifts').select('*').order('name'),
+    supabase.from('leave_types').select('*').order('name'),
+  ]);
+
+  if (companyRes.error) throw new Error(companyRes.error.message);
+  if (departmentsRes.error) throw new Error(departmentsRes.error.message);
+  if (branchesRes.error) throw new Error(branchesRes.error.message);
+  if (shiftsRes.error) throw new Error(shiftsRes.error.message);
+  if (leaveTypesRes.error) throw new Error(leaveTypesRes.error.message);
+
+  const map = new Map((companyRes.data || []).map((r: any) => [String(r.key), String(r.value ?? '')]));
+  const company = { ...COMPANY_DEFAULTS };
+  (Object.keys(COMPANY_KEY_MAP) as (keyof CompanySettings)[]).forEach((field) => {
+    const v = map.get(COMPANY_KEY_MAP[field]);
+    if (v !== undefined && v !== '') company[field] = v;
+  });
+
+  return {
+    company,
+    departments: (departmentsRes.data || []).map((db: any) => ({
+      id: db.id,
+      name: db.name,
+      head: db.head,
+      employeeCount: db.employee_count || 0,
+    })),
+    branches: (branchesRes.data || []).map((db: any) => ({
+      id: db.id,
+      name: db.name,
+      address: db.address,
+      city: db.city,
+    })),
+    shifts: (shiftsRes.data || []).map((db: any) => ({
+      id: db.id,
+      name: db.name,
+      startTime: db.start_time,
+      endTime: db.end_time,
+    })),
+    leaveTypes: (leaveTypesRes.data || []).map((db: any) => ({
+      id: db.id,
+      name: db.name,
+      daysAllowed: db.days_allowed,
+      carryForward: db.carry_forward,
+      color: db.color,
+      period: db.period,
+      description: db.description,
+    })),
+  };
+}

@@ -1,115 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-// NOTE: `@/lib/mock-data` was deleted on both sides of the merge, so the
-// mock fallback rows it used to export are inlined here verbatim (from merge
-// base 958d3d5). They seed the lists until real DB rows load, and back the
-// offline fallbacks below.
-const mockEmployees: Employee[] = [
-  {
-    id: '1', employeeCode: 'EMP001', firstName: 'Michael', lastName: 'Chen', email: 'michael.chen@codqor.com', phone: '+1-555-0101', avatar: 'MC',
-    dateOfBirth: '1990-05-15', gender: 'Male', address: '123 Tech Street', city: 'New York', country: 'USA',
-    emergencyContactName: 'Lisa Chen', emergencyContactPhone: '+1-555-0102',
-    department: 'Engineering', designation: 'Senior Software Engineer', branch: 'Mumtaz Market', reportingManager: 'David Kim',
-    employmentType: 'Full-time', joiningDate: '2022-03-01', status: 'Active', shift: 'Morning Shift', salary: 95000,
-  },
-  {
-    id: '2', employeeCode: 'EMP002', firstName: 'Sarah', lastName: 'Williams', email: 'sarah.williams@codqor.com', phone: '+1-555-0201', avatar: 'SW',
-    dateOfBirth: '1988-09-22', gender: 'Female', address: '456 HR Lane', city: 'New York', country: 'USA',
-    emergencyContactName: 'John Williams', emergencyContactPhone: '+1-555-0202',
-    department: 'Human Resources', designation: 'HR Manager', branch: 'Mumtaz Market', reportingManager: 'Alex Johnson',
-    employmentType: 'Full-time', joiningDate: '2021-01-15', status: 'Active', shift: 'Morning Shift', salary: 85000,
-  },
-  {
-    id: '3', employeeCode: 'EMP003', firstName: 'David', lastName: 'Kim', email: 'david.kim@codqor.com', phone: '+1-555-0301', avatar: 'DK',
-    dateOfBirth: '1985-12-10', gender: 'Male', address: '789 Lead Avenue', city: 'San Francisco', country: 'USA',
-    emergencyContactName: 'Jenny Kim', emergencyContactPhone: '+1-555-0302',
-    department: 'Engineering', designation: 'Engineering Manager', branch: 'Mumtaz Market', reportingManager: 'Alex Johnson',
-    employmentType: 'Full-time', joiningDate: '2020-06-01', status: 'Active', shift: 'Flexible', salary: 120000,
-  },
-  {
-    id: '4', employeeCode: 'EMP004', firstName: 'Emily', lastName: 'Rodriguez', email: 'emily.rodriguez@codqor.com', phone: '+1-555-0401', avatar: 'ER',
-    dateOfBirth: '1992-07-08', gender: 'Female', address: '321 Design Blvd', city: 'New York', country: 'USA',
-    emergencyContactName: 'Carlos Rodriguez', emergencyContactPhone: '+1-555-0402',
-    department: 'Design', designation: 'Senior Designer', branch: 'Mumtaz Market', reportingManager: 'Alex Johnson',
-    employmentType: 'Full-time', joiningDate: '2022-09-15', status: 'Active', shift: 'Morning Shift', salary: 80000,
-  },
-  {
-    id: '5', employeeCode: 'EMP005', firstName: 'James', lastName: 'Anderson', email: 'james.anderson@codqor.com', phone: '+1-555-0501', avatar: 'JA',
-    dateOfBirth: '1991-03-25', gender: 'Male', address: '654 Sales Road', city: 'Austin', country: 'USA',
-    emergencyContactName: 'Mary Anderson', emergencyContactPhone: '+1-555-0502',
-    department: 'Sales', designation: 'Sales Manager', branch: 'Mumtaz Market', reportingManager: 'Alex Johnson',
-    employmentType: 'Full-time', joiningDate: '2021-08-01', status: 'Active', shift: 'Morning Shift', salary: 90000,
-  },
-  {
-    id: '6', employeeCode: 'EMP006', firstName: 'Priya', lastName: 'Sharma', email: 'priya.sharma@codqor.com', phone: '+1-555-0601', avatar: 'PS',
-    dateOfBirth: '1994-11-30', gender: 'Female', address: '987 Market Way', city: 'New York', country: 'USA',
-    emergencyContactName: 'Raj Sharma', emergencyContactPhone: '+1-555-0602',
-    department: 'Marketing', designation: 'Marketing Executive', branch: 'Mumtaz Market', reportingManager: 'Sarah Williams',
-    employmentType: 'Full-time', joiningDate: '2023-02-01', status: 'Probation', shift: 'Morning Shift', salary: 60000,
-  },
-  {
-    id: '7', employeeCode: 'EMP007', firstName: 'Robert', lastName: 'Taylor', email: 'robert.taylor@codqor.com', phone: '+1-555-0701', avatar: 'RT',
-    dateOfBirth: '1987-06-14', gender: 'Male', address: '147 Finance Street', city: 'New York', country: 'USA',
-    emergencyContactName: 'Susan Taylor', emergencyContactPhone: '+1-555-0702',
-    department: 'Finance', designation: 'Finance Manager', branch: 'Mumtaz Market', reportingManager: 'Alex Johnson',
-    employmentType: 'Full-time', joiningDate: '2019-04-01', status: 'Active', shift: 'Morning Shift', salary: 100000,
-  },
-  {
-    id: '8', employeeCode: 'EMP008', firstName: 'Jessica', lastName: 'Lee', email: 'jessica.lee@codqor.com', phone: '+1-555-0801', avatar: 'JL',
-    dateOfBirth: '1993-01-20', gender: 'Female', address: '258 Product Lane', city: 'San Francisco', country: 'USA',
-    emergencyContactName: 'Tom Lee', emergencyContactPhone: '+1-555-0802',
-    department: 'Product', designation: 'Product Manager', branch: 'Mumtaz Market', reportingManager: 'David Kim',
-    employmentType: 'Full-time', joiningDate: '2022-01-10', status: 'Active', shift: 'Flexible', salary: 105000,
-  },
-  {
-    id: '9', employeeCode: 'EMP009', firstName: 'Ahmed', lastName: 'Hassan', email: 'ahmed.hassan@codqor.com', phone: '+1-555-0901', avatar: 'AH',
-    dateOfBirth: '1995-08-05', gender: 'Male', address: '369 Dev Court', city: 'Austin', country: 'USA',
-    emergencyContactName: 'Fatima Hassan', emergencyContactPhone: '+1-555-0902',
-    department: 'Engineering', designation: 'Software Engineer', branch: 'Mumtaz Market', reportingManager: 'David Kim',
-    employmentType: 'Full-time', joiningDate: '2023-06-15', status: 'Probation', shift: 'Morning Shift', salary: 75000,
-  },
-  {
-    id: '10', employeeCode: 'EMP010', firstName: 'Olivia', lastName: 'Brown', email: 'olivia.brown@codqor.com', phone: '+1-555-1001', avatar: 'OB',
-    dateOfBirth: '1989-04-18', gender: 'Female', address: '741 Support Way', city: 'New York', country: 'USA',
-    emergencyContactName: 'Mark Brown', emergencyContactPhone: '+1-555-1002',
-    department: 'Customer Support', designation: 'Support Lead', branch: 'Mumtaz Market', reportingManager: 'Sarah Williams',
-    employmentType: 'Full-time', joiningDate: '2021-11-01', status: 'Active', shift: 'Afternoon Shift', salary: 65000,
-  },
-  {
-    id: '11', employeeCode: 'EMP011', firstName: 'William', lastName: 'Martinez', email: 'william.martinez@codqor.com', phone: '+1-555-1101', avatar: 'WM',
-    dateOfBirth: '1996-02-28', gender: 'Male', address: '852 Ops Drive', city: 'New York', country: 'USA',
-    emergencyContactName: 'Carmen Martinez', emergencyContactPhone: '+1-555-1102',
-    department: 'Operations', designation: 'Operations Coordinator', branch: 'Mumtaz Market', reportingManager: 'Alex Johnson',
-    employmentType: 'Full-time', joiningDate: '2023-09-01', status: 'Active', shift: 'Morning Shift', salary: 55000,
-  },
-  {
-    id: '12', employeeCode: 'EMP012', firstName: 'Sophia', lastName: 'Davis', email: 'sophia.davis@codqor.com', phone: '+1-555-1201', avatar: 'SD',
-    dateOfBirth: '1990-10-12', gender: 'Female', address: '963 Legal Lane', city: 'New York', country: 'USA',
-    emergencyContactName: 'Richard Davis', emergencyContactPhone: '+1-555-1202',
-    department: 'Legal', designation: 'Legal Counsel', branch: 'Mumtaz Market', reportingManager: 'Alex Johnson',
-    employmentType: 'Full-time', joiningDate: '2020-02-15', status: 'Active', shift: 'Morning Shift', salary: 110000,
-  },
-  {
-    id: '13', employeeCode: 'EMP013', firstName: 'Daniel', lastName: 'Wilson', email: 'daniel.wilson@codqor.com', phone: '+1-555-1301', avatar: 'DW',
-    dateOfBirth: '1993-07-07', gender: 'Male', address: '159 Recruit Road', city: 'New York', country: 'USA',
-    emergencyContactName: 'Grace Wilson', emergencyContactPhone: '+1-555-1302',
-    department: 'Human Resources', designation: 'Recruiter', branch: 'Mumtaz Market', reportingManager: 'Sarah Williams',
-    employmentType: 'Full-time', joiningDate: '2022-05-01', status: 'Active', shift: 'Morning Shift', salary: 58000,
-  },
-  {
-    id: '14', employeeCode: 'EMP014', firstName: 'Emma', lastName: 'Garcia', email: 'emma.garcia@codqor.com', phone: '+1-555-1401', avatar: 'EG',
-    dateOfBirth: '1997-12-03', gender: 'Female', address: '753 Intern Ave', city: 'San Francisco', country: 'USA',
-    emergencyContactName: 'Maria Garcia', emergencyContactPhone: '+1-555-1402',
-    department: 'Engineering', designation: 'Software Engineer', branch: 'Mumtaz Market', reportingManager: 'David Kim',
-    employmentType: 'Intern', joiningDate: '2024-01-08', status: 'Probation', shift: 'Flexible', salary: 45000,
-  },
-  {
-    id: '15', employeeCode: 'EMP015', firstName: 'Alex', lastName: 'Johnson', email: 'admin@codqor.com', phone: '+1-555-1501', avatar: 'AJ',
-    dateOfBirth: '1983-09-01', gender: 'Male', address: '100 Admin Plaza', city: 'New York', country: 'USA',
-    emergencyContactName: 'Linda Johnson', emergencyContactPhone: '+1-555-1502',
-    department: 'Operations', designation: 'CEO', branch: 'Mumtaz Market', reportingManager: '-',
-    employmentType: 'Full-time', joiningDate: '2018-01-01', status: 'Active', shift: 'Flexible', salary: 180000,
-  },
-];
+// NOTE: `@/lib/mock-data` was deleted, so the small job/candidate fallbacks
+// it used to export are inlined here. They seed the lists until real DB rows
+// load. The 15-row mock employee directory was removed — the interviewer
+// dropdown now uses the lean server list (id + name + designation).
 
 const mockJobs: Job[] = [
   { id: '1', title: 'Senior Frontend Developer', department: 'Engineering', branch: 'Mumtaz Market', vacancies: 2, applicants: 15, status: 'Open', postedDate: '2024-01-02', closingDate: '2024-02-02', description: 'Looking for an experienced frontend developer with React/Next.js expertise.' },
@@ -141,6 +34,7 @@ import {
   getInterviews,
   getJobs,
   getOffers,
+  getRecruitmentData,
   saveOffer as saveOfferAction,
   scheduleInterview as scheduleInterviewAction,
   updateCandidate,
@@ -152,11 +46,42 @@ import {
 } from '@/lib/actions/recruitment';
 import { getDepartments, getBranches } from '@/lib/actions/settings';
 import { uploadCvFile, removeCvFile, getCvDownloadUrl } from '@/lib/actions/cv-storage';
-import { getEmployees } from '@/lib/actions/employees';
-import { getLookupData } from '@/lib/actions/employees';
 import { CandidateExt, Interview, Offer, SOURCES, STAGES, today } from '../types';
+import { createResourceCache } from '@/lib/resource-cache';
+import type { RecruitmentData } from '@/lib/actions/recruitment';
 
 const sanitizeFileName = (name: string) => name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+
+/** In-memory snapshot of everything the recruitment page renders. */
+interface RecruitmentSnapshot {
+  jobs: Job[];
+  candidates: CandidateExt[];
+  interviews: Interview[];
+  offers: Offer[];
+  interviewers: Employee[];
+  deptIdByName: Record<string, string>;
+  branchIdByName: Record<string, string>;
+}
+
+// Survives view remounts during navigation, so returning to /recruitment paints
+// instantly instead of re-running the aggregate loader.
+const recruitmentCache = createResourceCache<RecruitmentSnapshot>('recruitment:data', 60_000);
+
+function toSnapshot(data: RecruitmentData): RecruitmentSnapshot {
+  return {
+    jobs: data.jobs,
+    candidates: (data.candidates as any[]).map((c: any) => ({
+      ...c,
+      source: c.source || 'Other',
+      history: [{ date: c.appliedDate, action: 'Applied', note: `Noted for ${c.jobTitle}` }],
+    })),
+    interviews: (data.interviews as any[]).map((r: any) => ({ ...r, status: r.status as Interview['status'] })),
+    offers: (data.offers as any[]).map((r: any) => ({ ...r, status: r.status as Offer['status'] })),
+    interviewers: data.interviewers as unknown as Employee[],
+    deptIdByName: data.deptIdByName,
+    branchIdByName: data.branchIdByName,
+  };
+}
 
 export interface JobModalState {
   id?: string;
@@ -202,6 +127,9 @@ export function useRecruitment() {
   const [jobsError, setJobsError] = useState('');
   const [isSavingJob, setIsSavingJob] = useState(false);
   const [recLoading, setRecLoading] = useState(true);
+  // Becomes true once real (or cached) data has been applied; gates the cache
+  // write-back so the mock fallback initial state never overwrites the cache.
+  const [ready, setReady] = useState(false);
   const [success, setSuccess] = useState('');
 
   // modals
@@ -304,54 +232,48 @@ export function useRecruitment() {
     [loadHistory, pushHistory],
   );
 
+  // Apply a cached/server snapshot to every state slice in one go.
+  const hydrate = useCallback((snap: RecruitmentSnapshot) => {
+    setEmployees(snap.interviewers);
+    setDeptIdByName(snap.deptIdByName);
+    setBranchIdByName(snap.branchIdByName);
+    setJobs(snap.jobs);
+    setCandidates(snap.candidates);
+    setInterviews(snap.interviews);
+    setOffers(snap.offers);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      setIsLoading(true);
+      const snapshot = recruitmentCache.peek();
+      if (snapshot && !cancelled) {
+        // Paint the cached page instantly; only fetch when it has gone stale.
+        hydrate(snapshot.data);
+        setReady(true);
+        setIsLoading(false);
+        setJobsLoading(false);
+        setRecLoading(false);
+        if (!snapshot.isStale) return;
+      } else {
+        setIsLoading(true);
+      }
       setError(null);
       try {
-        const [empData, lookup] = await Promise.all([getEmployees(), getLookupData()]);
+        // ONE round trip: jobs + candidates + interviews + offers +
+        // lean interviewers + dept/branch maps, all in parallel server-side.
+        const data = await recruitmentCache.load(() => getRecruitmentData().then(toSnapshot));
         if (cancelled) return;
-        setEmployees(empData);
-        const dMap: Record<string, string> = {};
-        lookup.departments.forEach((d) => { dMap[d.name.toLowerCase()] = d.id; });
-        setDeptIdByName(dMap);
-        const bMap: Record<string, string> = {};
-        lookup.branches.forEach((b) => {
-          const short = b.name.split(' - ')[0].toLowerCase();
-          bMap[short] = b.id;
-          bMap[b.name.toLowerCase()] = b.id;
-        });
-        setBranchIdByName(bMap);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load recruitment data');
-      }
-      try {
-        // DB rows replace the mock fallback (kept when the DB is unreachable).
-        const [dbJobs, candRows, intRows, offerRows] = await Promise.all([
-          getJobs(),
-          getCandidates(),
-          getInterviews(),
-          getOffers(),
-        ]);
-        if (cancelled) return;
-        setJobs(dbJobs);
-        setCandidates(
-          (candRows as any[]).map((c: any) => ({
-            ...c,
-            source: c.source || 'Other',
-            history: [{ date: c.appliedDate, action: 'Applied', note: `Noted for ${c.jobTitle}` }],
-          })),
-        );
-        setInterviews((intRows as any[]).map((r: any) => ({ ...r, status: r.status as Interview['status'] })));
-        setOffers((offerRows as any[]).map((r: any) => ({ ...r, status: r.status as Offer['status'] })));
+        hydrate(data);
+        setReady(true);
         setJobsError('');
       } catch (err) {
         if (!cancelled) {
           // Keep mock fallback so the page still works when DB is unreachable,
           // but surface the real error so it can be fixed.
-          setJobsError(err instanceof Error ? err.message : 'Failed to load recruitment data.');
-          if (!error) setError(err instanceof Error ? err.message : 'Failed to load recruitment data.');
+          const message = err instanceof Error ? err.message : 'Failed to load recruitment data.';
+          setJobsError(message);
+          setError((prev) => prev ?? message);
         }
       } finally {
         if (!cancelled) {
@@ -362,7 +284,22 @@ export function useRecruitment() {
       }
     })();
     return () => { cancelled = true; };
-  }, [refreshAll]);
+  }, [hydrate]);
+
+  // Keep the module-level snapshot in sync with every state change (loads,
+  // optimistic mutations, granular refreshes) so the next mount is current.
+  useEffect(() => {
+    if (!ready) return;
+    recruitmentCache.set({
+      jobs,
+      candidates,
+      interviews,
+      offers,
+      interviewers: employees,
+      deptIdByName,
+      branchIdByName,
+    });
+  }, [ready, jobs, candidates, interviews, offers, employees, deptIdByName, branchIdByName]);
 
   const openNewJob = () =>
     setJobModal({ title: '', department: '', branch: '', vacancies: '1', requirements: '', description: '', closingDate: '', status: 'Open' });
@@ -749,7 +686,7 @@ export function useRecruitment() {
     if (!intModal || !intModal.candidateId || !intModal.date) return;
     if (!intModal.interviewer) return;
     const cand = candidates.find((c) => c.id === intModal.candidateId);
-    const emp = employees.find((x) => x.id === intModal.interviewer) ?? mockEmployees.find((e: any) => e.id === intModal.interviewer);
+    const emp = employees.find((x) => x.id === intModal.interviewer);
     const interviewerName = emp ? `${(emp as any).firstName} ${(emp as any).lastName}` : intModal.interviewer;
     const payload = {
       candidateId: intModal.candidateId,
@@ -906,17 +843,8 @@ export function useRecruitment() {
       await refreshCandidates();
       await loadHistory(cand.id);
     } catch {
-      // Fall back to the local mock conversion so HR is never blocked by the DB.
-      const [first, ...rest] = cand.name.split(' ');
-      mockEmployees.push({
-        id: `emp-${Date.now()}`, employeeCode: convertModal.code || `CQ-${String(mockEmployees.length + 1).padStart(3, '0')}`,
-        firstName: first || cand.name, lastName: rest.join(' ') || '', email: cand.email, phone: cand.phone,
-        dateOfBirth: '', gender: 'Other', address: '', city: '', country: '',
-        emergencyContactName: '', emergencyContactPhone: '',
-        department: convertModal.department, designation: convertModal.designation, branch: convertModal.branch,
-        reportingManager: '', employmentType: 'Full-time', joiningDate: convertModal.joiningDate || today(),
-        status: 'Probation', shift: 'Morning Shift', salary: Number(convertModal.salary) || 0,
-      } as never);
+      // DB conversion failed — keep the candidate and surface the stage move
+      // so HR can retry instead of silently duplicating a local-only record.
       await moveStage(cand.id, 'Hired', `Converted to employee ${convertModal.code}`);
     }
     setConvertModal(null);

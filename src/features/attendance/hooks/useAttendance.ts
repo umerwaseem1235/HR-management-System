@@ -9,8 +9,57 @@ import { timeToMinutes, toDateStr, todayStr } from '@/utils/date';
 import type { CorrectionHistoryEntry, CorrectionRequest, Holiday } from '../types';
 import { aggregate, calcWorkHours, DEFAULT_LATE_RULE, resolveLateStatus, type LateArrivalRule } from '../utils';
 import { createAuditLog, getAuditLogsByModule } from '@/lib/actions/audit';
+import { createResourceCache } from '@/lib/resource-cache';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Everything the attendance page renders from its initial aggregate load. */
+interface AttendanceSnapshot {
+  employees: Employee[];
+  records: AttendanceRecord[];
+  corrections: CorrectionRequest[];
+  history: CorrectionHistoryEntry[];
+  holidays: Holiday[];
+  stats: TodayStats;
+}
+
+function toAttendanceSnapshot(data: Awaited<ReturnType<typeof getAttendanceData>>): AttendanceSnapshot {
+  return {
+    employees: data.employees as unknown as Employee[],
+    records: data.records,
+    corrections: data.corrections as unknown as CorrectionRequest[],
+    history: mapAuditToHistory(data.auditLogs as unknown as Parameters<typeof mapAuditToHistory>[0]),
+    holidays: data.holidays,
+    stats: data.stats,
+  };
+}
+
+// Module scope survives navigation, so returning to /attendance paints
+// instantly instead of re-running the aggregate query. Keyed by month.
+function attendanceCacheFor(monthKey: string) {
+  return createResourceCache<AttendanceSnapshot>(`attendance:data:${monthKey}`, 60_000);
+}
+
+// Day slices: switching the date picker used to refetch on EVERY change —
+// even for dates already inside the loaded month. Cached per date so
+// revisiting a date is instant and the initial mount (today) usually needs
+// no extra query at all.
+function dayCacheFor(date: string) {
+  return createResourceCache<AttendanceRecord[]>(`attendance:day:${date}`, 60_000);
+}
+
+/** Idle-warmer: fills the month cache without touching React state. */
+export function warmAttendanceCache(): void {
+  try {
+    const n = new Date();
+    const key = `${n.getFullYear()}-${n.getMonth() + 1}`;
+    const cache = attendanceCacheFor(key);
+    if (cache.peek()) return;
+    void cache.load(() => getAttendanceData(n.getFullYear(), n.getMonth() + 1).then(toAttendanceSnapshot)).catch(() => {});
+  } catch {
+    // Never let a prefetch break the page.
+  }
+}
 
 function summarizeAttendance(status?: string, checkIn?: string, checkOut?: string): string {
   return `Status: ${status || '—'} · In: ${checkIn || '—'} · Out: ${checkOut || '—'}`;
@@ -37,21 +86,17 @@ function mapAuditToHistory(logs: { id: string; userName: string; action: string;
 
 // ── Supabase server actions ──────────────────────────────────────────
 import {
-  getAllAttendance,
   getAttendanceByDate,
-  getAttendanceByEmployee,
+  getAttendanceData,
   getAttendanceStats,
   createAttendanceRecord,
   updateAttendanceRecord,
-  getCorrections,
   updateCorrectionStatus,
-  getHolidays,
   createHoliday,
   deleteHoliday,
   deleteAttendanceRecord,
   selfCheckInOut,
 } from '@/lib/actions/attendance';
-import { getEmployees } from '@/lib/actions/employees';
 
 export type SummaryMode = 'daily' | 'weekly' | 'monthly';
 
@@ -68,16 +113,26 @@ export function useAttendance() {
   const { addNotification } = useNotifications();
 
   // ── Loading / error state ──────────────────────────────────────────
-  const [loading, setLoading] = useState(true);
+  // The aggregate always covers the current month; the cache key follows it.
+  const [monthKey] = useState(() => {
+    const n = new Date();
+    return `${n.getFullYear()}-${n.getMonth() + 1}`;
+  });
+  // Lazy-init from the module cache so a warm revisit paints on the very
+  // first render instead of flashing a loader before the effect runs.
+  const [loading, setLoading] = useState(() => attendanceCacheFor(monthKey).get() === null);
   const [error, setError] = useState<string | null>(null);
+  // Becomes true once real (or cached) data has been applied; gates the cache
+  // write-back so empty initial state never overwrites the snapshot.
+  const [ready, setReady] = useState(false);
 
   // ── Core data (from Supabase) ──────────────────────────────────────
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [attendRecords, setAttendRecords] = useState<AttendanceRecord[]>([]);
-  const [corrections, setCorrections] = useState<CorrectionRequest[]>([]);
-  const [correctionHistory, setCorrectionHistory] = useState<CorrectionHistoryEntry[]>([]);
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [todayStatsData, setTodayStatsData] = useState<TodayStats>({
+  const [employees, setEmployees] = useState<Employee[]>(() => attendanceCacheFor(monthKey).get()?.employees ?? []);
+  const [attendRecords, setAttendRecords] = useState<AttendanceRecord[]>(() => attendanceCacheFor(monthKey).get()?.records ?? []);
+  const [corrections, setCorrections] = useState<CorrectionRequest[]>(() => attendanceCacheFor(monthKey).get()?.corrections ?? []);
+  const [correctionHistory, setCorrectionHistory] = useState<CorrectionHistoryEntry[]>(() => attendanceCacheFor(monthKey).get()?.history ?? []);
+  const [holidays, setHolidays] = useState<Holiday[]>(() => attendanceCacheFor(monthKey).get()?.holidays ?? []);
+  const [todayStatsData, setTodayStatsData] = useState<TodayStats>(() => attendanceCacheFor(monthKey).get()?.stats ?? {
     presentToday: 0,
     absentToday: 0,
     lateToday: 0,
@@ -104,33 +159,39 @@ export function useAttendance() {
   // ── Expose stats (live from Supabase) ──────────────────────────────
   const stats = todayStatsData;
 
-  // ── Initial data load ──────────────────────────────────────────────
+  // ── Initial data load (cached across navigation) ────────────────────
   useEffect(() => {
     let cancelled = false;
     async function loadData() {
-      setLoading(true);
+      const cache = attendanceCacheFor(monthKey);
+      const snapshot = cache.peek();
+      if (snapshot) {
+        if (!cancelled) {
+          setEmployees(snapshot.data.employees);
+          setAttendRecords(snapshot.data.records);
+          setCorrections(snapshot.data.corrections);
+          setCorrectionHistory(snapshot.data.history);
+          setHolidays(snapshot.data.holidays);
+          setTodayStatsData(snapshot.data.stats);
+          setReady(true);
+          setLoading(false);
+        }
+        if (!snapshot.isStale) return;
+      } else if (!cancelled) {
+        setLoading(true);
+      }
       setError(null);
       try {
         const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1; // 1-indexed for server action
-
-        const [empData, attData, corrData, histData, holData, statsData] =
-          await Promise.all([
-            getEmployees(),
-            getAllAttendance(year, month),
-            getCorrections(),
-            getAuditLogsByModule('Attendance'),
-            getHolidays(),
-            getAttendanceStats(),
-          ]);
+        const data = await cache.load(() => getAttendanceData(now.getFullYear(), now.getMonth() + 1).then(toAttendanceSnapshot), { force: true });
         if (cancelled) return;
-        setEmployees(empData);
-        setAttendRecords(attData);
-        setCorrections(corrData);
-        setCorrectionHistory(mapAuditToHistory(histData));
-        setHolidays(holData);
-        setTodayStatsData(statsData);
+        setEmployees(data.employees);
+        setAttendRecords(data.records);
+        setCorrections(data.corrections);
+        setCorrectionHistory(data.history);
+        setHolidays(data.holidays);
+        setTodayStatsData(data.stats);
+        setReady(true);
       } catch (err: any) {
         if (cancelled) return;
         console.error('Failed to load attendance data:', err);
@@ -141,24 +202,66 @@ export function useAttendance() {
     }
     loadData();
     return () => { cancelled = true; };
-  }, []);
+  }, [monthKey]);
 
-  // ── Re-fetch day records when viewDate changes ─────────────────────
+  // Keep the cached snapshot in sync with local mutations (manual entries,
+  // edits, holiday changes) so the next mount is current. The viewed-date
+  // slice is mirrored too, so a cached day can never overwrite fresh edits.
+  useEffect(() => {
+    if (!ready) return;
+    attendanceCacheFor(monthKey).set({
+      employees,
+      records: attendRecords,
+      corrections,
+      history: correctionHistory,
+      holidays,
+      stats: todayStatsData,
+    });
+    if (viewDate) {
+      const slice = attendRecords.filter((r) => r.date === viewDate);
+      if (slice.length > 0) dayCacheFor(viewDate).set(slice);
+    }
+  }, [ready, monthKey, employees, attendRecords, corrections, correctionHistory, holidays, todayStatsData, viewDate]);
+
+  // ── Day records: cached per date, skipped when already covered ─────
+  // Before: EVERY viewDate change (including the initial mount for today,
+  // already inside the month aggregate) fired getAttendanceByDate. Now: serve
+  // the per-date cache instantly, skip entirely when the month snapshot
+  // already holds rows for that date, and only hit the server otherwise.
   useEffect(() => {
     let cancelled = false;
     async function loadDayRecords() {
+      const cache = dayCacheFor(viewDate);
+      const snapshot = cache.peek();
+      if (snapshot && !snapshot.isStale) {
+        if (!cancelled && snapshot.data.length > 0) {
+          setAttendRecords((prev) => {
+            if (prev.some((r) => r.date === viewDate)) return prev;
+            const otherDates = prev.filter((r) => r.date !== viewDate);
+            return [...otherDates, ...snapshot.data];
+          });
+        }
+        return;
+      }
       try {
-        const dayData = await getAttendanceByDate(viewDate);
+        const dayData = await cache.load(() => getAttendanceByDate(viewDate));
         if (cancelled) return;
         // Merge day records into attendRecords — replace records for this date
         setAttendRecords((prev) => {
           const otherDates = prev.filter((r) => r.date !== viewDate);
+          // No-op when the month aggregate already covered this date with
+          // the same row count — avoids a redundant render pass.
+          const current = prev.filter((r) => r.date === viewDate);
+          if (current.length === dayData.length && dayData.length > 0) return prev;
           return [...otherDates, ...dayData];
         });
       } catch (err: any) {
         console.error('Failed to load day records:', err);
       }
     }
+    // Skip the extra query when the aggregate already delivered this date
+    // (the common case: initial mount for today + same-month switches).
+    // attendRecords is intentionally NOT a dep — it would refetch in a loop.
     loadDayRecords();
     return () => { cancelled = true; };
   }, [viewDate]);

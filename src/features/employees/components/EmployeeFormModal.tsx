@@ -7,6 +7,12 @@ import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import Select from '@/components/ui/Select';
 import { Employee } from '@/lib/types';
+import {
+  EMPLOYEE_PHOTO_ACCEPT,
+  EMPLOYEE_PHOTO_MAX_LABEL,
+  validateEmployeePhotoFile,
+  validateEmployeePhotoPayload,
+} from '@/lib/employee-photo';
 
 interface LookupItem {
   id: string;
@@ -108,22 +114,29 @@ export default function EmployeeFormModal({
     });
 
   const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const input = event.target;
+    const file = input.files?.[0];
+    // Reset so re-selecting the same file (e.g. after a rejected pick) fires
+    // the change event again.
+    input.value = '';
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      setPhotoError('Please choose an image file.');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setPhotoError('Profile photo must be smaller than 5 MB.');
+    const validationError = validateEmployeePhotoFile(file);
+    if (validationError) {
+      setPhotoError(validationError);
       return;
     }
 
     setPhotoError('');
     try {
-      setPhotoPreview(await compressImage(file));
+      const preview = await compressImage(file);
+      // Downscaling keeps the payload tiny, but never store an oversized blob.
+      const payloadError = validateEmployeePhotoPayload(preview);
+      if (payloadError) {
+        setPhotoError(payloadError);
+        return;
+      }
+      setPhotoPreview(preview);
     } catch {
       setPhotoError('Could not read the selected image.');
     }
@@ -221,13 +234,13 @@ export default function EmployeeFormModal({
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-[#263238]">Upload a profile photo</p>
-                  <p className="text-xs text-gray-500 mt-1">Use a clear JPG, PNG or WEBP image up to 5 MB.</p>
+                  <p className="text-xs text-gray-500 mt-1">Use a clear JPG, PNG or WEBP image up to {EMPLOYEE_PHOTO_MAX_LABEL}.</p>
                   {photoError && <p className="text-xs text-red-600 mt-1">{photoError}</p>}
                   <div className="flex items-center gap-3 mt-3">
                     <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#D6E4E8] bg-white px-3 py-1.5 text-sm font-medium text-[#263238] hover:bg-[#EAF2F4] transition-colors">
                       <ImagePlus size={15} />
                       {photoPreview ? 'Replace Photo' : 'Choose Photo'}
-                      <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handlePhotoChange} className="sr-only" disabled={disabled} />
+                      <input type="file" accept={EMPLOYEE_PHOTO_ACCEPT} onChange={handlePhotoChange} className="sr-only" disabled={disabled} />
                     </label>
                     {photoPreview && (
                       <button

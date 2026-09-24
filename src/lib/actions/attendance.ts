@@ -52,13 +52,16 @@ function mapAttendance(db: any): AttendanceRecord {
 /*  Queries                                                            */
 /* ------------------------------------------------------------------ */
 
+const ATTENDANCE_LIST_COLUMNS =
+  'id, employee_id, date, check_in, check_out, status, work_hours, overtime, notes, check_in_lat, check_in_lng, check_out_lat, check_out_lng, distance_from_office, employees(first_name, last_name)';
+
 export async function getAttendanceByDate(
   date: string,
 ): Promise<AttendanceRecord[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('attendance')
-    .select('*, employees(first_name, last_name)')
+    .select(ATTENDANCE_LIST_COLUMNS)
     .eq('date', date)
     .order('created_at', { ascending: false });
 
@@ -74,7 +77,7 @@ export async function getAttendanceByEmployee(
   const supabase = await createClient();
   let query = supabase
     .from('attendance')
-    .select('*, employees(first_name, last_name)')
+    .select(ATTENDANCE_LIST_COLUMNS)
     .eq('employee_id', employeeId)
     .order('date', { ascending: true });
 
@@ -95,7 +98,7 @@ export async function getAllAttendance(
   const supabase = await createClient();
   let query = supabase
     .from('attendance')
-    .select('*, employees(first_name, last_name)')
+    .select(ATTENDANCE_LIST_COLUMNS)
     .order('date', { ascending: true });
 
   if (year && month) {
@@ -113,24 +116,152 @@ export async function getAttendanceStats(date?: string) {
   const supabase = await createClient();
   const targetDate = date ?? new Date().toISOString().slice(0, 10);
 
-  const { data, error } = await supabase
-    .from('attendance')
-    .select('status')
-    .eq('date', targetDate);
+  // Count-only queries in parallel — the old version downloaded every row
+  // for the date and counted in JS.
+  const [
+    { count: presentToday },
+    { count: absentToday },
+    { count: lateToday },
+    { count: onLeaveToday },
+  ] = await Promise.all([
+    supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', targetDate).eq('status', 'Present'),
+    supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', targetDate).eq('status', 'Absent'),
+    supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', targetDate).eq('status', 'Late'),
+    supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', targetDate).eq('status', 'Leave'),
+  ]);
 
-  if (error) throw new Error(error.message);
+  return {
+    presentToday: presentToday ?? 0,
+    absentToday: absentToday ?? 0,
+    lateToday: lateToday ?? 0,
+    onLeaveToday: onLeaveToday ?? 0,
+  };
+}
 
-  const records = data || [];
-  const presentToday = records.filter(
-    (r: any) => r.status === 'Present',
-  ).length;
-  const absentToday = records.filter((r: any) => r.status === 'Absent').length;
-  const lateToday = records.filter((r: any) => r.status === 'Late').length;
-  const onLeaveToday = records.filter(
-    (r: any) => r.status === 'Leave',
-  ).length;
+/* ------------------------------------------------------------------ */
+/*  Optimized single-call loader (dashboard-style)                     */
+/* ------------------------------------------------------------------ */
 
-  return { presentToday, absentToday, lateToday, onLeaveToday };
+/**
+ * Single round trip for the attendance page.
+ *
+ * Before: useAttendance fired getEmployees (30 cols + 5 joins — only
+ * id/email/name are used) + getAllAttendance + getCorrections +
+ * getAuditLogsByModule (unbounded) + getHolidays + getAttendanceStats
+ * = 6 client→server round trips. Now: one server action, Promise.all
+ * with lean selects and a bounded audit trail.
+ * Granular getters stay for day-switches and mutations.
+ */
+export async function getAttendanceData(year: number, month: number) {
+  const supabase = await createClient();
+  const lastDay = new Date(year, month, 0).getDate();
+  const start = `${year}-${String(month).padStart(2, '0')}-01`;
+  const end = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [
+    employeesRes,
+    recordsRes,
+    correctionsRes,
+    holidaysRes,
+    auditRes,
+    presentRes,
+    absentRes,
+    lateRes,
+    leaveRes,
+  ] = await Promise.all([
+    // Lean directory — attendance only matches on id/email/name.
+    supabase
+      .from('employees')
+      .select('id, first_name, last_name, email')
+      .order('first_name', { ascending: true }),
+    supabase
+      .from('attendance')
+      .select(ATTENDANCE_LIST_COLUMNS)
+      .gte('date', start)
+      .lte('date', end)
+      .order('date', { ascending: true }),
+    supabase
+      .from('attendance_corrections')
+      .select('id, employee_id, date, requested_status, requested_check_in, requested_check_out, reason, status, employees(first_name, last_name)')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('holidays')
+      .select('id, name, date, type, is_recurring')
+      .order('date', { ascending: true }),
+    // Bounded trail — the old call had no limit and grew forever.
+    supabase
+      .from('audit_logs')
+      .select('*')
+      .eq('module', 'Attendance')
+      .order('created_at', { ascending: false })
+      .limit(200),
+    supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today).eq('status', 'Present'),
+    supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today).eq('status', 'Absent'),
+    supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today).eq('status', 'Late'),
+    supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today).eq('status', 'Leave'),
+  ]);
+
+  for (const [res, label] of [
+    [employeesRes, 'employees'],
+    [recordsRes, 'attendance'],
+    [correctionsRes, 'corrections'],
+    [holidaysRes, 'holidays'],
+    [auditRes, 'audit logs'],
+  ] as const) {
+    if ((res as { error: unknown }).error) {
+      throw new Error(`Failed to load ${label}: ${((res as { error: { message?: string } }).error as { message?: string })?.message ?? 'unknown error'}`);
+    }
+  }
+
+  return {
+    employees: ((employeesRes.data ?? []) as Array<{ id: string; first_name: string; last_name: string; email: string }>).map((e) => ({
+      id: e.id,
+      firstName: e.first_name ?? '',
+      lastName: e.last_name ?? '',
+      email: e.email ?? '',
+    })),
+    records: ((recordsRes.data ?? []) as unknown[]).map(mapAttendance),
+    corrections: ((correctionsRes.data ?? []) as Array<Record<string, unknown>>).map((row: any) => {
+      const emp = Array.isArray(row.employees) ? row.employees[0] : row.employees;
+      return {
+        id: row.id,
+        employeeId: row.employee_id,
+        employeeName: emp ? `${emp.first_name || ''} ${emp.last_name || ''}`.trim() : 'Unknown',
+        date: row.date,
+        currentStatus: '',
+        requestedStatus: row.requested_status || '',
+        requestedCheckIn: row.requested_check_in || undefined,
+        requestedCheckOut: row.requested_check_out || undefined,
+        reason: row.reason || '',
+        status: (row.status || 'Pending') as 'Pending' | 'Approved' | 'Rejected',
+      };
+    }),
+    holidays: ((holidaysRes.data ?? []) as Array<Record<string, unknown>>).map((row: any) => ({
+      id: row.id,
+      name: row.name,
+      date: row.date,
+      type: (row.type || 'Public') as 'Public' | 'Optional' | 'Company',
+      isRecurring: row.is_recurring ?? false,
+    })),
+    auditLogs: ((auditRes.data ?? []) as Array<Record<string, unknown>>).map((row: any) => ({
+      id: row.id,
+      userId: row.user_id,
+      userName: row.user_name,
+      module: row.module,
+      action: row.action,
+      record: row.record,
+      previousValue: row.previous_value,
+      newValue: row.new_value,
+      timestamp: row.created_at,
+    })),
+    stats: {
+      presentToday: presentRes.count ?? 0,
+      absentToday: absentRes.count ?? 0,
+      lateToday: lateRes.count ?? 0,
+      onLeaveToday: leaveRes.count ?? 0,
+    },
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -264,7 +395,7 @@ export async function getCorrections() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('attendance_corrections')
-    .select('*, employees(first_name, last_name)')
+    .select('id, employee_id, date, requested_status, requested_check_in, requested_check_out, reason, status, employees(first_name, last_name)')
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   return (data || []).map((row: any) => {
@@ -356,7 +487,7 @@ export async function getHolidays() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('holidays')
-    .select('*')
+    .select('id, name, date, type, is_recurring')
     .order('date', { ascending: true });
   if (error) throw new Error(error.message);
   return (data || []).map((row: any) => ({

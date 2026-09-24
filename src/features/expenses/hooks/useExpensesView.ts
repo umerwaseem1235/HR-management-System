@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 // NOTE: jspdf is loaded lazily inside handleExportPDF so the expenses page
 // renders without the ~350KB PDF library in its initial bundle.
 import { useAuth } from '@/contexts/AuthContext';
 import { useExpense } from '@/contexts/ExpenseContext';
-import { getEmployees } from '@/lib/actions/employees';
+import { useEmployeeDirectory } from '@/hooks/useEmployeeDirectory';
 import { notifyAdminsNewClaim, notifyClaimantDecision } from '@/lib/actions/expenses';
-import type { Employee, ExpenseClaim } from '@/types';
+import type { ExpenseClaim } from '@/types';
 
 export function useExpensesView() {
   const { user } = useAuth();
@@ -50,14 +50,9 @@ export function useExpensesView() {
 
   // Resolve the logged-in user to a REAL employee record from Supabase
   // (mock IDs are not valid UUIDs and would violate the FK on submit).
-  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
-  useEffect(() => {
-    let cancelled = false;
-    getEmployees()
-      .then((data) => { if (!cancelled) setAllEmployees(data); })
-      .catch((err) => console.error('Failed to load employees:', err));
-    return () => { cancelled = true; };
-  }, []);
+  // Uses the shared cached directory so the expenses page never runs its own
+  // employee query on mount.
+  const { employees: allEmployees } = useEmployeeDirectory();
 
   const employee = useMemo(() => {
     if (!user) return undefined;

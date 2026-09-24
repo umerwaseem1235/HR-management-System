@@ -6,26 +6,38 @@ import Button from '../ui/Button';
 import { Save } from 'lucide-react';
 import { COMPANY_DEFAULTS, type CompanySettings } from '@/lib/company-settings';
 import { getCompanySettings, saveCompanySettings } from '@/lib/actions/settings';
+import { createResourceCache } from '@/lib/resource-cache';
+
+// Module scope survives navigation, so returning to /settings paints the
+// previously loaded company form instantly instead of re-querying.
+const companyCache = createResourceCache<CompanySettings>('settings:company', 5 * 60_000);
 
 export default function SettingsForm() {
-  const [form, setForm] = useState<CompanySettings>(COMPANY_DEFAULTS);
-  const [isLoading, setIsLoading] = useState(true);
+  const [form, setForm] = useState<CompanySettings>(() => companyCache.get() ?? COMPANY_DEFAULTS);
+  const [isLoading, setIsLoading] = useState(() => companyCache.get() === null);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
+    (async () => {
+      const snapshot = companyCache.peek();
+      if (snapshot) {
+        if (!cancelled) {
+          setForm(snapshot.data);
+          setIsLoading(false);
+        }
+        if (!snapshot.isStale) return;
+      }
       try {
-        const data = await getCompanySettings();
+        const data = await companyCache.load(getCompanySettings, { force: true });
         if (!cancelled) setForm(data);
       } catch (err) {
         if (!cancelled) setMessage({ kind: 'error', text: err instanceof Error ? err.message : 'Failed to load company settings.' });
       } finally {
         if (!cancelled) setIsLoading(false);
       }
-    }
-    load();
+    })();
     return () => {
       cancelled = true;
     };
@@ -45,6 +57,7 @@ export default function SettingsForm() {
     setIsSaving(true);
     try {
       await saveCompanySettings(form);
+      companyCache.set(form);
       setMessage({ kind: 'success', text: 'Company information saved — applied across the system.' });
     } catch (err) {
       setMessage({ kind: 'error', text: err instanceof Error ? err.message : 'Failed to save. Please try again.' });

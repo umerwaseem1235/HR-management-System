@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/server';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import type { PayrollRun, PayrollLineItem, SalaryComponent, PayrollRunStatus } from '@/lib/payroll';
 import type { Payslip, UserRole } from '@/lib/types';
 
@@ -13,7 +14,7 @@ async function getCallerRole(): Promise<UserRole> {
   const supabase = await createClient();
   const { data: authData, error: authError } = await supabase.auth.getUser();
   if (authError || !authData.user) {
-    throw new Error('You must be signed in to manage payroll.');
+    redirect('/login');
   }
   const { data: profile, error: profileError } = await supabase
     .from('users')
@@ -367,4 +368,143 @@ export async function updatePayrollRunTotals(id: string, totals: { totalGross: n
   }).eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/payroll');
+}
+
+/* ------------------------------------------------------------------ */
+/*  Optimized single-call loader (dashboard-style)                     */
+/* ------------------------------------------------------------------ */
+
+import type { Employee } from '@/lib/types';
+
+/**
+ * Single round trip for the payroll page.
+ *
+ * Before: usePayroll fired getEmployees + getPayrollRuns + getPayslips +
+ * getSalaryComponents = 4 client→server round trips on every visit.
+ * Now: one server action fans the same four queries out concurrently and
+ * returns a single snapshot the client caches, so switching modules and
+ * coming back paints instantly (SWR) instead of reloading.
+ */
+export interface PayrollSnapshot {
+  employees: Employee[];
+  runs: PayrollRun[];
+  payslips: Payslip[];
+  components: SalaryComponent[];
+}
+
+export async function getPayrollData(): Promise<PayrollSnapshot> {
+  const supabase = await createClient();
+
+  const [
+    employeesRes,
+    runsRes,
+    slipsRes,
+    componentsRes,
+  ] = await Promise.all([
+    supabase
+      .from('employees')
+      .select(`
+        id, user_id, employee_code, first_name, last_name, email, phone,
+        date_of_birth, gender, address, city, country,
+        emergency_contact_name, emergency_contact_phone,
+        department_id, designation_id, branch_id, shift_id, reporting_manager_id,
+        employment_type, joining_date, probation_end_date, confirmation_date,
+        status, bank_name, bank_account, tax_id, salary,
+        created_at, updated_at,
+        departments(name),
+        designations(name),
+        branches(name),
+        shifts(name),
+        reporting_manager:employees(first_name, last_name)
+      `)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('payroll_runs')
+      .select('*')
+      .order('year', { ascending: false })
+      .order('month_index', { ascending: false }),
+    supabase.from('payslips').select('*').order('generated_on', { ascending: false }),
+    supabase.from('salary_components').select('*'),
+  ]);
+
+  if (employeesRes.error) throw new Error(employeesRes.error.message);
+  if (runsRes.error) throw new Error(runsRes.error.message);
+  if (slipsRes.error) throw new Error(slipsRes.error.message);
+  if (componentsRes.error) throw new Error(componentsRes.error.message);
+
+  const mapEmployeeRow = (db: any): Employee => ({
+    id: db.id,
+    employeeCode: db.employee_code,
+    firstName: db.first_name,
+    lastName: db.last_name,
+    email: db.email,
+    phone: db.phone,
+    avatar: undefined,
+    dateOfBirth: db.date_of_birth,
+    gender: db.gender,
+    address: db.address,
+    city: db.city,
+    country: db.country,
+    emergencyContactName: db.emergency_contact_name,
+    emergencyContactPhone: db.emergency_contact_phone,
+    department: db.departments?.name || '',
+    departmentId: db.department_id,
+    designation: db.designations?.name || '',
+    designationId: db.designation_id,
+    branch: db.branches?.name || '',
+    branchId: db.branch_id,
+    shift: db.shifts?.name || '',
+    shiftId: db.shift_id,
+    reportingManager: db.reporting_manager?.first_name
+      ? `${db.reporting_manager.first_name} ${db.reporting_manager.last_name}`
+      : '',
+    reportingManagerId: db.reporting_manager_id,
+    employmentType: db.employment_type,
+    joiningDate: db.joining_date,
+    probationEndDate: db.probation_end_date,
+    confirmationDate: db.confirmation_date,
+    status: db.status,
+    bankName: db.bank_name,
+    bankAccount: db.bank_account,
+    taxId: db.tax_id,
+    salary: db.salary,
+  });
+
+  return {
+    employees: (employeesRes.data || []).map(mapEmployeeRow),
+    runs: (runsRes.data || []).map((db: any) => ({
+      id: db.id,
+      month: db.month,
+      monthIndex: db.month_index,
+      year: db.year,
+      status: (db.status || 'Draft') as PayrollRunStatus,
+      totalGross: db.total_gross || 0,
+      totalDeductions: db.total_deductions || 0,
+      totalNet: db.total_net || 0,
+      createdOn: db.created_on,
+      finalizedOn: db.finalized_on || undefined,
+      finalizedBy: db.finalized_by || undefined,
+      items: [],
+    })),
+    payslips: (slipsRes.data || []).map((db: any) => ({
+      id: db.id,
+      employeeId: db.employee_id,
+      employeeName: db.employee_name,
+      month: db.month,
+      year: db.year,
+      basicSalary: db.basic_salary,
+      allowances: db.allowances,
+      deductions: db.deductions,
+      grossSalary: db.gross_salary,
+      netSalary: db.net_salary,
+      status: db.status,
+      generatedOn: db.generated_on,
+    })),
+    components: (componentsRes.data || []).map((db: any) => ({
+      id: db.id,
+      name: db.name,
+      amount: db.amount,
+      kind: db.kind,
+    })),
+  };
 }

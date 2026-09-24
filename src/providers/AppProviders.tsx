@@ -2,6 +2,7 @@
 
 import React, { ReactNode } from 'react';
 import { AuthProvider } from '../contexts/AuthContext';
+import { DashboardProvider } from '../contexts/DashboardContext';
 import { LeaveProvider } from '../contexts/LeaveContext';
 import { ExpenseProvider } from '../contexts/ExpenseContext';
 import { NotificationProvider } from '../contexts/NotificationContext';
@@ -16,17 +17,19 @@ import { ProgressProvider } from '../contexts/ProgressContext';
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
-      <LeaveProvider>
-        <ExpenseProvider>
-          <NotificationProvider>
-            <WorkProvider>
-              <RemoteProvider>
-                <ProgressProvider>{children}</ProgressProvider>
-              </RemoteProvider>
-            </WorkProvider>
-          </NotificationProvider>
-        </ExpenseProvider>
-      </LeaveProvider>
+      <DashboardProvider>
+        <LeaveProvider>
+          <ExpenseProvider>
+            <NotificationProvider>
+              <WorkProvider>
+                <RemoteProvider>
+                  <ProgressProvider>{children}</ProgressProvider>
+                </RemoteProvider>
+              </WorkProvider>
+            </NotificationProvider>
+          </ExpenseProvider>
+        </LeaveProvider>
+      </DashboardProvider>
     </AuthProvider>
   );
 }

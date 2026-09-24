@@ -1,18 +1,35 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import { AuthLoadingView } from './AuthLoadingView';
 import { useAuthRedirect } from './useAuthRedirect';
 import { PAGE_TITLES } from './page-titles';
+import { warmAttendanceCache } from '@/features/attendance/hooks/useAttendance';
+import { warmPayrollCache } from '@/features/payroll/hooks/usePayroll';
+import { warmDocumentsCache } from '@/features/documents/hooks/useDocuments';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthRedirect();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Warm sibling module caches during dashboard idle time so switching
+  // modules later paints instantly. Runs once after the first paint.
+  useEffect(() => {
+    const id = requestIdleCallback?.(
+      () => {
+        warmAttendanceCache();
+        warmPayrollCache();
+        warmDocumentsCache();
+      },
+      { timeout: 5000 },
+    );
+    return () => { if (id) cancelIdleCallback(id); };
+  }, []);
 
   if (isLoading) {
     return <AuthLoadingView />;

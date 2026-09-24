@@ -1,7 +1,14 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getEmployeeByUserId } from '@/lib/actions/employees';
+import { createResourceCache } from '@/lib/resource-cache';
 import type { Employee, User } from '../lib/types';
+
+// Module scope survives navigation; keyed per auth user so returning to a
+// page that resolves the employee record paints instantly.
+function employeeCacheFor(userId: string) {
+  return createResourceCache<Employee | null>(`employee:by-user:${userId}`, 60_000);
+}
 
 export interface EmployeeResolution {
   /** Raw auth user (`null` when logged out). */
@@ -24,17 +31,36 @@ export function useEmployee(): EmployeeResolution {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setIsLoading(true);
-    if (user?.id) {
-      getEmployeeByUserId(user.id)
-        .then((emp) => setEmployee(emp || undefined))
-        .catch((err) => {
-          console.error('Failed to resolve employee for user:', err);
-        })
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
+    let cancelled = false;
+    (async () => {
+      if (!user?.id) {
+        if (!cancelled) {
+          setEmployee(undefined);
+          setIsLoading(false);
+        }
+        return;
+      }
+      const cache = employeeCacheFor(user.id);
+      const snapshot = cache.peek();
+      if (snapshot) {
+        if (!cancelled) {
+          setEmployee(snapshot.data ?? undefined);
+          setIsLoading(false);
+        }
+        if (!snapshot.isStale) return;
+      } else if (!cancelled) {
+        setIsLoading(true);
+      }
+      try {
+        const emp = await cache.load(() => getEmployeeByUserId(user.id), { force: true });
+        if (!cancelled) setEmployee(emp || undefined);
+      } catch (err) {
+        if (!cancelled) console.error('Failed to resolve employee for user:', err);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [user?.id]);
 
   const employeeId = employee?.id ?? user?.employeeId ?? user?.id ?? '';

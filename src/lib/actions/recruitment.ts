@@ -23,7 +23,7 @@ export async function getJobs(): Promise<Job[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('jobs')
-    .select('*, departments(name), branches(name)')
+    .select('id, title, vacancies, applicants, status, posted_date, closing_date, description, departments(name), branches(name)')
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -98,7 +98,7 @@ export async function deleteJob(id: string) {
 
 export async function getCandidates(jobId?: string): Promise<Candidate[]> {
   const supabase = await createClient();
-  let query = supabase.from('candidates').select('*, jobs(title)').order('created_at', { ascending: false });
+  let query = supabase.from('candidates').select('id, name, email, phone, job_id, stage, applied_date, resume, notes, rating, source, jobs(title)').order('created_at', { ascending: false });
   if (jobId) {
     query = query.eq('job_id', jobId);
   }
@@ -518,6 +518,12 @@ export async function convertCandidateToEmployee(data: {
   }
 
   const [first, ...rest] = (c.name || '').split(' ');
+  // Resolve FK ids concurrently (was 3 sequential round trips).
+  const [departmentId, designationId, branchId] = await Promise.all([
+    resolveId('departments', data.department),
+    resolveId('designations', data.designation),
+    resolveId('branches', data.branch),
+  ]);
   const { data: emp, error: empErr } = await supabase
     .from('employees')
     .insert([{
@@ -526,9 +532,9 @@ export async function convertCandidateToEmployee(data: {
       last_name: rest.join(' ') || '',
       email: c.email,
       phone: c.phone,
-      department_id: await resolveId('departments', data.department),
-      designation_id: await resolveId('designations', data.designation),
-      branch_id: await resolveId('branches', data.branch),
+      department_id: departmentId,
+      designation_id: designationId,
+      branch_id: branchId,
       employment_type: 'Full-time',
       joining_date: data.joiningDate,
       status: 'Probation',
@@ -544,4 +550,123 @@ export async function convertCandidateToEmployee(data: {
   revalidatePath('/recruitment');
   revalidatePath('/employees');
   return (emp as any).id as string;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Optimized single-call loader (dashboard-style)                     */
+/* ------------------------------------------------------------------ */
+
+export interface RecruitmentInterviewer {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  designation: string;
+}
+
+export interface RecruitmentData {
+  jobs: Job[];
+  candidates: Candidate[];
+  interviews: ReturnType<typeof mapInterview>[];
+  offers: ReturnType<typeof mapOffer>[];
+  interviewers: RecruitmentInterviewer[];
+  deptIdByName: Record<string, string>;
+  branchIdByName: Record<string, string>;
+}
+
+/**
+ * Single round trip for the recruitment page.
+ *
+ * Before: useRecruitment fired getEmployees (30 cols + 5 joins, only
+ * id/name needed for the interviewer dropdown) + getLookupData (5 queries)
+ * + getJobs + getCandidates + getInterviews + getOffers across 2 sequential
+ * waves. Now: one server action, everything in Promise.all with lean selects.
+ * Old granular getters are kept for quiet refreshes after mutations.
+ */
+export async function getRecruitmentData(): Promise<RecruitmentData> {
+  const supabase = await createClient();
+
+  const [
+    jobsRes,
+    candidatesRes,
+    interviewsRes,
+    offersRes,
+    interviewersRes,
+    departmentsRes,
+    branchesRes,
+  ] = await Promise.all([
+    supabase
+      .from('jobs')
+      .select('id, title, vacancies, applicants, status, posted_date, closing_date, description, departments(name), branches(name)')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('candidates')
+      .select('id, name, email, phone, job_id, stage, applied_date, resume, notes, rating, source, jobs(title)')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('interviews')
+      .select('*, candidates(name)')
+      .order('date', { ascending: true }),
+    supabase
+      .from('offers')
+      .select('id, candidate_id, salary, joining_date, status, notes, candidates(name)')
+      .order('created_at', { ascending: false }),
+    // Lean interviewer list — the page only needs id + name + designation for the dropdown.
+    supabase
+      .from('employees')
+      .select('id, first_name, last_name, email, designations(name)')
+      .eq('status', 'Active')
+      .order('first_name', { ascending: true }),
+    supabase.from('departments').select('id, name'),
+    supabase.from('branches').select('id, name, city'),
+  ]);
+
+  for (const [res, label] of [
+    [jobsRes, 'jobs'],
+    [candidatesRes, 'candidates'],
+    [interviewsRes, 'interviews'],
+    [offersRes, 'offers'],
+  ] as const) {
+    if ((res as { error: unknown }).error) throw new Error(`Failed to load ${label}`);
+  }
+
+  const deptIdByName: Record<string, string> = {};
+  for (const d of (departmentsRes.data ?? []) as Array<{ id: string; name: string }>) {
+    deptIdByName[d.name.toLowerCase()] = d.id;
+  }
+  const branchIdByName: Record<string, string> = {};
+  for (const b of (branchesRes.data ?? []) as Array<{ id: string; name: string }>) {
+    const short = b.name.split(' - ')[0].toLowerCase();
+    branchIdByName[short] = b.id;
+    branchIdByName[b.name.toLowerCase()] = b.id;
+  }
+
+  return {
+    jobs: ((jobsRes.data ?? []) as unknown[]).map(mapJob),
+    candidates: ((candidatesRes.data ?? []) as Array<Record<string, unknown>>).map((db: any) => ({
+      id: db.id,
+      name: db.name,
+      email: db.email,
+      phone: db.phone,
+      jobId: db.job_id,
+      jobTitle: db.jobs?.title || '',
+      stage: db.stage,
+      appliedDate: db.applied_date,
+      resume: db.resume,
+      notes: db.notes,
+      rating: db.rating,
+      source: db.source || 'Other',
+    })) as Candidate[],
+    interviews: ((interviewsRes.data ?? []) as unknown[]).map(mapInterview),
+    offers: ((offersRes.data ?? []) as unknown[]).map(mapOffer),
+    interviewers: ((interviewersRes.data ?? []) as unknown as Array<{ id: string; first_name: string; last_name: string; email: string; designations: { name: string } | null }>).map((e) => ({
+      id: e.id,
+      firstName: e.first_name ?? '',
+      lastName: e.last_name ?? '',
+      email: (e as { email?: string }).email ?? '',
+      designation: e.designations?.name ?? '',
+    })),
+    deptIdByName,
+    branchIdByName,
+  };
 }

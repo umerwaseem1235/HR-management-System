@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 
 interface AvatarProps {
   name: string;
@@ -35,7 +36,7 @@ function isImageSrc(src: string): boolean {
   return /\.(png|jpe?g|webp|gif|svg|avif)(\?.*)?$/i.test(src);
 }
 
-export default function Avatar({ name, src, size = 'md', className = '' }: AvatarProps) {
+export default React.memo(function Avatar({ name, src, size = 'md', className = '' }: AvatarProps) {
   const sizes = {
     sm: 'w-8 h-8 text-xs',
     md: 'w-10 h-10 text-sm',
@@ -43,13 +44,28 @@ export default function Avatar({ name, src, size = 'md', className = '' }: Avata
     xl: 'w-16 h-16 text-lg',
   };
 
+  const pxSizes = {
+    sm: 32,
+    md: 40,
+    lg: 48,
+    xl: 64,
+  };
+
   const [imgFailed, setImgFailed] = React.useState(false);
+
+  // A new photo (e.g. avatars arriving progressively after the list
+  // rendered with initials) must retry instead of sticking on fallback.
+  React.useEffect(() => {
+    setImgFailed(false);
+  }, [src]);
 
   if (src && !imgFailed && isImageSrc(src)) {
     return (
-      <img
+      <Image
         src={src}
         alt={name}
+        width={pxSizes[size]}
+        height={pxSizes[size]}
         onError={() => setImgFailed(true)}
         className={`${sizes[size]} aspect-square shrink-0 rounded-full object-cover object-center block ${className}`}
       />
@@ -61,4 +77,4 @@ export default function Avatar({ name, src, size = 'md', className = '' }: Avata
       {getInitials(name)}
     </div>
   );
-}
+});

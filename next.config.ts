@@ -10,8 +10,14 @@ const nextConfig: NextConfig = {
     },
   },
 
-  // Suppress the dev-indicator floating widget that can interfere with UI
-  devIndicators: false,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
+  },
 
   /* ── Production optimizations ───────────────────────────── */
 

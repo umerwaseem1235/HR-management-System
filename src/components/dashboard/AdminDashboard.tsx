@@ -12,52 +12,36 @@ import AttendanceChart, { TrendPoint } from './AttendanceChart';
 import AdminHeader from './admin/AdminHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLeave } from '../../contexts/LeaveContext';
-import type { DashboardStats, Employee, LeaveRequest } from '../../lib/types';
-import type { PayrollRun } from '../../lib/payroll';
-import { getPayrollStatus } from '../../lib/payroll';
-import { getAttendanceTrend, getDashboardStats, type AttendanceTrendDay } from '../../lib/actions/dashboard';
-import { getPayrollRuns } from '../../lib/actions/payroll';
-import { getEmployees } from '../../lib/actions/employees';
+import { useDashboard } from '../../contexts/DashboardContext';
+import type { DashboardStats, LeaveRequest } from '../../lib/types';
+import type { DashboardEmployee } from '../../lib/actions/dashboard';
+
+const EMPTY_EMPLOYEES: DashboardEmployee[] = [];
 
 export default function AdminDashboard() {
   const router = useRouter();
   const { user } = useAuth();
   const { leaveRequests, updateLeaveStatus } = useLeave();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [payrollRuns, setPayrollRuns] = useState<PayrollRun[]>([]);
-  const [trendWeek, setTrendWeek] = useState<AttendanceTrendDay[]>([]);
-  const [trendMonth, setTrendMonth] = useState<AttendanceTrendDay[]>([]);
+  // Cached at the app root: switching modules and coming back is instant and
+  // does not re-run the dashboard query.
+  const { data, ensureLoaded } = useDashboard();
+  const employees = data?.employees ?? EMPTY_EMPLOYEES;
+  const stats = data?.stats ?? null;
+  const trendWeek = useMemo(() => data?.attendanceTrend.slice(-7) ?? [], [data]);
+  // Month view: current month elapsed days only
+  const trendMonth = useMemo(() => {
+    const prefix = new Date().toISOString().slice(0, 7);
+    return (data?.attendanceTrend ?? []).filter((d) => d.date.startsWith(prefix));
+  }, [data]);
   const pendingLeaves = leaveRequests.filter(l => l.status === 'Pending');
-  // Same live payroll status as the payroll page (persisted runs, newest first)
-  const payrollStatusValue = getPayrollStatus(payrollRuns);
+  // Payroll label comes from the single dashboard query (same Pending/In Process/Finalized semantics as payroll page).
+  const payrollStatusValue = stats?.payrollStatus ?? 'Pending';
   const [confirmApproveLeave, setConfirmApproveLeave] = useState<LeaveRequest | null>(null);
   const [confirmRejectLeave, setConfirmRejectLeave] = useState<LeaveRequest | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [s, emp, runs, month] = await Promise.all([
-          getDashboardStats(),
-          getEmployees(),
-          getPayrollRuns(),
-          getAttendanceTrend(31),
-        ]);
-        if (cancelled) return;
-        setStats(s);
-        setEmployees(emp);
-        setPayrollRuns(runs);
-        setTrendWeek(month.slice(-7));
-        // Month view: current month elapsed days only
-        const prefix = new Date().toISOString().slice(0, 7);
-        setTrendMonth(month.filter((d) => d.date.startsWith(prefix)));
-      } catch (err) {
-        console.error('Failed to load dashboard data:', err);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+    ensureLoaded();
+  }, [ensureLoaded]);
 
   const [trendRange, setTrendRange] = useState<'week' | 'month'>('week');
 

@@ -4,9 +4,16 @@ import { createClient } from '@/lib/server';
 import { revalidatePath } from 'next/cache';
 import type { Employee } from '@/lib/types';
 import type { Database } from '@/lib/supabase/database.types';
+import { validateEmployeePhotoPayload } from '@/lib/employee-photo';
 
 type EmployeeInsert = Database['public']['Tables']['employees']['Insert'];
 type EmployeeUpdate = Database['public']['Tables']['employees']['Update'];
+
+/** Rejects avatars larger than the shared photo limit (defence in depth). */
+function assertAvatarWithinLimit(avatar: string | null | undefined): void {
+  const error = validateEmployeePhotoPayload(avatar);
+  if (error) throw new Error(error);
+}
 
 interface LookupItem {
   id: string;
@@ -202,6 +209,28 @@ export async function getEmployee(id: string): Promise<Employee> {
   return mapEmployee(data);
 }
 
+/**
+ * Batched avatar loader for list views.
+ *
+ * The list query omits `avatar` (base64 blobs) to keep the table fast.
+ * Call this AFTER the table renders with initials — it fetches only
+ * `id + avatar` in one query and the UI swaps initials → photo with
+ * zero layout shift (same fixed-size circle).
+ * Pass `ids` to limit to the visible page; omit to fetch all.
+ */
+export async function getEmployeeAvatars(ids?: string[]): Promise<Record<string, string>> {
+  const supabase = await createClient();
+  let query = supabase.from('employees').select('id, avatar').not('avatar', 'is', null);
+  if (ids && ids.length > 0) query = query.in('id', ids);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  const map: Record<string, string> = {};
+  for (const row of (data ?? []) as Array<{ id: string; avatar: string | null }>) {
+    if (row.avatar) map[row.id] = row.avatar;
+  }
+  return map;
+}
+
 export async function getLookupData(): Promise<LookupData> {
   const supabase = await createClient();
 
@@ -223,6 +252,7 @@ export async function getLookupData(): Promise<LookupData> {
 }
 
 export async function createEmployee(input: EmployeeInput): Promise<Employee> {
+  assertAvatarWithinLimit(input.avatar);
   const supabase = await createClient();
 
   const employeeCode = input.employeeCode || await getNextEmployeeCode(supabase);
@@ -297,6 +327,7 @@ export async function createEmployee(input: EmployeeInput): Promise<Employee> {
 }
 
 export async function updateEmployee(id: string, input: Partial<EmployeeInput>): Promise<Employee> {
+  if (input.avatar !== undefined) assertAvatarWithinLimit(input.avatar);
   const supabase = await createClient();
 
   if (input.employeeCode) {
@@ -386,6 +417,7 @@ export async function createEmployeeWithAuth(input: EmployeeInput & {
   password: string; 
   loginEmail: string 
 }): Promise<{ employee: Employee; authUserId: string }> {
+  assertAvatarWithinLimit(input.avatar);
   const supabase = await createClient();
 
   const employeeCode = input.employeeCode || await getNextEmployeeCode(supabase);
@@ -410,39 +442,32 @@ export async function createEmployeeWithAuth(input: EmployeeInput & {
 
   const resolved = await resolveFKs(supabase, input);
 
-  // Step 1: Create the Supabase Auth user via the public sign-up endpoint.
-  // A session-less client is used deliberately: no session is persisted,
-  // so the admin performing this action stays logged in as themselves.
-  // Requires "Confirm email" OFF in Supabase Auth settings (else the new
-  // account can't sign in until it confirms).
-  const { createClient: createAuthClient } = await import('@supabase/supabase-js');
-  const authClient = createAuthClient(
+  // Step 1: Create the Supabase Auth user via the admin API.
+  // Uses the service-role key so the user is created with a confirmed
+  // email — no confirmation email is ever sent, and the employee can
+  // log in immediately with the credentials set here by the admin.
+  const { createClient: createAdminClient } = await import('@supabase/supabase-js');
+  const adminClient = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    process.env.SUPABASE_SECRET_KEY!,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
-  const { data: authData, error: authError } = await authClient.auth.signUp({
+  const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
     email: input.loginEmail,
     password: input.password,
-    options: {
-      data: { name: `${input.firstName} ${input.lastName}`, role: 'employee' },
-    },
+    email_confirm: true,
+    user_metadata: { name: `${input.firstName} ${input.lastName}`, role: 'employee' },
   });
 
   if (authError) {
     const msg = authError.message || '';
-    if (/already (registered|exists)|already been registered/i.test(msg)) {
+    if (/already (registered|exists)|already been registered|duplicate/i.test(msg)) {
       throw new Error(`An account with email "${input.loginEmail}" already exists`);
     }
-    throw new Error(`Failed to create auth account: ${msg}`);
+    throw new Error(`Failed to create employee account: ${msg}`);
   }
   if (!authData.user) {
-    throw new Error('Failed to create auth account: no user returned');
-  }
-  if (authData.user.identities && authData.user.identities.length === 0) {
-    throw new Error(
-      'Account created but email confirmation is required. Turn OFF "Confirm email" in Supabase → Authentication → Sign In/Up → Email, then retry.',
-    );
+    throw new Error('Failed to create employee account: no user returned');
   }
 
   const authUserId = authData.user.id;
@@ -494,7 +519,7 @@ export async function createEmployeeWithAuth(input: EmployeeInput & {
 
   if (error) {
     // Rollback: delete the auth user if employee creation fails
-    await supabase.auth.admin.deleteUser(authUserId);
+    await adminClient.auth.admin.deleteUser(authUserId);
     throw new Error(error.message);
   }
 

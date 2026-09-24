@@ -35,9 +35,13 @@ function mapDoc(db: any): DocumentRecord {
 
 export async function getDocuments(): Promise<DocumentRecord[]> {
   const supabase = await createClient();
+  // Lean list query: file_data holds base64 blobs (MBs per row) and is never
+  // needed for the table — receipts resolve via signed URLs (file_path) or
+  // fall back to file_data for legacy rows only. Excluding it keeps the
+  // documents module paint fast even with hundreds of rows.
   const { data, error } = await supabase
     .from('documents')
-    .select('*')
+    .select('id, name, type, employee, uploaded_date, expiry_date, status, file_path, file_name, created_at')
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   return (data || []).map(mapDoc);

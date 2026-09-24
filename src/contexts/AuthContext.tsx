@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { User, UserRole } from '../lib/types';
 import { signIn, signUp, signOut, getCurrentUser } from '@/lib/actions/auth';
 import { createClient } from '@/lib/client';
+import { clearAllResourceCaches } from '@/lib/resource-cache';
 
 interface AuthContextType {
   user: User | null;
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         fetchUser();
       } else if (event === 'SIGNED_OUT') {
+        clearAllResourceCaches();
         setUser(null);
       }
     });
@@ -77,8 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     // Clear local state first so route guards see a logged-out user instantly,
-    // even if a network call below fails.
+    // even if a network call below fails. Also clear feature data caches so no
+    // data leaks across users in the same tab.
     setUser(null);
+    clearAllResourceCaches();
     setIsLoading(false);
     try {
       // Clear the browser session (also fires SIGNED_OUT on the listener).

@@ -23,6 +23,20 @@ import {
   getLeaveTypes,
   getShifts,
 } from '@/lib/actions/settings';
+import { createResourceCache } from '@/lib/resource-cache';
+
+interface DepartmentItem { id: string; name: string; head: string; }
+interface BranchItem { id: string; name: string; city: string; address: string; }
+interface ShiftItem { id: string; name: string; startTime: string; endTime: string; }
+interface LeaveTypeItem { id: string; name: string; daysAllowed: number; period: string; carryForward: boolean; color: string; description: string; }
+
+// Module scope survives navigation, so returning to /settings paints the
+// previously loaded lists instantly instead of re-querying each one.
+// Reference data changes rarely, hence the longer TTL.
+const departmentsCache = createResourceCache<DepartmentItem[]>('settings:departments', 5 * 60_000);
+const branchesCache = createResourceCache<BranchItem[]>('settings:branches', 5 * 60_000);
+const shiftsCache = createResourceCache<ShiftItem[]>('settings:shifts', 5 * 60_000);
+const leaveTypesCache = createResourceCache<LeaveTypeItem[]>('settings:leave-types', 5 * 60_000);
 
 function SkeletonRows() {
   return (
@@ -59,8 +73,8 @@ function AddFormShell({ children, onCancel, onSave, saving, saveLabel }: {
 /* ================= Departments (DB) ================= */
 
 export function DepartmentList() {
-  const [items, setItems] = useState<{ id: string; name: string; head: string }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<DepartmentItem[]>(() => departmentsCache.get() ?? []);
+  const [loading, setLoading] = useState(() => departmentsCache.get() === null);
   const [error, setError] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState('');
@@ -73,8 +87,11 @@ export function DepartmentList() {
     setLoading(true);
     setError('');
     try {
-      const data = await getDepartments();
-      setItems(data.map((d) => ({ id: d.id, name: d.name, head: d.head || '' })));
+      const data = await departmentsCache.load(
+        () => getDepartments().then((ds) => ds.map((d) => ({ id: d.id, name: d.name, head: d.head || '' }))),
+        { force: true },
+      );
+      setItems(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load departments.');
     } finally {
@@ -82,7 +99,21 @@ export function DepartmentList() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const snapshot = departmentsCache.peek();
+      if (snapshot) {
+        if (!cancelled) {
+          setItems(snapshot.data);
+          setLoading(false);
+        }
+        if (!snapshot.isStale) return;
+      }
+      if (!cancelled) await load();
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,8 +197,8 @@ export function DepartmentList() {
 /* ================= Branches (DB) ================= */
 
 export function BranchList() {
-  const [items, setItems] = useState<{ id: string; name: string; city: string; address: string }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<BranchItem[]>(() => branchesCache.get() ?? []);
+  const [loading, setLoading] = useState(() => branchesCache.get() === null);
   const [error, setError] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState('');
@@ -181,8 +212,11 @@ export function BranchList() {
     setLoading(true);
     setError('');
     try {
-      const data = await getBranches();
-      setItems(data.map((b) => ({ id: b.id, name: b.name, city: b.city || '', address: b.address || '' })));
+      const data = await branchesCache.load(
+        () => getBranches().then((bs) => bs.map((b) => ({ id: b.id, name: b.name, city: b.city || '', address: b.address || '' }))),
+        { force: true },
+      );
+      setItems(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load branches.');
     } finally {
@@ -190,7 +224,21 @@ export function BranchList() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const snapshot = branchesCache.peek();
+      if (snapshot) {
+        if (!cancelled) {
+          setItems(snapshot.data);
+          setLoading(false);
+        }
+        if (!snapshot.isStale) return;
+      }
+      if (!cancelled) await load();
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,8 +326,8 @@ export function BranchList() {
 /* ================= Shifts (DB) ================= */
 
 export function ShiftList() {
-  const [items, setItems] = useState<{ id: string; name: string; startTime: string; endTime: string }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<ShiftItem[]>(() => shiftsCache.get() ?? []);
+  const [loading, setLoading] = useState(() => shiftsCache.get() === null);
   const [error, setError] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState('');
@@ -293,8 +341,11 @@ export function ShiftList() {
     setLoading(true);
     setError('');
     try {
-      const data = await getShifts();
-      setItems(data.map((s) => ({ id: s.id, name: s.name, startTime: s.startTime || '', endTime: s.endTime || '' })));
+      const data = await shiftsCache.load(
+        () => getShifts().then((ss) => ss.map((s) => ({ id: s.id, name: s.name, startTime: s.startTime || '', endTime: s.endTime || '' }))),
+        { force: true },
+      );
+      setItems(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load shifts.');
     } finally {
@@ -302,7 +353,21 @@ export function ShiftList() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const snapshot = shiftsCache.peek();
+      if (snapshot) {
+        if (!cancelled) {
+          setItems(snapshot.data);
+          setLoading(false);
+        }
+        if (!snapshot.isStale) return;
+      }
+      if (!cancelled) await load();
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -386,8 +451,8 @@ export function ShiftList() {
 /* ================= Leave Types (DB) ================= */
 
 export function LeaveTypeList() {
-  const [items, setItems] = useState<{ id: string; name: string; daysAllowed: number; period: string; carryForward: boolean; color: string; description: string }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<LeaveTypeItem[]>(() => leaveTypesCache.get() ?? []);
+  const [loading, setLoading] = useState(() => leaveTypesCache.get() === null);
   const [error, setError] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState('');
@@ -403,16 +468,19 @@ export function LeaveTypeList() {
     setLoading(true);
     setError('');
     try {
-      const data = await getLeaveTypes();
-      setItems(data.map((lt) => ({
-        id: lt.id,
-        name: lt.name,
-        daysAllowed: lt.daysAllowed,
-        period: lt.period || 'year',
-        carryForward: !!lt.carryForward,
-        color: lt.color || '#024fa7',
-        description: lt.description || '',
-      })));
+      const data = await leaveTypesCache.load(
+        () => getLeaveTypes().then((lts) => lts.map((lt) => ({
+          id: lt.id,
+          name: lt.name,
+          daysAllowed: lt.daysAllowed,
+          period: lt.period || 'year',
+          carryForward: !!lt.carryForward,
+          color: lt.color || '#024fa7',
+          description: lt.description || '',
+        }))),
+        { force: true },
+      );
+      setItems(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load leave types.');
     } finally {
@@ -420,7 +488,21 @@ export function LeaveTypeList() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const snapshot = leaveTypesCache.peek();
+      if (snapshot) {
+        if (!cancelled) {
+          setItems(snapshot.data);
+          setLoading(false);
+        }
+        if (!snapshot.isStale) return;
+      }
+      if (!cancelled) await load();
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -8,8 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProgress } from '@/contexts/ProgressContext';
 import { useWork } from '@/contexts/WorkContext';
 import { useEmployeeDirectory } from '@/hooks/useEmployeeDirectory';
-import { getAllAttendance } from '@/lib/actions/attendance';
 import { getAttendanceReport, getReportEmployees, type ReportEmployeeOption } from '@/lib/actions/reports';
+import { createResourceCache } from '@/lib/resource-cache';
 import type { AttendanceRecord } from '@/lib/types';
 import type { DailyWork } from '@/types';
 import type { AttendanceDayRow, TabId } from '../types';
@@ -54,22 +54,6 @@ export function stripHtml(html: string): string {
 
 function fmtDur(mins: number): string {
   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
-}
-
-/** Months (1-indexed) spanned by [from, to], capped at 12. */
-function monthsInRange(from: string, to: string): { year: number; month: number }[] {
-  const out: { year: number; month: number }[] = [];
-  if (!from || !to || from > to) return out;
-  let y = Number(from.slice(0, 4));
-  let m = Number(from.slice(5, 7));
-  const endY = Number(to.slice(0, 4));
-  const endM = Number(to.slice(5, 7));
-  while ((y < endY || (y === endY && m <= endM)) && out.length < 12) {
-    out.push({ year: y, month: m });
-    m += 1;
-    if (m > 12) { m = 1; y += 1; }
-  }
-  return out;
 }
 
 /** Map a real attendance record to a report day row. */
@@ -142,6 +126,14 @@ export const PRINT_STATUS_COLOR: Record<string, string> = {
 
 export const PAGE_SIZES = [5, 10, 20];
 
+// Module scope survives navigation, so returning to /reports reuses the
+// employee options and any already-fetched month slices / report rows.
+const reportEmployeesCache = createResourceCache<ReportEmployeeOption[]>('reports:employees', 5 * 60_000);
+
+function scopedReportCache(scopeId: string, from: string, to: string) {
+  return createResourceCache<AttendanceRecord[]>(`reports:detail:${scopeId}:${from}:${to}`, 60_000);
+}
+
 /* ================= Hook ================= */
 
 export function useReports() {
@@ -179,8 +171,17 @@ export function useReports() {
   useEffect(() => {
     let cancelled = false;
     async function loadEmployees() {
+      const snapshot = reportEmployeesCache.peek();
+      if (snapshot) {
+        if (!cancelled) {
+          setReportEmployees(snapshot.data);
+          setEmpId((prev) => prev || snapshot.data[0]?.id || '');
+          setEmployeesLoading(false);
+        }
+        if (!snapshot.isStale) return;
+      }
       try {
-        const list = await getReportEmployees();
+        const list = await reportEmployeesCache.load(getReportEmployees, { force: true });
         if (cancelled) return;
         setReportEmployees(list);
         // Default the dropdown to the first real employee.
@@ -213,20 +214,11 @@ export function useReports() {
     }
   }, [isEmployee, empId, employees]);
 
-  // Load real attendance records for every month in the active range
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const months = monthsInRange(from, to);
-        const batches = await Promise.all(months.map((m) => getAllAttendance(m.year, m.month)));
-        if (!cancelled) setAttendanceRecords(batches.flat());
-      } catch (err) {
-        console.error('Failed to load report attendance:', err);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [from, to]);
+  // NOTE: a previous version bulk-loaded getAllAttendance() for EVERY month
+  // in the range (all employees) AND then loaded the scoped employee report
+  // on top — doubling the slowest query on every visit. The scoped loader
+  // below is the only one needed: it fetches exactly the selected employee
+  // + range, cached per scope so switching modules and coming back is instant.
 
   const switchTab = (t: TabId) => {
     setTab(t);
@@ -246,10 +238,22 @@ export function useReports() {
       if (!scopeId || !from || !to || from > to) {
         return;
       }
-      setAttendanceLoading(true);
+      const cache = scopedReportCache(scopeId, from, to);
+      // Paint the cached scope instantly; only show the spinner on a cold miss
+      // so returning from another module never flashes a loader.
+      const snapshot = cache.peek();
+      if (snapshot) {
+        if (!cancelled) {
+          setAttendanceRecords(snapshot.data);
+          setAttendanceLoading(false);
+        }
+        if (!snapshot.isStale) return;
+      } else if (!cancelled) {
+        setAttendanceLoading(true);
+      }
       try {
-        const rows = await getAttendanceReport(scopeId, from, to);
-        if (!cancelled && rows.length > 0) setAttendanceRecords(rows);
+        const rows = await cache.load(() => getAttendanceReport(scopeId, from, to), { force: !snapshot });
+        if (!cancelled) setAttendanceRecords(rows);
       } catch (err) {
         console.error('Failed to load attendance report:', err);
       } finally {

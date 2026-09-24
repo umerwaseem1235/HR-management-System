@@ -6,22 +6,22 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   PAYROLL_MONTHS, PAYROLL_YEARS, DAILY_RATE_DIVISOR,
   buildRunItems, recalcLine, calcRunTotals,
-  todayISO,
   getPayrollStatus, resolveMonthlyLeaves,
 } from '@/lib/payroll';
 import type { PayrollRun, PayrollLineItem, SalaryComponent, EmployeeMonthlyLeaves, EmployeeMonthlyFines } from '@/lib/payroll';
 // NOTE: jspdf (~350KB) is intentionally NOT imported here. PDF helpers are
 // dynamically imported inside exportRun/downloadSlip so the heavy library
 // loads only when the user actually exports — never on page render.
-import { getEmployees } from '@/lib/actions/employees';
 import { getLeaveRequests } from '@/lib/actions/leave';
 import { getAllAttendance } from '@/lib/actions/attendance';
 import {
+  getPayrollData,
   getPayrollRuns, getPayrollRun, getPayslips, getSalaryComponents,
   createPayrollRun, createSalaryComponent, updateSalaryComponent, deleteSalaryComponent,
   updatePayrollRunStatus, updatePayrollItem, updatePayrollRunTotals,
   finalizePayrollRun, unlockPayrollRun, deletePayrollRun,
 } from '@/lib/actions/payroll';
+import { createResourceCache } from '@/lib/resource-cache';
 
 // Professional auto-dismiss timings for transient banners.
 const SUCCESS_DISMISS_MS = 5000;
@@ -34,6 +34,29 @@ function nextSuccessKey() { return ++successKey; }
 function nextErrorKey() { return ++errorKey; }
 
 export type { PayrollRun, PayrollLineItem, SalaryComponent, EmployeeMonthlyLeaves, EmployeeMonthlyFines };
+
+/** Everything the payroll page renders from its initial parallel load. */
+interface PayrollSnapshot {
+  employees: Employee[];
+  runs: PayrollRun[];
+  payslips: Payslip[];
+  components: SalaryComponent[];
+}
+
+// Module scope survives navigation, so returning to /payroll paints instantly
+// instead of re-running the loader. Warmed on idle from the dashboard layout
+// (see warmPayrollCache) so even the first visit is usually instant.
+const payrollCache = createResourceCache<PayrollSnapshot>('payroll:data', 60_000);
+
+/** Idle-warmer: fills the cache without touching React state. */
+export function warmPayrollCache(): void {
+  try {
+    if (payrollCache.peek()) return;
+    void payrollCache.load(getPayrollData).catch(() => {});
+  } catch {
+    // Never let a prefetch break the page.
+  }
+}
 
 export interface CompModalState {
   id?: string;
@@ -49,12 +72,17 @@ export function usePayroll() {
   const isSuperAdmin = user?.role === 'super_admin';
 
   // ---- Core state (all from Supabase) ----
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [payslips, setPayslips] = useState<Payslip[]>([]);
-  const [runs, setRuns] = useState<PayrollRun[]>([]);
-  const [components, setComponents] = useState<SalaryComponent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Lazy-init from the module cache so a warm revisit paints on the very
+  // first render instead of flashing a loader before the effect runs.
+  const [employees, setEmployees] = useState<Employee[]>(() => payrollCache.get()?.employees ?? []);
+  const [payslips, setPayslips] = useState<Payslip[]>(() => payrollCache.get()?.payslips ?? []);
+  const [runs, setRuns] = useState<PayrollRun[]>(() => payrollCache.get()?.runs ?? []);
+  const [components, setComponents] = useState<SalaryComponent[]>(() => payrollCache.get()?.components ?? []);
+  const [isLoading, setIsLoading] = useState(() => payrollCache.get() === null);
   const [loadError, setLoadError] = useState('');
+  // Becomes true once real (or cached) data has been applied; gates the cache
+  // write-back so empty initial state never overwrites the snapshot.
+  const [ready, setReady] = useState(false);
   // Monthly leaves: paid leave days per employee per month (fresh every month).
   // Company default + per-employee overrides; extra days auto-unpaid in payslip.
   const [monthlyDefault, setMonthlyDefault] = useState(2);
@@ -103,20 +131,31 @@ export function usePayroll() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      setIsLoading(true);
+      const snapshot = payrollCache.peek();
+      if (snapshot) {
+        if (!cancelled) {
+          setEmployees(snapshot.data.employees);
+          setRuns(snapshot.data.runs);
+          setPayslips(snapshot.data.payslips);
+          setComponents(snapshot.data.components);
+          setReady(true);
+          setIsLoading(false);
+        }
+        if (!snapshot.isStale) return;
+      } else if (!cancelled) {
+        setIsLoading(true);
+      }
       setLoadError('');
       try {
-        const [empData, runData, slipData, compData] = await Promise.all([
-          getEmployees(),
-          getPayrollRuns(),
-          getPayslips(),
-          getSalaryComponents(),
-        ]);
+        // ONE client→server round trip (the action fans out concurrently
+        // server-side). Previously four separate actions per visit.
+        const snap = await payrollCache.load(getPayrollData, { force: true });
         if (cancelled) return;
-        setEmployees(empData);
-        setRuns(runData);
-        setPayslips(slipData);
-        setComponents(compData);
+        setEmployees(snap.employees);
+        setRuns(snap.runs);
+        setPayslips(snap.payslips);
+        setComponents(snap.components);
+        setReady(true);
       } catch (err) {
         if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load payroll data');
       } finally {
@@ -125,6 +164,13 @@ export function usePayroll() {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // Keep the cached snapshot in sync with local mutations (run actions, line
+  // edits, structure changes) so the next mount is current.
+  useEffect(() => {
+    if (!ready) return;
+    payrollCache.set({ employees, runs, payslips, components });
+  }, [ready, employees, runs, payslips, components]);
 
   // Transient banners dismiss themselves professionally: each new message
   // restarts its timer, manual dismissal still works, and timers never leak.
