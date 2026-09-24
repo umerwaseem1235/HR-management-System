@@ -1,18 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getEmployeeByUserId } from '@/lib/actions/employees';
-<<<<<<< HEAD
-import { createResourceCache } from '@/lib/resource-cache';
-=======
 import { cachedQuery, peekStaleQuery } from '@/lib/query-cache';
->>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
 import type { Employee, User } from '../lib/types';
-
-// Module scope survives navigation; keyed per auth user so returning to a
-// page that resolves the employee record paints instantly.
-function employeeCacheFor(userId: string) {
-  return createResourceCache<Employee | null>(`employee:by-user:${userId}`, 60_000);
-}
 
 export interface EmployeeResolution {
   /** Raw auth user (`null` when logged out). */
@@ -48,38 +38,6 @@ export function useEmployee(): EmployeeResolution {
   });
 
   useEffect(() => {
-<<<<<<< HEAD
-    let cancelled = false;
-    (async () => {
-      if (!user?.id) {
-        if (!cancelled) {
-          setEmployee(undefined);
-          setIsLoading(false);
-        }
-        return;
-      }
-      const cache = employeeCacheFor(user.id);
-      const snapshot = cache.peek();
-      if (snapshot) {
-        if (!cancelled) {
-          setEmployee(snapshot.data ?? undefined);
-          setIsLoading(false);
-        }
-        if (!snapshot.isStale) return;
-      } else if (!cancelled) {
-        setIsLoading(true);
-      }
-      try {
-        const emp = await cache.load(() => getEmployeeByUserId(user.id), { force: true });
-        if (!cancelled) setEmployee(emp || undefined);
-      } catch (err) {
-        if (!cancelled) console.error('Failed to resolve employee for user:', err);
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-=======
     if (!user?.id) {
       setEmployee(undefined);
       setIsLoading(false);
@@ -109,7 +67,6 @@ export function useEmployee(): EmployeeResolution {
     return () => {
       cancelled = true;
     };
->>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
   }, [user?.id]);
 
   const employeeId = employee?.id ?? user?.employeeId ?? user?.id ?? '';

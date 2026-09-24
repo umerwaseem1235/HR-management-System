@@ -4,32 +4,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/client';
 import { DocumentItem } from '../types';
 import { createDocument, deleteDocument, getDocumentDownloadUrl, getDocuments } from '@/lib/actions/documents';
-<<<<<<< HEAD
-import { createResourceCache } from '@/lib/resource-cache';
-
-const DOCUMENTS_BUCKET = 'documents';
-
-// Module scope survives navigation, so returning to /documents paints
-// instantly instead of re-running the list query.
-const documentsCache = createResourceCache<DocumentItem[]>('documents:list', 60_000);
-
-/** Idle-warmer: fills the cache without touching React state. */
-export function warmDocumentsCache(): void {
-  try {
-    if (documentsCache.peek()) return;
-    void documentsCache.load(getDocuments).catch(() => {});
-  } catch {
-    // Never let a prefetch break the page.
-  }
-}
-=======
 import { cachedQuery, invalidateQuery, peekStaleQuery } from '@/lib/query-cache';
 
 const DOCUMENTS_BUCKET = 'documents';
 
 // Shared list cache — one entry for the whole documents module.
 const DOCUMENTS_CACHE_KEY = 'documents';
->>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
 
 function slugify(value: string): string {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'general';
@@ -40,12 +20,6 @@ export function useDocuments() {
   const { user: authUser } = useAuth();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
-<<<<<<< HEAD
-  // Lazy-init from the module cache so a warm revisit paints on the very
-  // first render instead of flashing a loader before the effect runs.
-  const [docs, setDocs] = useState<DocumentItem[]>(() => documentsCache.get() ?? []);
-  const [isLoading, setIsLoading] = useState(() => documentsCache.get() === null);
-=======
   // Stale-while-revalidate seeds: paint the last visit's list on the first
   // frame when navigating back — no empty "No documents" flash. (The cache is
   // always empty during SSR/hydration, so this stays hydration-safe.)
@@ -55,7 +29,6 @@ export function useDocuments() {
   const [isLoading, setIsLoading] = useState(
     () => peekStaleQuery<DocumentItem[]>(DOCUMENTS_CACHE_KEY) === undefined,
   );
->>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
   const [loadError, setLoadError] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [viewDoc, setViewDoc] = useState<DocumentItem | null>(null);
@@ -77,11 +50,7 @@ export function useDocuments() {
     }
     setLoadError('');
     try {
-<<<<<<< HEAD
-      setDocs(await documentsCache.load(getDocuments, { force: true }));
-=======
       setDocs(await cachedQuery(DOCUMENTS_CACHE_KEY, getDocuments));
->>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'Failed to load documents');
     } finally {
@@ -90,26 +59,8 @@ export function useDocuments() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const snapshot = documentsCache.peek();
-      if (snapshot) {
-        if (!cancelled) {
-          setDocs(snapshot.data);
-          setIsLoading(false);
-        }
-        if (!snapshot.isStale) return;
-      }
-      if (!cancelled) await refresh();
-    })();
-    return () => { cancelled = true; };
+    refresh();
   }, [refresh]);
-
-  // Keep the cached snapshot in sync with local mutations (uploads, deletes)
-  // so the next mount is current.
-  useEffect(() => {
-    documentsCache.set(docs);
-  }, [docs]);
 
   const filtered = docs.filter(doc => {
     // Employees see only their own documents plus company-wide shared ones.

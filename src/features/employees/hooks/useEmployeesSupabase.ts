@@ -2,16 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Employee } from '@/lib/types';
-<<<<<<< HEAD
-import { getEmployee, getEmployeeAvatars, getEmployees, getLookupData } from '@/lib/actions/employees';
-import { createResourceCache } from '@/lib/resource-cache';
-=======
 import { getEmployee, getEmployees, getLookupData } from '@/lib/actions/employees';
 import { cachedQuery, invalidateQuery, peekQuery } from '@/lib/query-cache';
 
 export const EMPLOYEES_CACHE_KEY = 'employees';
 export const EMPLOYEE_LOOKUP_CACHE_KEY = 'employees:lookup';
->>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
 
 interface LookupItem {
   id: string;
@@ -25,11 +20,6 @@ interface LookupData {
   shifts: LookupItem[];
   managers: LookupItem[];
 }
-
-// Survives view remounts during navigation, so returning to /employees paints
-// instantly instead of re-running the (already lean) list query.
-const employeesCache = createResourceCache<Employee[]>('employees:list', 60_000);
-const lookupCache = createResourceCache<LookupData>('employees:lookup', 5 * 60_000);
 
 interface UseEmployeesSupabaseReturn {
   search: string;
@@ -72,73 +62,26 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
   const [isLookupLoading, setIsLookupLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const lookupFetchedRef = useRef(false);
-  // Becomes true once real (or cached) roster data has been applied; gates the
-  // write-back effect so the empty initial state never overwrites the cache.
-  const [ready, setReady] = useState(false);
 
-  // Apply a roster to state, preserving already-known avatars so a revalidation
-  // never makes photos flicker back to initials, then fill in any missing ones.
-  const applyRoster = useCallback((incoming: Employee[]) => {
-    setEmployees((prev) => {
-      const known = new Map<string, string>();
-      prev.forEach((e) => { if (e.avatar) known.set(e.id, e.avatar); });
-      return incoming.map((e) => (!e.avatar && known.get(e.id) ? { ...e, avatar: known.get(e.id)! } : e));
-    });
-    const ids = incoming.map((e) => e.id);
-    if (ids.length === 0) return;
-    getEmployeeAvatars(ids)
-      .then((avatarMap) => {
-        if (Object.keys(avatarMap).length === 0) return;
-        setEmployees((prev) =>
-          prev.map((emp) => (avatarMap[emp.id] ? { ...emp, avatar: avatarMap[emp.id] } : emp))
-        );
-      })
-      .catch(() => {});
-  }, []);
-
-  const fetchEmployees = useCallback(async (options?: { force?: boolean }) => {
+  const fetchEmployees = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-<<<<<<< HEAD
-      const data = await employeesCache.load(getEmployees, options);
-      applyRoster(data);
-      setReady(true);
-=======
       const data = await cachedQuery(EMPLOYEES_CACHE_KEY, getEmployees);
       setEmployees(data);
->>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }
-  }, [applyRoster]);
-
-  // Silent background refresh — keeps the cached roster on failure.
-  const revalidateEmployees = useCallback(async () => {
-    try {
-      const data = await employeesCache.load(getEmployees, { force: true });
-      applyRoster(data);
-      setReady(true);
-    } catch {
-      // Keep the cached roster.
-    }
-  }, [applyRoster]);
+  }, []);
 
   const fetchLookup = useCallback(async () => {
-    const snapshot = lookupCache.peek();
-    if (snapshot) setLookupData(snapshot.data);
-    if (snapshot && !snapshot.isStale) return;
     if (lookupFetchedRef.current) return;
     lookupFetchedRef.current = true;
     setIsLookupLoading(true);
     try {
-<<<<<<< HEAD
-      const data = await lookupCache.load(getLookupData);
-=======
       const data = await cachedQuery(EMPLOYEE_LOOKUP_CACHE_KEY, getLookupData);
->>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
       setLookupData(data);
     } catch (err) {
       console.error('Lookup fetch error:', err);
@@ -148,36 +91,15 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
     }
   }, []);
 
-  // Hydrate from cache on mount; only hit the server when there is nothing to
-  // show. A stale snapshot is served immediately and revalidated in the
-  // background (stale-while-revalidate).
+  // Fetch employees on mount
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const snapshot = employeesCache.peek();
-      if (snapshot && !cancelled) {
-        applyRoster(snapshot.data);
-        setReady(true);
-        setIsLoading(false);
-        if (snapshot.isStale) void revalidateEmployees();
-        return;
-      }
-      void fetchEmployees();
-    })();
-    return () => { cancelled = true; };
-  }, [applyRoster, revalidateEmployees, fetchEmployees]);
-
-  // Write roster changes (loads, avatars, add/edit/delete refreshes) back to the
-  // shared cache so the next mount is current.
-  useEffect(() => {
-    if (!ready) return;
-    employeesCache.set(employees);
-  }, [ready, employees]);
+    fetchEmployees();
+  }, [fetchEmployees]);
 
   // Fetch lookup data in background or when modal is opened
   useEffect(() => {
     if (isAddEmployeeOpen || editingEmployee) {
-      (async () => { await fetchLookup(); })();
+      fetchLookup();
     }
   }, [isAddEmployeeOpen, editingEmployee, fetchLookup]);
 
@@ -238,11 +160,7 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
         const err = await res.json();
         throw new Error(err.message || 'Failed to create employee');
       }
-<<<<<<< HEAD
-      await fetchEmployees({ force: true });
-=======
       await refreshEmployees();
->>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
       setIsAddEmployeeOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create employee');
@@ -266,11 +184,7 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
         const err = await res.json();
         throw new Error(err.message || 'Failed to update employee');
       }
-<<<<<<< HEAD
-      await fetchEmployees({ force: true });
-=======
       await refreshEmployees();
->>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
       setEditingEmployee(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update employee');
@@ -285,22 +199,14 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
     try {
       const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete employee');
-<<<<<<< HEAD
-      await fetchEmployees({ force: true });
-=======
       await refreshEmployees();
->>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete employee');
     }
   };
 
   const refresh = async () => {
-<<<<<<< HEAD
-    await fetchEmployees({ force: true });
-=======
     await refreshEmployees();
->>>>>>> 77f10f9747aad4e0dd6e5708d9f89134faf2b97a
   };
 
   return {
