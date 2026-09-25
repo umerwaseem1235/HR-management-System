@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
 import Button from '@/components/ui/Button';
@@ -32,11 +32,16 @@ export default function EditAttendanceModal({
 
   const suggestion = lateRule && checkIn ? resolveLateStatus(checkIn, lateRule) : null;
 
-  useEffect(() => {
-    if (!suggestion || !lateRule?.enabled || statusTouched) return;
-    if (['Present', 'Late', 'Half Day'].includes(status)) setStatus(suggestion.status);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checkIn]);
+  // Auto-suggest status from the late-arrival rule until the admin overrides
+  // it. Adjusted during render (instead of an effect) to avoid a cascading
+  // render: reacts to checkIn changes only, matching the previous behavior.
+  const [prevCheckIn, setPrevCheckIn] = useState(checkIn);
+  if (prevCheckIn !== checkIn) {
+    setPrevCheckIn(checkIn);
+    if (suggestion && lateRule?.enabled && !statusTouched && ['Present', 'Late', 'Half Day'].includes(status)) {
+      setStatus(suggestion.status);
+    }
+  }
 
   const inMin = checkIn ? timeToMinutes(checkIn) : 0;
   const outMin = checkOut ? timeToMinutes(checkOut) : 0;

@@ -38,32 +38,36 @@ export function useEmployee(): EmployeeResolution {
   });
 
   useEffect(() => {
-    if (!user?.id) {
-      setEmployee(undefined);
-      setIsLoading(false);
-      return;
-    }
-    const key = employeeCacheKey(user.id);
-    const cached = peekStaleQuery<Employee | null>(key);
-    if (cached !== undefined) {
-      setEmployee(cached ?? undefined);
-      setIsLoading(false);
-    } else {
-      setEmployee(undefined);
-      setIsLoading(true);
-    }
-
     let cancelled = false;
-    cachedQuery(key, () => getEmployeeByUserId(user.id))
-      .then((emp) => {
-        if (!cancelled) setEmployee(emp ?? undefined);
-      })
-      .catch((err) => {
-        console.error('Failed to resolve employee for user:', err);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
+    // Subscription-style resolution: all state updates happen inside the
+    // async callback, not synchronously in the effect body.
+    void (async () => {
+      if (!user?.id) {
+        setEmployee(undefined);
+        setIsLoading(false);
+        return;
+      }
+      const key = employeeCacheKey(user.id);
+      const cached = peekStaleQuery<Employee | null>(key);
+      if (cached !== undefined) {
+        setEmployee(cached ?? undefined);
+        setIsLoading(false);
+      } else {
+        setEmployee(undefined);
+        setIsLoading(true);
+      }
+
+      cachedQuery(key, () => getEmployeeByUserId(user.id))
+        .then((emp) => {
+          if (!cancelled) setEmployee(emp ?? undefined);
+        })
+        .catch((err) => {
+          console.error('Failed to resolve employee for user:', err);
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoading(false);
+        });
+    })();
     return () => {
       cancelled = true;
     };

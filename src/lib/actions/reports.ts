@@ -2,6 +2,14 @@
 
 import { createClient } from '@/lib/server';
 import type { AttendanceRecord } from '@/lib/types';
+import type { Database } from '@/lib/supabase/database.types';
+
+type EmployeeRow = Database['public']['Tables']['employees']['Row'];
+type AttendanceRow = Database['public']['Tables']['attendance']['Row'];
+
+interface AttendanceRowWithEmployee extends AttendanceRow {
+  employees?: { first_name: string | null; last_name: string | null } | null;
+}
 
 export interface ReportEmployeeOption {
   id: string;
@@ -19,7 +27,7 @@ export async function getReportEmployees(): Promise<ReportEmployeeOption[]> {
     .order('first_name', { ascending: true });
 
   if (error) throw new Error(error.message);
-  return (data || []).map((r: any) => ({
+  return ((data ?? []) as unknown as Pick<EmployeeRow, 'id' | 'first_name' | 'last_name' | 'email'>[]).map((r: Pick<EmployeeRow, 'id' | 'first_name' | 'last_name' | 'email'>) => ({
     id: r.id,
     firstName: r.first_name ?? '',
     lastName: r.last_name ?? '',
@@ -27,18 +35,18 @@ export async function getReportEmployees(): Promise<ReportEmployeeOption[]> {
   }));
 }
 
-function mapAttendance(db: any): AttendanceRecord {
+function mapAttendance(db: AttendanceRowWithEmployee): AttendanceRecord {
   return {
     id: db.id,
     employeeId: db.employee_id,
     employeeName: db.employees?.first_name ? `${db.employees.first_name} ${db.employees.last_name}` : '',
     date: db.date,
-    checkIn: db.check_in,
-    checkOut: db.check_out,
+    checkIn: db.check_in ?? '',
+    checkOut: db.check_out ?? '',
     status: db.status,
     workHours: db.work_hours ?? 0,
     overtime: db.overtime ?? 0,
-    notes: db.notes,
+    notes: db.notes ?? undefined,
   };
 }
 
@@ -59,5 +67,5 @@ export async function getAttendanceReport(
     .order('date', { ascending: true });
 
   if (error) throw new Error(error.message);
-  return (data || []).map(mapAttendance);
+  return ((data ?? []) as unknown as AttendanceRowWithEmployee[]).map(mapAttendance);
 }

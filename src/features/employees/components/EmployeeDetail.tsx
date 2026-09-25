@@ -15,9 +15,8 @@ import { getEmployee } from '@/lib/actions/employees';
 import { getAttendanceByEmployee } from '@/lib/actions/attendance';
 import { getLeaveBalances } from '@/lib/actions/leave';
 import { getPayslips } from '@/lib/actions/payroll';
-import { getAssets } from '@/lib/actions/performance';
 import { getDocuments } from '@/lib/actions/documents';
-import type { Asset, AttendanceRecord, Employee, LeaveBalance, Payslip } from '@/lib/types';
+import type { AttendanceRecord, Employee, LeaveBalance, Payslip } from '@/lib/types';
 import type { DocumentRecord } from '@/lib/actions/documents';
 import { formatWorkHours } from '@/utils/date';
 
@@ -38,7 +37,6 @@ export default function EmployeeDetail() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
   const [slips, setSlips] = useState<Payslip[]>([]);
-  const [assets, setAssets] = useState<Asset[]>([]);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
 
   useEffect(() => {
@@ -51,18 +49,16 @@ export default function EmployeeDetail() {
         const emp = await getEmployee(id);
         if (cancelled) return;
         setEmployee(emp);
-        const [att, bal, pay, ass, docs] = await Promise.all([
+        const [att, bal, pay, docs] = await Promise.all([
           getAttendanceByEmployee(id),
           getLeaveBalances(id),
           getPayslips(id),
-          getAssets().catch(() => [] as Asset[]),
           getDocuments(),
         ]);
         if (cancelled) return;
         setAttendance(att.slice(0, 10));
         setBalances(bal);
         setSlips(pay);
-        setAssets(ass.filter((a) => a.assignedTo === id));
         const fullName = `${emp.firstName} ${emp.lastName}`.toLowerCase();
         setDocuments(docs.filter((d) => d.employee.toLowerCase() === fullName || d.employee.toLowerCase() === 'all employees'));
       } catch (err) {
@@ -81,7 +77,6 @@ export default function EmployeeDetail() {
     { id: 'leave', label: 'Leave' },
     { id: 'payroll', label: 'Payroll' },
     { id: 'documents', label: 'Documents' },
-    { id: 'assets', label: 'Assets' },
   ];
 
   if (isLoading) {
@@ -267,25 +262,6 @@ export default function EmployeeDetail() {
                   ))}
                 </div>
               )}
-            </div>
-          )}
-          {activeTab === 'assets' && (
-            <div>
-              <h3 className="text-base font-semibold text-[#17324D] mb-4">Assigned Assets</h3>
-              <div className="space-y-3">
-                {assets.map((asset) => (
-                  <div key={asset.id} className="flex items-center justify-between p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
-                    <div>
-                      <p className="text-sm font-medium text-[#263238]">{asset.name}</p>
-                      <p className="text-xs text-gray-500">{asset.type} · {asset.serialNumber}</p>
-                    </div>
-                    <Badge variant={asset.condition === 'New' ? 'success' : asset.condition === 'Good' ? 'info' : 'warning'} size="sm">{asset.condition}</Badge>
-                  </div>
-                ))}
-                {assets.length === 0 && (
-                  <p className="text-gray-500 text-sm text-center py-8">No assets assigned.</p>
-                )}
-              </div>
             </div>
           )}
         </div>

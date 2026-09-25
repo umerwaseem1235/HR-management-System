@@ -179,13 +179,13 @@ export function useAttendance() {
           setTodayStatsData(statsData);
         }
         loadedMonths.current.add(prefix);
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (cancelled) return;
         // The pre-seeded current month never actually loaded — clear the flag
         // so a later viewDate change can retry it.
         loadedMonths.current.delete(prefix);
         console.error('Failed to load attendance data:', err);
-        setError(err.message || 'Failed to load data');
+        setError(err instanceof Error && err.message ? err.message : 'Failed to load data');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -218,7 +218,7 @@ export function useAttendance() {
           );
           return [...outside, ...monthData];
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to load month records:', err);
       }
     }
@@ -428,11 +428,11 @@ export function useAttendance() {
   // ── Late-arrival rule: auto-mark status from check-in time ───────────
   // Remote (late-rule) feature applied on top of the Supabase-backed
   // handlers below — explicit non-attendance statuses are never overridden.
-  const applyLateRule = (checkIn: string, chosenStatus: string): string => {
+  const applyLateRule = useCallback((checkIn: string, chosenStatus: string): string => {
     if (!lateRule.enabled || !checkIn) return chosenStatus;
     if (['Absent', 'Leave', 'Holiday', 'Weekend'].includes(chosenStatus)) return chosenStatus;
     return resolveLateStatus(checkIn, lateRule).status;
-  };
+  }, [lateRule]);
 
   // Log an HR attendance correction to the audit trail (Correction History).
   // userId is only stored when it is a real Supabase auth UUID; mock/demo
@@ -487,9 +487,9 @@ export function useAttendance() {
         invalidateDashboardCache(resolvedEmployeeId);
       }
       await refreshStats();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to check in:', err);
-      setError(err.message || 'Failed to check in');
+      setError(err instanceof Error && err.message ? err.message : 'Failed to check in');
     }
   }, [resolvedEmployeeId, refreshStats, attendRecords, isEmployee, userEmployeeId]);
 
@@ -514,9 +514,9 @@ export function useAttendance() {
         invalidateDashboardCache(resolvedEmployeeId);
       }
       await refreshStats();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to check out:', err);
-      setError(err.message || 'Failed to check out');
+      setError(err instanceof Error && err.message ? err.message : 'Failed to check out');
     }
   }, [resolvedEmployeeId, refreshStats, attendRecords, isEmployee, userEmployeeId]);
 
@@ -564,12 +564,12 @@ export function useAttendance() {
         setManualOpen(false);
         invalidateAttendanceViews(emp.id);
         await refreshStats();
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to add manual record:', err);
-        setError(err.message || 'Failed to save attendance record');
+        setError(err instanceof Error && err.message ? err.message : 'Failed to save attendance record');
       }
     },
-    [employees, lateRule, refreshStats],
+    [employees, applyLateRule, refreshStats],
   );
 
   // ── Edit record (Supabase) ─────────────────────────────────────────
@@ -628,12 +628,12 @@ export function useAttendance() {
             summarizeAttendance(finalStatus, values.checkIn, values.checkOut),
           );
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to update record:', err);
-        setError(err.message || 'Failed to update attendance record');
+        setError(err instanceof Error && err.message ? err.message : 'Failed to update attendance record');
       }
     },
-    [attendRecords, lateRule, logCorrection, refreshStats],
+    [attendRecords, applyLateRule, logCorrection, refreshStats],
   );
 
   // ── Delete record (Supabase) ─────────────────────────────────────────
@@ -646,9 +646,9 @@ export function useAttendance() {
         setEditingRecord(null);
         if (before) invalidateAttendanceViews(before.employeeId);
         await refreshStats();
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to delete record:', err);
-        setError(err.message || 'Failed to delete attendance record');
+        setError(err instanceof Error && err.message ? err.message : 'Failed to delete attendance record');
       }
     },
     [attendRecords, refreshStats],
@@ -714,9 +714,9 @@ export function useAttendance() {
             `Status: ${target.requestedStatus}${times ? ` (${times})` : ''}`,
           );
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to approve correction:', err);
-        setError(err.message || 'Failed to approve correction');
+        setError(err instanceof Error && err.message ? err.message : 'Failed to approve correction');
       }
     },
     [corrections, logCorrection, refreshStats],
@@ -731,9 +731,9 @@ export function useAttendance() {
           c.id === id ? { ...c, status: 'Rejected' as const } : c,
         ),
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to reject correction:', err);
-      setError(err.message || 'Failed to reject correction');
+        setError(err instanceof Error && err.message ? err.message : 'Failed to reject correction');
     }
   }, []);
 
@@ -769,9 +769,9 @@ export function useAttendance() {
           `${name} on ${date} added — notification sent to all employees.`,
         );
         form.reset();
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to add holiday:', err);
-        setError(err.message || 'Failed to add holiday');
+        setError(err instanceof Error && err.message ? err.message : 'Failed to add holiday');
       }
     },
     [addNotification],
@@ -782,9 +782,9 @@ export function useAttendance() {
     try {
       await deleteHoliday(id);
       setHolidays((current) => current.filter((x) => x.id !== id));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to delete holiday:', err);
-      setError(err.message || 'Failed to delete holiday');
+        setError(err instanceof Error && err.message ? err.message : 'Failed to delete holiday');
     }
   }, []);
 

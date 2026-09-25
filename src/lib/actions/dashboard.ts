@@ -2,6 +2,17 @@
 
 import { createClient } from '@/lib/server';
 import type { DashboardStats } from '@/lib/types';
+import type { Database } from '@/lib/supabase/database.types';
+
+type JobRow = Pick<Database['public']['Tables']['jobs']['Row'], 'vacancies'>;
+type PayrollRunRow = Database['public']['Tables']['payroll_runs']['Row'];
+
+type DashboardEmployeeSource = Pick<
+  Database['public']['Tables']['employees']['Row'],
+  'id' | 'first_name' | 'last_name' | 'date_of_birth' | 'probation_end_date'
+> & { departments?: { name: string | null } | null };
+
+type AttendanceTrendSource = Pick<Database['public']['Tables']['attendance']['Row'], 'date' | 'status'>;
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   const supabase = await createClient();
@@ -32,7 +43,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     supabase.from('leave_requests').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
     supabase.from('expense_claims').select('*', { count: 'exact', head: true }).eq('status', 'Pending').then(
       (res) => res,
-      () => ({ count: 0 }) // Graceful fallback if table doesn't exist
+      () => ({ count: 0 }) as { count: number | null } // Graceful fallback if table doesn't exist
     ),
     supabase.from('jobs').select('vacancies').eq('status', 'Open'),
     supabase.from('employees').select('*', { count: 'exact', head: true }).gte('joining_date', firstDayOfMonth),
@@ -141,7 +152,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'Pending'),
     supabase.from('expense_claims').select('id', { count: 'exact', head: true }).eq('status', 'Pending').then(
       (res) => res,
-      () => ({ count: 0 }) as any
+      () => ({ count: 0 }) as { count: number | null }
     ),
     supabase.from('jobs').select('vacancies').eq('status', 'Open'),
     supabase.from('employees').select('id', { count: 'exact', head: true }).gte('joining_date', firstDayOfMonth),
@@ -162,7 +173,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       .in('status', ['Present', 'Late']),
   ]);
 
-  const employees: DashboardEmployee[] = (employeesRes.data ?? []).map((e: any) => ({
+  const employees: DashboardEmployee[] = ((employeesRes.data ?? []) as unknown as DashboardEmployeeSource[]).map((e) => ({
     id: e.id,
     firstName: e.first_name ?? '',
     lastName: e.last_name ?? '',
@@ -171,7 +182,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     probationEndDate: e.probation_end_date ?? null,
   }));
 
-  const openVacancies = (openJobsRes.data ?? []).reduce((sum: number, j: any) => sum + (Number(j.vacancies) || 0), 0);
+  const openVacancies = (openJobsRes.data ?? []).reduce((sum: number, j: JobRow) => sum + (Number(j.vacancies) || 0), 0);
 
   const activeEmployees = activeEmployeesRes.count ?? 0;
   const byDate = new Map<string, number>();
@@ -196,7 +207,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   const presentCount = presentToday + lateToday;
 
   // Same label semantics as getPayrollStatus(): Pending | In Process | Finalized
-  const latestStatus: string | null = (latestPayrollRes.data as any)?.status ?? null;
+  const latestStatus: string | null = (latestPayrollRes.data as PayrollRunRow | null)?.status ?? null;
   const payrollStatus = !latestStatus ? 'Pending' : latestStatus === 'Finalized' ? 'Finalized' : 'In Process';
 
   const stats: DashboardStats = {
@@ -207,7 +218,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     onLeaveToday: onLeaveTodayRes.count ?? 0,
     lateToday,
     pendingLeaveApprovals: pendingLeaveRes.count ?? 0,
-    pendingExpenseApprovals: (pendingExpenseRes as any)?.count ?? 0,
+    pendingExpenseApprovals: (pendingExpenseRes as { count: number | null }).count ?? 0,
     openVacancies,
     newJoinersThisMonth: newJoinersRes.count ?? 0,
     upcomingExits: upcomingExitsRes.count ?? 0,
@@ -233,7 +244,7 @@ export async function getAttendanceTrend(days: number = 7): Promise<AttendanceTr
   ]);
 
   const byDate = new Map<string, number>();
-  (records || []).forEach((r: any) => {
+  (records || []).forEach((r: AttendanceTrendSource) => {
     if (r.status === 'Present' || r.status === 'Late') {
       byDate.set(r.date, (byDate.get(r.date) || 0) + 1);
     }

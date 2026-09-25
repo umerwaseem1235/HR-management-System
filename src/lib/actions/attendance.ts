@@ -1,12 +1,96 @@
 'use server';
 
 import { createClient } from '@/lib/server';
-import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { createClient as createServiceClient, type PostgrestError } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import type { AttendanceRecord } from '@/lib/types';
 import type { Database } from '@/lib/supabase/database.types';
 import { isEarlyHalfDayCheckout } from '@/utils/date';
 import { calculateDistance, getOfficeLocationConfig } from '@/lib/location';
+
+type AttendanceStatus = Database['public']['Tables']['attendance']['Row']['status'];
+
+interface EmployeeNameJoin {
+  first_name?: string | null;
+  last_name?: string | null;
+}
+
+interface AttendanceRowWithEmployee {
+  id: string;
+  employee_id: string;
+  date: string;
+  check_in: string | null;
+  check_out: string | null;
+  status: AttendanceStatus;
+  work_hours: number | null;
+  overtime: number | null;
+  notes: string | null;
+  check_in_lat?: number | null;
+  check_in_lng?: number | null;
+  check_out_lat?: number | null;
+  check_out_lng?: number | null;
+  distance_from_office?: number | null;
+  employees?: EmployeeNameJoin | EmployeeNameJoin[] | null;
+}
+
+interface CorrectionRowWithEmployee {
+  id: string;
+  employee_id: string;
+  date: string;
+  requested_status: string | null;
+  requested_check_in: string | null;
+  requested_check_out: string | null;
+  reason: string | null;
+  status: string | null;
+  employees?: EmployeeNameJoin | EmployeeNameJoin[] | null;
+}
+
+interface HolidayRowLike {
+  id: string;
+  name: string;
+  date: string;
+  type: string | null;
+  is_recurring: boolean | null;
+}
+
+interface AuditRowLike {
+  id: string;
+  user_id: string | null;
+  user_name: string | null;
+  module: string;
+  action: string;
+  record: string | null;
+  previous_value: string | null;
+  new_value: string | null;
+  created_at: string;
+}
+
+interface AttendanceFormInput {
+  employeeId?: string;
+  employee_id?: string;
+  date: string;
+  checkIn?: string | null;
+  check_in?: string | null;
+  checkOut?: string | null;
+  check_out?: string | null;
+  status: AttendanceStatus;
+  workHours?: number | null;
+  work_hours?: number | null;
+  overtime?: number | null;
+  notes?: string | null;
+  checkInLat?: number | null;
+  check_in_lat?: number | null;
+  checkInLng?: number | null;
+  check_in_lng?: number | null;
+  checkOutLat?: number | null;
+  check_out_lat?: number | null;
+  checkOutLng?: number | null;
+  check_out_lng?: number | null;
+  distanceFromOffice?: number | null;
+  distance_from_office?: number | null;
+}
+
+type CorrectionInsert = Database['public']['Tables']['attendance_corrections']['Insert'];
 
 function getLastDayOfMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
@@ -23,14 +107,14 @@ function getMonthDateRange(year: number, month: number): { start: string; end: s
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function mapAttendance(db: any): AttendanceRecord {
+function mapAttendance(db: AttendanceRowWithEmployee): AttendanceRecord {
   if (!db) {
     throw new Error('No attendance record returned from database.');
   }
   const emp = Array.isArray(db.employees) ? db.employees[0] : db.employees;
   const employeeName = emp
     ? `${emp.first_name || ''} ${emp.last_name || ''}`.trim()
-    : (db.employees?.first_name ? `${db.employees.first_name} ${db.employees.last_name}` : '');
+    : '';
 
   return {
     id: db.id,
@@ -43,11 +127,11 @@ function mapAttendance(db: any): AttendanceRecord {
     workHours: db.work_hours != null ? Number(db.work_hours) || 0 : 0,
     overtime: db.overtime != null ? Number(db.overtime) || 0 : 0,
     notes: db.notes ?? undefined,
-    checkInLat: db.check_in_lat,
-    checkInLng: db.check_in_lng,
-    checkOutLat: db.check_out_lat,
-    checkOutLng: db.check_out_lng,
-    distanceFromOffice: db.distance_from_office,
+    checkInLat: db.check_in_lat ?? undefined,
+    checkInLng: db.check_in_lng ?? undefined,
+    checkOutLat: db.check_out_lat ?? undefined,
+    checkOutLng: db.check_out_lng ?? undefined,
+    distanceFromOffice: db.distance_from_office ?? undefined,
   };
 }
 
@@ -69,7 +153,7 @@ export async function getAttendanceByDate(
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data || []).map(mapAttendance);
+  return (data || []).map((row) => mapAttendance(row as AttendanceRowWithEmployee));
 }
 
 export async function getAttendanceByEmployee(
@@ -91,7 +175,7 @@ export async function getAttendanceByEmployee(
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return (data || []).map(mapAttendance);
+  return (data || []).map((row) => mapAttendance(row as AttendanceRowWithEmployee));
 }
 
 export async function getAllAttendance(
@@ -111,7 +195,7 @@ export async function getAllAttendance(
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return (data || []).map(mapAttendance);
+  return (data || []).map((row) => mapAttendance(row as AttendanceRowWithEmployee));
 }
 
 /** Compute live attendance stats for a given date (defaults to today). */
@@ -224,8 +308,8 @@ export async function getAttendanceData(year: number, month: number) {
       lastName: e.last_name ?? '',
       email: e.email ?? '',
     })),
-    records: ((recordsRes.data ?? []) as unknown[]).map(mapAttendance),
-    corrections: ((correctionsRes.data ?? []) as Array<Record<string, unknown>>).map((row: any) => {
+    records: ((recordsRes.data ?? []) as unknown as AttendanceRowWithEmployee[]).map((row) => mapAttendance(row)),
+    corrections: ((correctionsRes.data ?? []) as unknown as CorrectionRowWithEmployee[]).map((row) => {
       const emp = Array.isArray(row.employees) ? row.employees[0] : row.employees;
       return {
         id: row.id,
@@ -240,14 +324,14 @@ export async function getAttendanceData(year: number, month: number) {
         status: (row.status || 'Pending') as 'Pending' | 'Approved' | 'Rejected',
       };
     }),
-    holidays: ((holidaysRes.data ?? []) as Array<Record<string, unknown>>).map((row: any) => ({
+    holidays: ((holidaysRes.data ?? []) as unknown as HolidayRowLike[]).map((row) => ({
       id: row.id,
       name: row.name,
       date: row.date,
       type: (row.type || 'Public') as 'Public' | 'Optional' | 'Company',
       isRecurring: row.is_recurring ?? false,
     })),
-    auditLogs: ((auditRes.data ?? []) as Array<Record<string, unknown>>).map((row: any) => ({
+    auditLogs: ((auditRes.data ?? []) as unknown as AuditRowLike[]).map((row) => ({
       id: row.id,
       userId: row.user_id,
       userName: row.user_name,
@@ -272,11 +356,11 @@ export async function getAttendanceData(year: number, month: number) {
 /* ------------------------------------------------------------------ */
 
 export async function createAttendanceRecord(
-  data: any,
+  data: AttendanceFormInput,
 ): Promise<AttendanceRecord> {
   const supabase = await createClient();
-  const dbData: any = {
-    employee_id: data.employeeId || data.employee_id,
+  const dbData: Database['public']['Tables']['attendance']['Insert'] = {
+    employee_id: (data.employeeId || data.employee_id) as string,
     date: data.date,
     check_in: data.checkIn ?? data.check_in ?? null,
     check_out: data.checkOut ?? data.check_out ?? null,
@@ -298,7 +382,7 @@ export async function createAttendanceRecord(
 
   if (error) throw new Error(error.message);
   revalidatePath('/attendance');
-  return mapAttendance(row);
+  return mapAttendance(row as unknown as AttendanceRowWithEmployee);
 }
 
 export async function updateAttendanceRecord(
@@ -312,10 +396,10 @@ export async function updateAttendanceRecord(
   },
 ) {
   const supabase = await createClient();
-  const dbData: any = {};
+  const dbData: Database['public']['Tables']['attendance']['Update'] = {};
   if (data.checkIn !== undefined) dbData.check_in = data.checkIn || null;
   if (data.checkOut !== undefined) dbData.check_out = data.checkOut || null;
-  if (data.status !== undefined) dbData.status = data.status;
+  if (data.status !== undefined) dbData.status = data.status as Database['public']['Tables']['attendance']['Update']['status'];
   if (data.workHours !== undefined) dbData.work_hours = data.workHours;
   if (data.notes !== undefined) dbData.notes = data.notes || null;
 
@@ -362,7 +446,7 @@ async function closeStaleOpenDays(
     const { error } = await supabase
       .from('attendance')
       .update({ status: 'Half Day', work_hours: 4 })
-      .in('id', stale.map((r: any) => r.id));
+      .in('id', stale.map((r) => r.id));
     if (error) return 0;
     return stale.length;
   } catch {
@@ -402,7 +486,7 @@ export async function autoCloseOpenAttendance(
   if (fetchErr) throw new Error(fetchErr.message);
   if (!open?.length) return { closed: 0, date: today };
 
-  const ids = open.map((r: any) => r.id);
+  const ids = open.map((r) => r.id);
   const { error: updErr } = await svc
     .from('attendance')
     .update({ status: 'Half Day', work_hours: 4 })
@@ -453,7 +537,7 @@ export async function selfCheckInOut(
     throw new Error('You have already checked out for today.');
   }
 
-  const updateData: Record<string, any> = {};
+  const updateData: Database['public']['Tables']['attendance']['Update'] = {};
   if (action === 'check_in') {
     updateData.check_in = timeStr;
     // If no record exists, set status to Present
@@ -499,7 +583,7 @@ export async function selfCheckInOut(
 
   if (error) throw new Error(error.message);
   revalidatePath('/attendance');
-  return mapAttendance(data);
+  return mapAttendance(data as unknown as AttendanceRowWithEmployee);
 }
 
 /* ------------------------------------------------------------------ */
@@ -513,7 +597,7 @@ export async function getCorrections() {
     .select('id, employee_id, date, requested_status, requested_check_in, requested_check_out, reason, status, employees(first_name, last_name)')
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
-  return (data || []).map((row: any) => {
+  return ((data || []) as unknown as CorrectionRowWithEmployee[]).map((row) => {
     const emp = Array.isArray(row.employees) ? row.employees[0] : row.employees;
     const employeeName = emp
       ? `${emp.first_name || ''} ${emp.last_name || ''}`.trim()
@@ -534,7 +618,7 @@ export async function getCorrections() {
   });
 }
 
-export async function createCorrection(data: any) {
+export async function createCorrection(data: CorrectionInsert) {
   const supabase = await createClient();
   const { error } = await supabase
     .from('attendance_corrections')
@@ -558,7 +642,7 @@ export async function approveCorrection(id: string) {
       date: correction.date,
       check_in: correction.requested_check_in,
       check_out: correction.requested_check_out,
-      status: (correction.requested_status as any) || 'Present',
+      status: (correction.requested_status as AttendanceStatus) || 'Present',
     },
     { onConflict: 'employee_id,date' },
   );
@@ -605,7 +689,7 @@ export async function getHolidays() {
     .select('id, name, date, type, is_recurring')
     .order('date', { ascending: true });
   if (error) throw new Error(error.message);
-  return (data || []).map((row: any) => ({
+  return ((data || []) as unknown as HolidayRowLike[]).map((row) => ({
     id: row.id,
     name: row.name,
     date: row.date,
@@ -729,24 +813,24 @@ export async function checkInWithLocation(data: {
       distance_from_office: Math.round(distance),
     };
 
-    let row: any = null;
-    let upsertError: any = null;
+    let row: AttendanceRowWithEmployee | null = null;
+    let upsertError: PostgrestError | null = null;
     const first = await supabase
       .from('attendance')
-      .upsert(fullData as any, { onConflict: 'employee_id,date' })
+      .upsert(fullData, { onConflict: 'employee_id,date' })
       .select('*, employees(first_name, last_name)')
       .single();
-    row = first.data;
+    row = first.data as unknown as AttendanceRowWithEmployee | null;
     upsertError = first.error;
 
     // Fallback when the location migration hasn't been applied yet.
     if (upsertError && /check_in_lat|check_in_lng|check_out_lat|check_out_lng|distance_from_office|schema cache|column/i.test(upsertError.message || '')) {
       const retry = await supabase
         .from('attendance')
-        .upsert(baseData as any, { onConflict: 'employee_id,date' })
+        .upsert(baseData, { onConflict: 'employee_id,date' })
         .select('*, employees(first_name, last_name)')
         .single();
-      row = retry.data;
+      row = retry.data as unknown as AttendanceRowWithEmployee | null;
       upsertError = retry.error;
     }
 
@@ -762,7 +846,7 @@ export async function checkInWithLocation(data: {
 
     return {
       success: true,
-      record: mapAttendance(row),
+      record: mapAttendance(row as AttendanceRowWithEmployee),
       distance: Math.round(distance),
       withinRadius: true,
     };
@@ -856,30 +940,30 @@ export async function checkOutWithLocation(data: {
     };
     const fullData = {
       ...baseData,
-      check_in_lat: (existing as any)?.check_in_lat ?? null,
-      check_in_lng: (existing as any)?.check_in_lng ?? null,
+      check_in_lat: existing?.check_in_lat ?? null,
+      check_in_lng: existing?.check_in_lng ?? null,
       check_out_lat: data.latitude,
       check_out_lng: data.longitude,
       distance_from_office: Math.round(distance),
     };
 
-    let row: any = null;
-    let upsertError: any = null;
+    let row: AttendanceRowWithEmployee | null = null;
+    let upsertError: PostgrestError | null = null;
     const first = await supabase
       .from('attendance')
-      .upsert(fullData as any, { onConflict: 'employee_id,date' })
+      .upsert(fullData, { onConflict: 'employee_id,date' })
       .select('*, employees(first_name, last_name)')
       .single();
-    row = first.data;
+    row = first.data as unknown as AttendanceRowWithEmployee | null;
     upsertError = first.error;
 
     if (upsertError && /check_in_lat|check_in_lng|check_out_lat|check_out_lng|distance_from_office|schema cache|column/i.test(upsertError.message || '')) {
       const retry = await supabase
         .from('attendance')
-        .upsert(baseData as any, { onConflict: 'employee_id,date' })
+        .upsert(baseData, { onConflict: 'employee_id,date' })
         .select('*, employees(first_name, last_name)')
         .single();
-      row = retry.data;
+      row = retry.data as unknown as AttendanceRowWithEmployee | null;
       upsertError = retry.error;
     }
 
@@ -895,7 +979,7 @@ export async function checkOutWithLocation(data: {
 
     return {
       success: true,
-      record: mapAttendance(row),
+      record: mapAttendance(row as AttendanceRowWithEmployee),
       distance: Math.round(distance),
       withinRadius: true,
     };

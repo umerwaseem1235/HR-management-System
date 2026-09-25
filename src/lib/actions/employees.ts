@@ -58,43 +58,62 @@ interface LookupData {
   managers: LookupItem[];
 }
 
-function mapEmployee(db: any): Employee {
+type EmployeeRow = Database['public']['Tables']['employees']['Row'];
+
+type EmployeeRowWithJoins = EmployeeRow & {
+  departments?: { name: string | null } | null;
+  designations?: { name: string | null } | null;
+  branches?: { name: string | null } | null;
+  shifts?: { name: string | null } | null;
+  reporting_manager?: { first_name: string | null; last_name: string | null } | null;
+};
+
+/**
+ * Supabase's generated join types reject several of the relation aliases used in
+ * the selects below (Relationships are under-specified in database.types.ts), so
+ * the inferred row is narrowed here once instead of at every call site.
+ */
+function asEmployeeRow(db: unknown): EmployeeRowWithJoins {
+  return db as EmployeeRowWithJoins;
+}
+
+function mapEmployee(db: EmployeeRowWithJoins): Employee {
   return {
     id: db.id,
     employeeCode: db.employee_code,
     firstName: db.first_name,
     lastName: db.last_name,
     email: db.email,
-    phone: db.phone,
-    avatar: db.avatar,
-    dateOfBirth: db.date_of_birth,
-    gender: db.gender,
-    address: db.address,
-    city: db.city,
-    country: db.country,
-    emergencyContactName: db.emergency_contact_name,
-    emergencyContactPhone: db.emergency_contact_phone,
+    phone: db.phone || '',
+    avatar: db.avatar ?? undefined,
+    dateOfBirth: db.date_of_birth || '',
+    gender: db.gender || 'Other',
+    address: db.address || '',
+    city: db.city || '',
+    country: db.country || '',
+    emergencyContactName: db.emergency_contact_name || '',
+    emergencyContactPhone: db.emergency_contact_phone || '',
     department: db.departments?.name || '',
-    departmentId: db.department_id,
+    departmentId: db.department_id ?? undefined,
     designation: db.designations?.name || '',
-    designationId: db.designation_id,
+    designationId: db.designation_id ?? undefined,
     branch: db.branches?.name || '',
-    branchId: db.branch_id,
+    branchId: db.branch_id ?? undefined,
     shift: db.shifts?.name || '',
-    shiftId: db.shift_id,
+    shiftId: db.shift_id ?? undefined,
     reportingManager: db.reporting_manager?.first_name
       ? `${db.reporting_manager.first_name} ${db.reporting_manager.last_name}`
       : '',
-    reportingManagerId: db.reporting_manager_id,
+    reportingManagerId: db.reporting_manager_id ?? undefined,
     employmentType: db.employment_type,
     joiningDate: db.joining_date,
-    probationEndDate: db.probation_end_date,
-    confirmationDate: db.confirmation_date,
+    probationEndDate: db.probation_end_date ?? undefined,
+    confirmationDate: db.confirmation_date ?? undefined,
     status: db.status,
-    bankName: db.bank_name,
-    bankAccount: db.bank_account,
-    taxId: db.tax_id,
-    salary: db.salary,
+    bankName: db.bank_name ?? undefined,
+    bankAccount: db.bank_account ?? undefined,
+    taxId: db.tax_id ?? undefined,
+    salary: db.salary ?? undefined,
   };
 }
 
@@ -187,7 +206,7 @@ export async function getEmployees(): Promise<Employee[]> {
     throw new Error(`Database query failed: ${error.message}`);
   }
   
-  return (data || []).map(mapEmployee);
+  return (data || []).map((r) => mapEmployee(asEmployeeRow(r)));
 }
 
 export async function getEmployee(id: string): Promise<Employee> {
@@ -206,7 +225,7 @@ export async function getEmployee(id: string): Promise<Employee> {
     .single();
 
   if (error) throw new Error(error.message);
-  return mapEmployee(data);
+  return mapEmployee(asEmployeeRow(data));
 }
 
 /**
@@ -323,7 +342,7 @@ export async function createEmployee(input: EmployeeInput): Promise<Employee> {
   if (error) throw new Error(error.message);
 
   revalidatePath('/employees');
-  return mapEmployee(data);
+  return mapEmployee(asEmployeeRow(data));
 }
 
 export async function updateEmployee(id: string, input: Partial<EmployeeInput>): Promise<Employee> {
@@ -403,7 +422,7 @@ export async function updateEmployee(id: string, input: Partial<EmployeeInput>):
 
   revalidatePath('/employees');
   revalidatePath(`/employees/${id}`);
-  return mapEmployee(data);
+  return mapEmployee(asEmployeeRow(data));
 }
 
 export async function deleteEmployee(id: string): Promise<void> {
@@ -544,7 +563,6 @@ export async function createEmployeeWithAuth(input: EmployeeInput & {
     .select('id, days_allowed');
   
   if (leaveTypes) {
-    const yr = new Date(input.joiningDate).getFullYear();
     const leaveBalances = leaveTypes.map(lt => ({
       employee_id: data.id,
       leave_type_id: lt.id,
@@ -556,7 +574,7 @@ export async function createEmployeeWithAuth(input: EmployeeInput & {
   }
 
   revalidatePath('/employees');
-  return { employee: mapEmployee(data), authUserId };
+  return { employee: mapEmployee(asEmployeeRow(data)), authUserId };
 }
 
 export async function getEmployeeByUserId(userId: string): Promise<Employee | null> {
@@ -576,5 +594,5 @@ export async function getEmployeeByUserId(userId: string): Promise<Employee | nu
 
   if (error && error.code !== 'PGRST116') throw new Error(error.message);
   if (!data) return null;
-  return mapEmployee(data);
+  return mapEmployee(asEmployeeRow(data));
 }

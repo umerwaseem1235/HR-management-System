@@ -3,19 +3,99 @@
 import { createClient } from '@/lib/server';
 import { revalidatePath } from 'next/cache';
 import type { Job, Candidate } from '@/lib/types';
+import type { Database } from '@/lib/supabase/database.types';
+import type { PostgrestError } from '@supabase/supabase-js';
 
-function mapJob(db: any): Job {
+type JobRow = Database['public']['Tables']['jobs']['Row'];
+type CandidateRow = Database['public']['Tables']['candidates']['Row'];
+type InterviewRow = Database['public']['Tables']['interviews']['Row'];
+type OfferRow = Database['public']['Tables']['offers']['Row'];
+type CandidateHistoryRow = Database['public']['Tables']['candidate_history']['Row'];
+type InterviewUpdate = Database['public']['Tables']['interviews']['Update'];
+type CandidateStage = Database['public']['Tables']['candidates']['Row']['stage'];
+type InterviewStatus = 'Scheduled' | 'Completed' | 'Cancelled';
+
+interface NameRef {
+  name: string | null;
+}
+
+interface JobRowWithJoins extends JobRow {
+  departments?: NameRef | null;
+  branches?: NameRef | null;
+}
+
+interface CandidateRowWithJob extends CandidateRow {
+  jobs?: { title: string | null } | null;
+}
+
+interface InterviewRowWithCandidate extends InterviewRow {
+  candidates?: NameRef | null;
+}
+
+interface OfferRowWithCandidate extends OfferRow {
+  candidates?: NameRef | null;
+}
+
+export interface JobInput {
+  title: string;
+  departmentId: string | null;
+  branchId: string | null;
+  vacancies: number;
+  status: Job['status'];
+  postedDate: string;
+  closingDate: string | null;
+  description: string | null;
+}
+
+export type JobUpdateInput = Partial<JobInput>;
+
+export interface CandidateInput {
+  name: string;
+  email: string;
+  phone?: string | null;
+  jobId: string;
+  jobTitle?: string;
+  stage?: Candidate['stage'];
+  appliedDate?: string;
+  resume?: string | null;
+  notes?: string | null;
+  rating?: number | null;
+  source?: string | null;
+}
+
+export type CandidateUpdateInput = Partial<CandidateInput>;
+
+export interface InterviewInput {
+  candidateId: string;
+  date: string;
+  time?: string;
+  mode?: string;
+  interviewer?: string;
+  interviewerId?: string | null;
+  round?: string;
+  status?: string;
+}
+
+export interface OfferInput {
+  candidateId: string;
+  salary?: number;
+  joiningDate?: string | null;
+  status?: string;
+  notes?: string | null;
+}
+
+function mapJob(db: JobRowWithJoins): Job {
   return {
     id: db.id,
     title: db.title,
     department: db.departments?.name || '',
     branch: db.branches?.name || '',
-    vacancies: db.vacancies,
-    applicants: db.applicants,
+    vacancies: db.vacancies ?? 0,
+    applicants: db.applicants ?? 0,
     status: db.status,
     postedDate: db.posted_date,
-    closingDate: db.closing_date,
-    description: db.description,
+    closingDate: db.closing_date ?? '',
+    description: db.description ?? '',
   };
 }
 
@@ -27,7 +107,7 @@ export async function getJobs(): Promise<Job[]> {
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data || []).map(mapJob);
+  return ((data ?? []) as unknown as JobRowWithJoins[]).map(mapJob);
 }
 
 export async function getJob(id: string): Promise<Job> {
@@ -39,22 +119,22 @@ export async function getJob(id: string): Promise<Job> {
     .single();
 
   if (error) throw new Error(error.message);
-  const d = data as any;
+  const d = data as unknown as JobRowWithJoins;
   return {
     id: d.id,
     title: d.title,
     department: d.departments?.name || '',
     branch: d.branches?.name || '',
-    vacancies: d.vacancies,
-    applicants: d.applicants,
+    vacancies: d.vacancies ?? 0,
+    applicants: d.applicants ?? 0,
     status: d.status,
     postedDate: d.posted_date,
-    closingDate: d.closing_date,
-    description: d.description,
+    closingDate: d.closing_date ?? '',
+    description: d.description ?? '',
   };
 }
 
-export async function createJob(data: any): Promise<Job> {
+export async function createJob(data: JobInput): Promise<Job> {
   const supabase = await createClient();
   const { data: row, error } = await supabase.from('jobs').insert([{
     title: data.title,
@@ -69,10 +149,10 @@ export async function createJob(data: any): Promise<Job> {
   }]).select('*, departments(name), branches(name)').single();
   if (error) throw new Error(error.message);
   revalidatePath('/recruitment');
-  return mapJob(row);
+  return mapJob(row as unknown as JobRowWithJoins);
 }
 
-export async function updateJob(id: string, data: any): Promise<Job> {
+export async function updateJob(id: string, data: JobUpdateInput): Promise<Job> {
   const supabase = await createClient();
   const { data: row, error } = await supabase.from('jobs').update({
     title: data.title,
@@ -86,7 +166,7 @@ export async function updateJob(id: string, data: any): Promise<Job> {
   }).eq('id', id).select('*, departments(name), branches(name)').single();
   if (error) throw new Error(error.message);
   revalidatePath('/recruitment');
-  return mapJob(row);
+  return mapJob(row as unknown as JobRowWithJoins);
 }
 
 export async function deleteJob(id: string) {
@@ -105,23 +185,23 @@ export async function getCandidates(jobId?: string): Promise<Candidate[]> {
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return (data || []).map((db: any) => ({
+  return ((data ?? []) as unknown as CandidateRowWithJob[]).map((db: CandidateRowWithJob) => ({
     id: db.id,
     name: db.name,
     email: db.email,
-    phone: db.phone,
+    phone: db.phone ?? '',
     jobId: db.job_id,
     jobTitle: db.jobs?.title || '',
     stage: db.stage,
     appliedDate: db.applied_date,
-    resume: db.resume,
-    notes: db.notes,
-    rating: db.rating,
+    resume: db.resume ?? undefined,
+    notes: db.notes ?? undefined,
+    rating: db.rating ?? undefined,
     source: db.source || 'Other',
   }));
 }
 
-export async function createCandidate(data: any) {
+export async function createCandidate(data: CandidateInput) {
   const supabase = await createClient();
   const { data: row, error: candidateErr } = await supabase.from('candidates').insert([{
     name: data.name,
@@ -144,7 +224,7 @@ export async function createCandidate(data: any) {
   }
 
   revalidatePath('/recruitment');
-  const r = row as any;
+  const r = row as unknown as CandidateRowWithJob;
   return {
     id: r.id,
     name: r.name,
@@ -163,12 +243,12 @@ export async function createCandidate(data: any) {
 
 export async function updateCandidateStage(id: string, stage: string) {
   const supabase = await createClient();
-  const { error } = await supabase.from('candidates').update({ stage: stage as any }).eq('id', id);
+  const { error } = await supabase.from('candidates').update({ stage: stage as CandidateStage }).eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/recruitment');
 }
 
-export async function updateCandidate(id: string, data: any) {
+export async function updateCandidate(id: string, data: CandidateUpdateInput) {
   const supabase = await createClient();
   const { error } = await supabase.from('candidates').update({
     name: data.name,
@@ -224,7 +304,7 @@ export async function getCandidateHistory(candidateId: string) {
     .eq('candidate_id', candidateId)
     .order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
-  return (data || []).map((row: any) => ({
+  return (data || []).map((row: CandidateHistoryRow) => ({
     date: row.date,
     action: row.action,
     note: row.note || undefined,
@@ -257,7 +337,7 @@ function toUuidOrNull(value: unknown): string | null {
     : null;
 }
 
-function mapInterview(db: any) {
+function mapInterview(db: InterviewRowWithCandidate) {
   return {
     id: db.id,
     candidateId: db.candidate_id,
@@ -267,16 +347,16 @@ function mapInterview(db: any) {
     mode: db.mode || 'In-person',
     // HEAD schema stores the name in `interviewer_name`, THEIRS in `interviewer`.
     interviewer: db.interviewer_name ?? db.interviewer ?? '',
-    interviewerId: db.interviewer_id,
+    interviewerId: db.interviewer_id ?? undefined,
     round: db.round || 'Round 1',
-    status: db.status || 'Scheduled',
+    status: (db.status || 'Scheduled') as InterviewStatus,
     feedback: db.feedback || undefined,
     rating: db.rating ?? undefined,
   };
 }
 
-function isMissingColumn(error: any, ...cols: string[]): boolean {
-  const msg = (error as any)?.message;
+function isMissingColumn(error: PostgrestError | null, ...cols: string[]): boolean {
+  const msg = error?.message;
   return typeof msg === 'string' && cols.some((c) => msg.includes(c));
 }
 export async function getInterviews() {
@@ -286,7 +366,7 @@ export async function getInterviews() {
     .select('*, candidates(name)')
     .order('date', { ascending: true });
   if (error) throw new Error(error.message);
-  return (data || []).map(mapInterview);
+  return ((data ?? []) as unknown as InterviewRowWithCandidate[]).map(mapInterview);
 }
 
 export async function scheduleInterview(data: {
@@ -324,10 +404,10 @@ export async function scheduleInterview(data: {
   }
   if (error) throw new Error(error.message);
   revalidatePath('/recruitment');
-  return (row as any)?.id as string;
+  return (row as unknown as { id: string } | null)?.id as string;
 }
 
-export async function createInterview(data: any) {
+export async function createInterview(data: InterviewInput) {
   const supabase = await createClient();
   const base = {
     candidate_id: data.candidateId,
@@ -354,7 +434,7 @@ export async function createInterview(data: any) {
   }
   if (error) throw new Error(error.message);
   revalidatePath('/recruitment');
-  return mapInterview(row);
+  return mapInterview(row as unknown as InterviewRowWithCandidate);
 }
 
 export async function updateInterview(
@@ -372,7 +452,7 @@ export async function updateInterview(
   }
 ) {
   const supabase = await createClient();
-  const patch: Record<string, any> = {};
+  const patch: InterviewUpdate = {};
   if (data.date !== undefined) patch.date = data.date;
   if (data.time !== undefined) patch.time = data.time;
   if (data.mode !== undefined) patch.mode = data.mode;
@@ -389,7 +469,7 @@ export async function updateInterview(
 
   let { data: row, error } = await supabase
     .from('interviews')
-    .update(patch as any)
+    .update(patch)
     .eq('id', id)
     .select('*, candidates(name)')
     .single();
@@ -404,21 +484,21 @@ export async function updateInterview(
     if (msg.includes('rating')) delete patch.rating;
     ({ data: row, error } = await supabase
       .from('interviews')
-      .update(patch as any)
+      .update(patch)
       .eq('id', id)
       .select('*, candidates(name)')
       .single());
   }
   if (error) throw new Error(error.message);
   revalidatePath('/recruitment');
-  return mapInterview(row);
+  return mapInterview(row as unknown as InterviewRowWithCandidate);
 }
 
 /* ------------------------------------------------------------------ */
 /*  Offers (one row per candidate)                                     */
 /* ------------------------------------------------------------------ */
 
-function mapOffer(db: any) {
+function mapOffer(db: OfferRowWithCandidate) {
   return {
     id: db.id,
     candidateId: db.candidate_id,
@@ -437,7 +517,7 @@ export async function getOffers() {
     .select('*, candidates(name)')
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
-  return (data || []).map(mapOffer);
+  return ((data ?? []) as unknown as OfferRowWithCandidate[]).map(mapOffer);
 }
 
 export async function saveOffer(data: { candidateId: string; salary: number; joiningDate: string; notes?: string }) {
@@ -453,7 +533,7 @@ export async function saveOffer(data: { candidateId: string; salary: number; joi
   revalidatePath('/recruitment');
 }
 
-export async function upsertOffer(data: any) {
+export async function upsertOffer(data: OfferInput) {
   const supabase = await createClient();
   const { data: row, error } = await supabase.from('offers').upsert([{
     candidate_id: data.candidateId,
@@ -464,7 +544,7 @@ export async function upsertOffer(data: any) {
   }], { onConflict: 'candidate_id' }).select('*, candidates(name)').single();
   if (error) throw new Error(error.message);
   revalidatePath('/recruitment');
-  return mapOffer(row);
+  return mapOffer(row as unknown as OfferRowWithCandidate);
 }
 
 export async function updateOfferStatus(idOrCandidateId: string, status: string) {
@@ -485,7 +565,7 @@ export async function updateOfferStatus(idOrCandidateId: string, status: string)
   if (error) throw new Error(error.message);
   if (!row) throw new Error('Offer not found');
   revalidatePath('/recruitment');
-  return mapOffer(row);
+  return mapOffer(row as unknown as OfferRowWithCandidate);
 }
 
 /* ------------------------------------------------------------------ */
@@ -509,12 +589,12 @@ export async function convertCandidateToEmployee(data: {
     .eq('id', data.candidateId)
     .single();
   if (candErr || !cand) throw new Error('Candidate not found');
-  const c = cand as any;
+  const c: CandidateRow = cand;
 
   async function resolveId(table: 'departments' | 'designations' | 'branches', name: string): Promise<string | null> {
     if (!name) return null;
     const { data } = await supabase.from(table).select('id').ilike('name', name).limit(1).single();
-    return (data as any)?.id || null;
+    return (data as unknown as { id: string } | null)?.id || null;
   }
 
   const [first, ...rest] = (c.name || '').split(' ');
@@ -545,11 +625,11 @@ export async function convertCandidateToEmployee(data: {
   if (empErr) throw new Error(empErr.message);
 
   await supabase.from('candidates').update({ stage: 'Hired' }).eq('id', data.candidateId);
-  await addCandidateHistory(data.candidateId, 'Hired', `Converted to employee ${(emp as any).id}`);
+  await addCandidateHistory(data.candidateId, 'Hired', `Converted to employee ${(emp as unknown as { id: string }).id}`);
 
   revalidatePath('/recruitment');
   revalidatePath('/employees');
-  return (emp as any).id as string;
+  return (emp as unknown as { id: string }).id as string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -642,23 +722,23 @@ export async function getRecruitmentData(): Promise<RecruitmentData> {
   }
 
   return {
-    jobs: ((jobsRes.data ?? []) as unknown[]).map(mapJob),
-    candidates: ((candidatesRes.data ?? []) as Array<Record<string, unknown>>).map((db: any) => ({
+    jobs: ((jobsRes.data ?? []) as unknown as JobRowWithJoins[]).map(mapJob),
+    candidates: ((candidatesRes.data ?? []) as unknown as CandidateRowWithJob[]).map((db: CandidateRowWithJob) => ({
       id: db.id,
       name: db.name,
       email: db.email,
-      phone: db.phone,
+      phone: db.phone ?? '',
       jobId: db.job_id,
       jobTitle: db.jobs?.title || '',
       stage: db.stage,
       appliedDate: db.applied_date,
-      resume: db.resume,
-      notes: db.notes,
-      rating: db.rating,
+      resume: db.resume ?? undefined,
+      notes: db.notes ?? undefined,
+      rating: db.rating ?? undefined,
       source: db.source || 'Other',
     })) as Candidate[],
-    interviews: ((interviewsRes.data ?? []) as unknown[]).map(mapInterview),
-    offers: ((offersRes.data ?? []) as unknown[]).map(mapOffer),
+    interviews: ((interviewsRes.data ?? []) as unknown as InterviewRowWithCandidate[]).map(mapInterview),
+    offers: ((offersRes.data ?? []) as unknown as OfferRowWithCandidate[]).map(mapOffer),
     interviewers: ((interviewersRes.data ?? []) as unknown as Array<{ id: string; first_name: string; last_name: string; email: string; designations: { name: string } | null }>).map((e) => ({
       id: e.id,
       firstName: e.first_name ?? '',

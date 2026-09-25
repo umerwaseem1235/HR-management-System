@@ -8,11 +8,9 @@ import SearchBar from '@/components/ui/SearchBar';
 import Select from '@/components/ui/Select';
 import type { Employee } from '@/types';
 import type { ReportEmployeeOption } from '@/lib/actions/reports';
-import type { TabId } from '../types';
 
 interface ReportFiltersProps {
   employees: (Employee | ReportEmployeeOption)[];
-  tab: TabId;
   fetchLabel: string;
   draftFrom: string;
   onDraftFromChange: (v: string) => void;
@@ -30,7 +28,7 @@ interface ReportFiltersProps {
 }
 
 export default function ReportFilters({
-  employees, tab, fetchLabel, draftFrom, onDraftFromChange, draftTo, onDraftToChange,
+  employees, fetchLabel, draftFrom, onDraftFromChange, draftTo, onDraftToChange,
   isEmployee, empId, employeesLoading, onEmpIdChange, query, onQueryChange, queryPlaceholder,
   onFetch, onPrint,
 }: ReportFiltersProps) {

@@ -2,10 +2,9 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CalendarOff, ClipboardCheck, Gift, Clock, CheckCircle2, XCircle, ArrowUpRight, Briefcase, UserPlus, DollarSign, TrendingUp, ChevronDown } from 'lucide-react';
+import { ClipboardCheck, Gift, Clock, CheckCircle2, XCircle, ArrowUpRight, Briefcase, UserPlus, DollarSign } from 'lucide-react';
 import Card from '../ui/Card';
 import StatCard from '../ui/StatCard';
-import Badge from '../ui/Badge';
 import Avatar from '../ui/Avatar';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AttendanceChart, { TrendPoint } from './AttendanceChart';
@@ -17,6 +16,19 @@ import type { DashboardStats, LeaveRequest } from '../../lib/types';
 import type { DashboardEmployee } from '../../lib/actions/dashboard';
 
 const EMPTY_EMPLOYEES: DashboardEmployee[] = [];
+
+const DEPT_PALETTE = [
+  { color: 'bg-[#2563eb]', fill: 'linear-gradient(90deg, #2E7CCB 0%, #0B4EA2 100%)' },
+  { color: 'bg-[#2378bd]', fill: 'linear-gradient(90deg, #3494CB 0%, #1B66AC 100%)' },
+  { color: 'bg-[#3ecf8e]', fill: 'linear-gradient(90deg, #62D89B 0%, #38BC7E 100%)' },
+  { color: 'bg-[#8b5cf6]', fill: 'linear-gradient(90deg, #9B7BFF 0%, #7B4DFF 100%)' },
+  { color: 'bg-[#6f8ff5]', fill: 'linear-gradient(90deg, #6E92D7 0%, #4E6FC2 100%)' },
+  { color: 'bg-[#dd6bab]', fill: 'linear-gradient(90deg, #DE7EB3 0%, #C65B9A 100%)' },
+  { color: 'bg-indigo-500', fill: 'linear-gradient(90deg, #818CF8 0%, #6366F1 100%)' },
+  { color: 'bg-yellow-500', fill: 'linear-gradient(90deg, #FBBF24 0%, #F59E0B 100%)' },
+  { color: 'bg-emerald-500', fill: 'linear-gradient(90deg, #34D399 0%, #059669 100%)' },
+  { color: 'bg-red-500', fill: 'linear-gradient(90deg, #F87171 0%, #EF4444 100%)' },
+];
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -72,18 +84,6 @@ export default function AdminDashboard() {
   }, [trendRange, trendWeek, trendMonth]);
 
   // Department headcount from live employees
-  const DEPT_PALETTE = [
-    { color: 'bg-[#2563eb]', fill: 'linear-gradient(90deg, #2E7CCB 0%, #0B4EA2 100%)' },
-    { color: 'bg-[#2378bd]', fill: 'linear-gradient(90deg, #3494CB 0%, #1B66AC 100%)' },
-    { color: 'bg-[#3ecf8e]', fill: 'linear-gradient(90deg, #62D89B 0%, #38BC7E 100%)' },
-    { color: 'bg-[#8b5cf6]', fill: 'linear-gradient(90deg, #9B7BFF 0%, #7B4DFF 100%)' },
-    { color: 'bg-[#6f8ff5]', fill: 'linear-gradient(90deg, #6E92D7 0%, #4E6FC2 100%)' },
-    { color: 'bg-[#dd6bab]', fill: 'linear-gradient(90deg, #DE7EB3 0%, #C65B9A 100%)' },
-    { color: 'bg-indigo-500', fill: 'linear-gradient(90deg, #818CF8 0%, #6366F1 100%)' },
-    { color: 'bg-yellow-500', fill: 'linear-gradient(90deg, #FBBF24 0%, #F59E0B 100%)' },
-    { color: 'bg-emerald-500', fill: 'linear-gradient(90deg, #34D399 0%, #059669 100%)' },
-    { color: 'bg-red-500', fill: 'linear-gradient(90deg, #F87171 0%, #EF4444 100%)' },
-  ];
   const deptCounts = useMemo(() => {
     const counts = new Map<string, number>();
     employees.forEach((e) => {

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/server';
 import { revalidatePath } from 'next/cache';
+import type { Database } from '@/lib/supabase/database.types';
 
 const DOCUMENTS_BUCKET = 'documents';
 
@@ -18,7 +19,15 @@ export interface DocumentRecord {
   fileName?: string;
 }
 
-function mapDoc(db: any): DocumentRecord {
+type DocumentRow = Database['public']['Tables']['documents']['Row'];
+
+type DocumentRowLike = Pick<
+  DocumentRow,
+  'id' | 'name' | 'type' | 'employee' | 'uploaded_date' | 'expiry_date' | 'status'
+> &
+  Partial<Pick<DocumentRow, 'file_data' | 'file_path' | 'file_name'>>;
+
+function mapDoc(db: DocumentRowLike): DocumentRecord {
   return {
     id: db.id,
     name: db.name,
@@ -88,7 +97,7 @@ export async function deleteDocument(id: string): Promise<void> {
   const { error } = await supabase.from('documents').delete().eq('id', id);
   if (error) throw new Error(error.message);
   // Best-effort cleanup of the bucket object; row delete already succeeded
-  const path = (row as any)?.file_path as string | undefined;
+  const path = row?.file_path;
   if (path) {
     await supabase.storage.from(DOCUMENTS_BUCKET).remove([path]);
   }
@@ -103,10 +112,10 @@ export async function getDocumentDownloadUrl(id: string): Promise<string> {
     .select('file_path, file_name')
     .eq('id', id)
     .single();
-  if (rowErr || !(row as any)?.file_path) throw new Error('No file stored for this document');
+  if (rowErr || !row?.file_path) throw new Error('No file stored for this document');
   const { data, error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
-    .createSignedUrl((row as any).file_path, 120);
+    .createSignedUrl(row.file_path, 120);
   if (error || !data?.signedUrl) throw new Error(error?.message || 'Failed to create download link');
   return data.signedUrl;
 }

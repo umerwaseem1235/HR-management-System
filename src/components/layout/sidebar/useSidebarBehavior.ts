@@ -32,10 +32,16 @@ export function useSidebarBehavior({ collapsed, role }: UseSidebarBehaviorArgs) 
     hoverTimeout.current = setTimeout(() => setHoverExpanded(false), 120);
   };
 
+  // Derive the pinned-open state during render instead of syncing it in an
+  // effect: when the sidebar is pinned open, hover-expansion is always off.
+  // (Same committed output as the previous effect, without a cascading render.)
+  if (!collapsed && hoverExpanded) {
+    setHoverExpanded(false);
+  }
+
   useEffect(() => {
     // If user pins it open via toggle, cancel any pending hover-close
     if (!collapsed) {
-      setHoverExpanded(false);
       if (hoverTimeout.current) {
         clearTimeout(hoverTimeout.current);
         hoverTimeout.current = null;

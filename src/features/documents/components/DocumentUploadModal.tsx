@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -92,7 +93,15 @@ export default function DocumentUploadModal(props: DocumentUploadModalProps) {
             <div className="overflow-auto max-h-[55vh] rounded-xl border border-[#D6E4E8] bg-[#EAF2F4]/40 min-h-[200px] flex items-center justify-center p-3">
               {viewDoc.fileData ? (
                 viewDoc.fileData.startsWith('data:image/') ? (
-                  <img src={viewDoc.fileData} alt={viewDoc.name} className="max-h-[50vh] rounded-lg mx-auto" />
+                  <Image
+                    src={viewDoc.fileData}
+                    alt={viewDoc.name}
+                    width={800}
+                    height={600}
+                    unoptimized
+                    loader={({ src }) => src}
+                    className="max-h-[50vh] w-auto rounded-lg mx-auto"
+                  />
                 ) : viewDoc.fileData.startsWith('data:application/pdf') ? (
                   <iframe src={viewDoc.fileData} title={viewDoc.name} className="w-full h-[50vh] rounded-lg bg-white" />
                 ) : (

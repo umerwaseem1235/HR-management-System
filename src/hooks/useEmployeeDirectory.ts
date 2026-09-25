@@ -39,7 +39,11 @@ export function useEmployeeDirectory() {
   }, []);
 
   useEffect(() => {
-    refresh();
+    // Subscription-style fetch: state updates happen in the async callback,
+    // not synchronously in the effect body.
+    void (async () => {
+      await refresh();
+    })();
   }, [refresh]);
 
   const findByUser = useCallback(

@@ -2,7 +2,36 @@
 
 import { createClient } from '@/lib/server';
 import { revalidatePath } from 'next/cache';
-import type { PerformanceReview, Goal, Asset } from '@/lib/types';
+import type { PerformanceReview, Goal } from '@/lib/types';
+import type { Database } from '@/lib/supabase/database.types';
+
+type PerformanceReviewRow = Database['public']['Tables']['performance_reviews']['Row'];
+type PerformanceReviewStatus = PerformanceReviewRow['status'];
+type GoalRow = Database['public']['Tables']['goals']['Row'];
+type GoalStatus = GoalRow['status'];
+
+type PerformanceReviewRowWithEmployee = PerformanceReviewRow & {
+  employees?: { first_name: string | null; last_name: string | null } | null;
+};
+
+interface PerformanceReviewInput {
+  employeeId: string;
+  cycleId: string;
+  cycleName?: string | null;
+  selfRating?: number | null;
+  managerRating?: number | null;
+  status?: PerformanceReviewStatus;
+  comments?: string | null;
+}
+
+interface GoalInput {
+  employeeId: string;
+  title: string;
+  description?: string | null;
+  progress?: number | null;
+  status?: GoalStatus;
+  dueDate?: string | null;
+}
 
 export async function getPerformanceReviews(employeeId?: string): Promise<PerformanceReview[]> {
   const supabase = await createClient();
@@ -12,20 +41,20 @@ export async function getPerformanceReviews(employeeId?: string): Promise<Perfor
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  return (data || []).map((db: any) => ({
+  return ((data || []) as unknown as PerformanceReviewRowWithEmployee[]).map((db) => ({
     id: db.id,
     employeeId: db.employee_id,
     employeeName: db.employees ? `${db.employees.first_name} ${db.employees.last_name}` : '',
     cycleId: db.cycle_id,
-    cycleName: db.cycle_name,
-    selfRating: db.self_rating,
-    managerRating: db.manager_rating,
+    cycleName: db.cycle_name || '',
+    selfRating: db.self_rating ?? undefined,
+    managerRating: db.manager_rating ?? undefined,
     status: db.status,
-    comments: db.comments,
+    comments: db.comments ?? undefined,
   }));
 }
 
-export async function createPerformanceReview(data: any) {
+export async function createPerformanceReview(data: PerformanceReviewInput) {
   const supabase = await createClient();
   const { error } = await supabase.from('performance_reviews').insert([{
     employee_id: data.employeeId,
@@ -40,7 +69,7 @@ export async function createPerformanceReview(data: any) {
   revalidatePath('/performance');
 }
 
-export async function updatePerformanceReview(id: string, data: any) {
+export async function updatePerformanceReview(id: string, data: PerformanceReviewInput) {
   const supabase = await createClient();
   const { error } = await supabase.from('performance_reviews').update({
     employee_id: data.employeeId,
@@ -63,18 +92,18 @@ export async function getGoals(employeeId?: string): Promise<Goal[]> {
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  return (data || []).map((db: any) => ({
+  return (data || []).map((db) => ({
     id: db.id,
     employeeId: db.employee_id,
     title: db.title,
-    description: db.description,
-    progress: db.progress,
+    description: db.description || '',
+    progress: db.progress ?? 0,
     status: db.status,
-    dueDate: db.due_date,
+    dueDate: db.due_date || '',
   }));
 }
 
-export async function createGoal(data: any) {
+export async function createGoal(data: GoalInput) {
   const supabase = await createClient();
   const { error } = await supabase.from('goals').insert([{
     employee_id: data.employeeId,
@@ -88,7 +117,7 @@ export async function createGoal(data: any) {
   revalidatePath('/performance');
 }
 
-export async function updateGoal(id: string, data: any) {
+export async function updateGoal(id: string, data: GoalInput) {
   const supabase = await createClient();
   const { error } = await supabase.from('goals').update({
     employee_id: data.employeeId,
@@ -109,103 +138,7 @@ export async function deleteGoal(id: string) {
   revalidatePath('/performance');
 }
 
-export async function getAssets(): Promise<Asset[]> {
-  const supabase = await createClient();
-  const { data: assets, error: assetErr } = await supabase.from('assets').select('*').order('created_at', { ascending: false });
-  if (assetErr) {
-    // Table was dropped by migration 003_drop_assets_ensure_recruitment.
-    // Return empty instead of crashing callers (e.g. EmployeeDetail view).
-    const msg = assetErr.message || '';
-    if ((assetErr as any).code === 'PGRST205' || msg.includes('Could not find the table') || msg.includes('schema cache')) {
-      return [];
-    }
-    throw new Error(assetErr.message);
-  }
-
-  const { data: assignments } = await supabase.from('asset_assignments').select('*, employees(first_name, last_name)').is('return_date', null);
-
-  const assignmentMap = new Map((assignments || []).map((a: any) => [a.asset_id, a]));
-
-  return (assets || []).map((db: any) => {
-    const a = assignmentMap.get(db.id) as any;
-    return {
-      id: db.id,
-      name: db.name,
-      type: db.type,
-      serialNumber: db.serial_number,
-      assignedTo: a?.employee_id,
-      assignedToName: a?.employees ? `${a.employees.first_name} ${a.employees.last_name}` : undefined,
-      issueDate: a?.issue_date,
-      returnDate: a?.return_date,
-      condition: db.condition,
-      status: db.status,
-    };
-  });
-}
-
-export async function createAsset(data: any) {
-  const supabase = await createClient();
-  const { data: asset, error } = await supabase.from('assets').insert([{
-    name: data.name,
-    type: data.type,
-    serial_number: data.serialNumber,
-    condition: data.condition || 'New',
-    status: data.status || 'Available',
-  }]).select().single();
-  if (error) throw new Error(error.message);
-
-  if (data.assignedTo && asset) {
-    await supabase.from('asset_assignments').insert([{
-      asset_id: asset.id,
-      employee_id: data.assignedTo,
-      issue_date: data.issueDate || new Date().toISOString().split('T')[0],
-    }]);
-  }
-
-  revalidatePath('/performance');
-}
-
-export async function updateAsset(id: string, data: any) {
-  const supabase = await createClient();
-  const { error } = await supabase.from('assets').update({
-    name: data.name,
-    type: data.type,
-    serial_number: data.serialNumber,
-    condition: data.condition,
-    status: data.status,
-  }).eq('id', id);
-  if (error) throw new Error(error.message);
-  revalidatePath('/performance');
-}
-
-export async function assignAsset(assetId: string, employeeId: string, issueDate: string) {
-  const supabase = await createClient();
-  const { error: updateErr } = await supabase.from('assets').update({
-    status: 'Assigned',
-  }).eq('id', assetId);
-  if (updateErr) throw new Error(updateErr.message);
-
-  const { error: assignErr } = await supabase.from('asset_assignments').insert([{
-    asset_id: assetId,
-    employee_id: employeeId,
-    issue_date: issueDate,
-  }]);
-  if (assignErr) throw new Error(assignErr.message);
-
-  revalidatePath('/performance');
-}
-
-export async function returnAsset(assetId: string) {
-  const supabase = await createClient();
-  const today = new Date().toISOString().split('T')[0];
-
-  await supabase.from('assets').update({
-    status: 'Available',
-  }).eq('id', assetId);
-
-  await supabase.from('asset_assignments').update({
-    return_date: today,
-  }).eq('asset_id', assetId).is('return_date', null);
-
-  revalidatePath('/performance');
-}
+// NOTE: The legacy asset-management actions (getAssets, createAsset,
+// updateAsset, assignAsset, returnAsset) were removed — migration
+// 003_drop_assets_ensure_recruitment permanently dropped the `assets`
+// and `asset_assignments` tables, so those queries could never succeed.

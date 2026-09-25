@@ -1,8 +1,24 @@
 'use server';
 
 import { createClient } from '@/lib/server';
-import { revalidatePath } from 'next/cache';
+import type { Database } from '@/lib/supabase/database.types';
 import { AuditLog } from '@/lib/types';
+
+type AuditLogRow = Database['public']['Tables']['audit_logs']['Row'];
+
+function mapAuditLog(row: AuditLogRow): AuditLog {
+  return {
+    id: row.id,
+    userId: row.user_id || '',
+    userName: row.user_name || '',
+    module: row.module || '',
+    action: row.action || '',
+    record: row.record || '',
+    previousValue: row.previous_value ?? undefined,
+    newValue: row.new_value ?? undefined,
+    timestamp: row.created_at,
+  };
+}
 
 export async function getAuditLogs(): Promise<AuditLog[]> {
   const supabase = await createClient();
@@ -13,17 +29,7 @@ export async function getAuditLogs(): Promise<AuditLog[]> {
 
   if (error) throw new Error(error.message);
 
-  return (data || []).map((row: any) => ({
-    id: row.id,
-    userId: row.user_id,
-    userName: row.user_name,
-    module: row.module,
-    action: row.action,
-    record: row.record,
-    previousValue: row.previous_value,
-    newValue: row.new_value,
-    timestamp: row.created_at,
-  }));
+  return (data || []).map(mapAuditLog);
 }
 
 export async function getAuditLogsByModule(module: string): Promise<AuditLog[]> {
@@ -36,17 +42,7 @@ export async function getAuditLogsByModule(module: string): Promise<AuditLog[]> 
 
   if (error) throw new Error(error.message);
 
-  return (data || []).map((row: any) => ({
-    id: row.id,
-    userId: row.user_id,
-    userName: row.user_name,
-    module: row.module,
-    action: row.action,
-    record: row.record,
-    previousValue: row.previous_value,
-    newValue: row.new_value,
-    timestamp: row.created_at,
-  }));
+  return (data || []).map(mapAuditLog);
 }
 
 export async function createAuditLog(data: {

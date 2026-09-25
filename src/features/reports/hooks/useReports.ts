@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 // NOTE: jspdf is loaded lazily inside handleDownloadPDF so the reports page
 // renders without the PDF library in its initial bundle.
-import { downloadTabReport } from '@/lib/reports-pdf';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProgress } from '@/contexts/ProgressContext';
 import { useWork } from '@/contexts/WorkContext';
@@ -52,24 +51,6 @@ export function stripHtml(html: string): string {
     .trim();
 }
 
-function fmtDur(mins: number): string {
-  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
-}
-
-/** Map a real attendance record to a report day row. */
-function recordToDayRow(r: AttendanceRecord): AttendanceDayRow {
-  const weekday = new Date(`${r.date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' });
-  const mins = Math.round((Number(r.workHours) || 0) * 60);
-  return {
-    date: r.date,
-    weekday,
-    clockIn: r.checkIn || '—',
-    clockOut: r.checkOut || '—',
-    hours: mins > 0 ? fmtDur(mins) : '—',
-    status: (r.status || 'Present') as AttendanceDayRow['status'],
-  };
-}
-
 function toMinutes(t: string | null | undefined): number | null {
   if (!t) return null;
   const m = t.match(/(\d{1,2}):(\d{2})/);
@@ -104,14 +85,6 @@ function toDayRow(r: AttendanceRecord): AttendanceDayRow {
     hours: formatHours(r.checkIn, r.checkOut, r.workHours),
     status: (r.status as AttendanceDayRow['status']) ?? 'Present',
   };
-}
-
-/**
- * @deprecated Reports now load real attendance from the database
- * (`getAttendanceReport`). Kept only so old imports don't break.
- */
-export function buildAttendanceDays(_empId: string, _from: string, _to: string): AttendanceDayRow[] {
-  return [];
 }
 
 export const PRINT_STATUS_COLOR: Record<string, string> = {
@@ -207,12 +180,19 @@ export function useReports() {
     ? `${scopeEmployee.firstName} ${scopeEmployee.lastName}`.trim()
     : (isEmployee ? (user?.name ?? '') : '');
 
-  // Default the admin scope picker to the first live employee
-  useEffect(() => {
+  // Default the admin scope picker to the first live employee, adjusted
+  // during render (instead of an effect) to avoid a cascading render.
+  const [prevScopeKey, setPrevScopeKey] = useState({ isEmployee, empId, employees });
+  if (
+    prevScopeKey.isEmployee !== isEmployee ||
+    prevScopeKey.empId !== empId ||
+    prevScopeKey.employees !== employees
+  ) {
+    setPrevScopeKey({ isEmployee, empId, employees });
     if (!isEmployee && !empId && employees.length > 0) {
       setEmpId(employees[0].id);
     }
-  }, [isEmployee, empId, employees]);
+  }
 
   // NOTE: a previous version bulk-loaded getAllAttendance() for EVERY month
   // in the range (all employees) AND then loaded the scoped employee report

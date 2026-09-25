@@ -2,8 +2,10 @@
 
 import { createClient } from '@/lib/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
-import { revalidatePath } from 'next/cache';
 import { Notification } from '@/lib/types';
+import type { Database } from '@/lib/supabase/database.types';
+
+type NotificationRow = Database['public']['Tables']['notifications']['Row'];
 
 export async function getNotifications(userId: string): Promise<Notification[]> {
   const supabase = await createClient();
@@ -15,14 +17,14 @@ export async function getNotifications(userId: string): Promise<Notification[]> 
 
   if (error) throw new Error(error.message);
 
-  return (data || []).map((row: any) => ({
+  return (data || []).map((row: NotificationRow) => ({
     id: row.id,
     title: row.title,
     message: row.message,
     type: (row.type || 'info') as Notification['type'],
     read: row.read || false,
     createdAt: row.created_at,
-    link: row.link,
+    link: row.link ?? undefined,
   }));
 }
 

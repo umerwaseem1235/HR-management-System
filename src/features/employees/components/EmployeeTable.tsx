@@ -65,8 +65,8 @@ export default function EmployeeTable({ employees, onEdit, onView, onDelete, isL
                   <td className="px-6 py-4 text-sm text-[#263238] whitespace-nowrap">{emp.joiningDate}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3 text-gray-400">
-                      {emp.email && <Mail size={16} title={emp.email} className="hover:text-[#024fa7] cursor-pointer transition-colors" />}
-                      {emp.phone && <Phone size={16} title={emp.phone} className="hover:text-[#024fa7] cursor-pointer transition-colors" />}
+                      {emp.email && <span title={emp.email}><Mail size={16} aria-label={emp.email} className="hover:text-[#024fa7] cursor-pointer transition-colors" /></span>}
+                      {emp.phone && <span title={emp.phone}><Phone size={16} aria-label={emp.phone} className="hover:text-[#024fa7] cursor-pointer transition-colors" /></span>}
                     </div>
                   </td>
                   <td className="px-6 py-4">

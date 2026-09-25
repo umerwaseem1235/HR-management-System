@@ -10,15 +10,18 @@ export default function EmployeeDashboardPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [mounted, setMounted] = useState(false);
 
+  // Mount-guard deferred to the next frame so no setState runs
+  // synchronously inside the effect body.
   useEffect(() => {
-    setMounted(true);
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
     if (mounted && !authLoading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [mounted, authLoading, isAuthenticated]);
+  }, [mounted, authLoading, isAuthenticated, router]);
 
   // Gate on auth only — AuthContext persists across module switches, so
   // returning here renders the dashboard (with cached data) immediately

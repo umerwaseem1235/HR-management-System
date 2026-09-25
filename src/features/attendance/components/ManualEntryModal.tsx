@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -34,11 +34,29 @@ export default function ManualEntryModal({
   const suggestion = lateRule && checkIn ? resolveLateStatus(checkIn, lateRule) : null;
 
   // Auto-suggest status from the late-arrival rule until the admin overrides it.
-  useEffect(() => {
-    if (!suggestion || !lateRule?.enabled || statusTouched) return;
-    if (['Present', 'Late', 'Half Day'].includes(status)) setStatus(suggestion.status);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checkIn, lateRule?.graceMinutes, lateRule?.halfDayAfterMinutes, lateRule?.enabled]);
+  // Adjusted during render (instead of an effect) to avoid a cascading render.
+  const [prevAutoInput, setPrevAutoInput] = useState({
+    checkIn,
+    graceMinutes: lateRule?.graceMinutes,
+    halfDayAfterMinutes: lateRule?.halfDayAfterMinutes,
+    enabled: lateRule?.enabled,
+  });
+  if (
+    prevAutoInput.checkIn !== checkIn ||
+    prevAutoInput.graceMinutes !== lateRule?.graceMinutes ||
+    prevAutoInput.halfDayAfterMinutes !== lateRule?.halfDayAfterMinutes ||
+    prevAutoInput.enabled !== lateRule?.enabled
+  ) {
+    setPrevAutoInput({
+      checkIn,
+      graceMinutes: lateRule?.graceMinutes,
+      halfDayAfterMinutes: lateRule?.halfDayAfterMinutes,
+      enabled: lateRule?.enabled,
+    });
+    if (suggestion && lateRule?.enabled && !statusTouched && ['Present', 'Late', 'Half Day'].includes(status)) {
+      setStatus(suggestion.status);
+    }
+  }
 
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

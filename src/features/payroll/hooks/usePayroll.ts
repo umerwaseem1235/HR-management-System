@@ -206,13 +206,16 @@ export function usePayroll() {
   };
 
   useEffect(() => {
-    closeStaleDialogs();
-    if (!selectedRunId) {
-      setSelectedRun(null);
-      return;
-    }
     let cancelled = false;
-    (async () => {
+    // Subscription-style loader: all state updates happen inside the async
+    // callback (sync resets run first within the same task, then the async
+    // fetch resolves), not synchronously in the effect body.
+    void (async () => {
+      closeStaleDialogs();
+      if (!selectedRunId) {
+        setSelectedRun(null);
+        return;
+      }
       try {
         const full = await getPayrollRun(selectedRunId);
         if (!cancelled) {

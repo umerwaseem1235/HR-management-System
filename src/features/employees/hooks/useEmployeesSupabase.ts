@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Employee } from '@/lib/types';
 import { getEmployee, getEmployees, getLookupData } from '@/lib/actions/employees';
 import { cachedQuery, invalidateQuery, peekQuery } from '@/lib/query-cache';
@@ -53,7 +53,16 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
   const [statusFilter, setStatusFilter] = useState('');
   const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
   const [employees, setEmployees] = useState<Employee[]>(() => peekQuery<Employee[]>(EMPLOYEES_CACHE_KEY) ?? []);
-  const [filtered, setFiltered] = useState<Employee[]>([]);
+  // Derived synchronously during render instead of syncing via an effect.
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return employees.filter(emp => {
+      const matchSearch = !q || `${emp.firstName} ${emp.lastName} ${emp.employeeCode} ${emp.email} ${emp.department} ${emp.designation} ${emp.branch} ${emp.phone || ''}`.toLowerCase().includes(q);
+      const matchDept = !deptFilter || emp.department === deptFilter;
+      const matchStatus = !statusFilter || emp.status === statusFilter;
+      return matchSearch && matchDept && matchStatus;
+    });
+  }, [search, deptFilter, statusFilter, employees]);
   // Instant first paint when a fresh cache entry exists (recent tab visit).
   const [isLoading, setIsLoading] = useState(() => peekQuery<Employee[]>(EMPLOYEES_CACHE_KEY) === undefined);
   const [error, setError] = useState<string | null>(null);
@@ -100,15 +109,20 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
     }
   }, []);
 
-  // Fetch employees on mount
+  // Fetch employees on mount (subscription-style: state updates happen in
+  // the async callback, not synchronously in the effect body).
   useEffect(() => {
-    fetchEmployees();
+    void (async () => {
+      await fetchEmployees();
+    })();
   }, [fetchEmployees]);
 
-  // Fetch lookup data in background or when modal is opened
+  // Fetch lookup data in background or when modal is opened.
   useEffect(() => {
     if (isAddEmployeeOpen || editingEmployee) {
-      fetchLookup();
+      void (async () => {
+        await fetchLookup();
+      })();
     }
   }, [isAddEmployeeOpen, editingEmployee, fetchLookup]);
 
@@ -137,19 +151,6 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
     setEditingEmployee(null);
   }, []);
 
-  // Filter employees
-  useEffect(() => {
-    const q = search.trim().toLowerCase();
-    const result = employees.filter(emp => {
-      const matchSearch = !q || `${emp.firstName} ${emp.lastName} ${emp.employeeCode} ${emp.email} ${emp.department} ${emp.designation} ${emp.branch} ${emp.phone || ''}`.toLowerCase().includes(q);
-      const matchDept = !deptFilter || emp.department === deptFilter;
-      const matchStatus = !statusFilter || emp.status === statusFilter;
-      return matchSearch && matchDept && matchStatus;
-    });
-    setFiltered(result);
-  }, [search, deptFilter, statusFilter, employees]);
-
-  // Drop cached reads before refetching so mutations are always visible.
   const refreshEmployees = useCallback(async () => {
     invalidateQuery(EMPLOYEES_CACHE_KEY);
     invalidateQuery(EMPLOYEE_LOOKUP_CACHE_KEY);

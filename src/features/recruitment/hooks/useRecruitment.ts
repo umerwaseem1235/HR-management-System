@@ -70,13 +70,13 @@ const recruitmentCache = createResourceCache<RecruitmentSnapshot>('recruitment:d
 function toSnapshot(data: RecruitmentData): RecruitmentSnapshot {
   return {
     jobs: data.jobs,
-    candidates: (data.candidates as any[]).map((c: any) => ({
+    candidates: data.candidates.map((c: Candidate) => ({
       ...c,
-      source: c.source || 'Other',
+      source: (c as unknown as CandidateExt).source || 'Other',
       history: [{ date: c.appliedDate, action: 'Applied', note: `Noted for ${c.jobTitle}` }],
     })),
-    interviews: (data.interviews as any[]).map((r: any) => ({ ...r, status: r.status as Interview['status'] })),
-    offers: (data.offers as any[]).map((r: any) => ({ ...r, status: r.status as Offer['status'] })),
+    interviews: data.interviews.map((r: RecruitmentData['interviews'][number]) => ({ ...r, status: r.status as Interview['status'] })),
+    offers: data.offers.map((r: RecruitmentData['offers'][number]) => ({ ...r, status: r.status as Offer['status'] })),
     interviewers: data.interviewers as unknown as Employee[],
     deptIdByName: data.deptIdByName,
     branchIdByName: data.branchIdByName,
@@ -163,21 +163,21 @@ export function useRecruitment() {
 
   const refreshCandidates = useCallback(async () => {
     const list = await getCandidates();
-    setCandidates(list.map((c: any) => ({
+    setCandidates(list.map((c: Candidate) => ({
       ...c,
-      source: c.source || 'Other',
+      source: (c as unknown as CandidateExt).source || 'Other',
       history: [] as CandidateExt['history'],
     })));
   }, []);
 
   const refreshInterviews = useCallback(async () => {
     const list = await getInterviews();
-    setInterviews(list as Interview[]);
+    setInterviews(list as unknown as Interview[]);
   }, []);
 
   const refreshOffers = useCallback(async () => {
     const list = await getOffers();
-    setOffers(list as Offer[]);
+    setOffers(list as unknown as Offer[]);
   }, []);
 
   const refreshOffersQuietly = async () => {
@@ -339,12 +339,12 @@ export function useRecruitment() {
         const departmentId = deptIdByName[job.department.toLowerCase()];
         const branchId = branchIdByName[job.branch.toLowerCase()];
         if (departmentId && branchId) {
-          await updateJob(id, { status: 'Closed' } as any);
+          await updateJob(id, { status: 'Closed' });
         } else {
           await persistJobStatus(job, 'Closed');
         }
       } else {
-        await updateJob(id, { status: 'Closed' } as any);
+        await updateJob(id, { status: 'Closed' });
       }
       await refreshJobsQuietly();
     } catch (err) {
@@ -362,12 +362,12 @@ export function useRecruitment() {
         const departmentId = deptIdByName[job.department.toLowerCase()];
         const branchId = branchIdByName[job.branch.toLowerCase()];
         if (departmentId && branchId) {
-          await updateJob(id, { status: 'Open' } as any);
+          await updateJob(id, { status: 'Open' });
         } else {
           await persistJobStatus(job, 'Open');
         }
       } else {
-        await updateJob(id, { status: 'Open' } as any);
+        await updateJob(id, { status: 'Open' });
       }
       await refreshJobsQuietly();
     } catch (err) {
@@ -412,12 +412,12 @@ export function useRecruitment() {
       const description = `${jobModal.description.trim()}${jobModal.requirements.trim() ? `\nRequirements: ${jobModal.requirements.trim()}` : ''}`;
       const vacancies = Math.max(1, Number(jobModal.vacancies) || 1);
       const closingDate = jobModal.closingDate || today();
-      let departmentId = deptIdByName[jobModal.department.toLowerCase()];
-      let branchId = branchIdByName[jobModal.branch.toLowerCase()];
+      let departmentId: string | undefined = deptIdByName[jobModal.department.toLowerCase()];
+      let branchId: string | undefined = branchIdByName[jobModal.branch.toLowerCase()];
       if (!departmentId || !branchId) {
         const resolved = await resolveDeptBranchIds(jobModal.department, jobModal.branch);
-        departmentId = departmentId || resolved.departmentId || undefined as any;
-        branchId = branchId || resolved.branchId || undefined as any;
+        departmentId = departmentId || resolved.departmentId || undefined;
+        branchId = branchId || resolved.branchId || undefined;
       }
       if (!departmentId || !branchId) {
         const msg = 'Department or branch not found. Refresh and try again.';
@@ -525,13 +525,13 @@ export function useRecruitment() {
     try {
       const saved = await createCandidate(payload);
       const ext: CandidateExt = {
-        ...(saved as Candidate),
-        source: (saved as Candidate & { source?: string }).source || payload.source,
+        ...(saved as unknown as Candidate),
+        source: (saved as unknown as CandidateExt).source || payload.source,
         history: [{ date: today(), action: 'Noted', note: `Manually noted for ${payload.jobTitle} via ${payload.source}` }],
       };
       setCandidates(prev => [ext, ...prev]);
       setJobs(prev => prev.map(j => j.id === v.jobId ? { ...j, applicants: j.applicants + 1 } : j));
-      const created = { ...(saved as any), id: (saved as any)?.id };
+      const created = saved as unknown as { id?: string };
       if (created?.id) {
         try {
           await addCandidateHistory(created.id, 'Applied', `Noted for ${job?.title || ''} via ${payload.source}`);
@@ -687,17 +687,17 @@ export function useRecruitment() {
     if (!intModal.interviewer) return;
     const cand = candidates.find((c) => c.id === intModal.candidateId);
     const emp = employees.find((x) => x.id === intModal.interviewer);
-    const interviewerName = emp ? `${(emp as any).firstName} ${(emp as any).lastName}` : intModal.interviewer;
+    const interviewerName = emp ? `${emp.firstName} ${emp.lastName}` : intModal.interviewer;
     const payload = {
       candidateId: intModal.candidateId,
       date: intModal.date,
       time: intModal.time || '10:00',
       mode: intModal.mode,
       interviewer: interviewerName,
-      interviewerId: (emp as any)?.id,
+      interviewerId: emp?.id,
       round: intModal.round || 'Round 1',
     };
-    let saved: any = null;
+    let saved: Interview | string | null = null;
     try {
       saved = await scheduleInterviewAction(payload);
     } catch {
@@ -709,7 +709,8 @@ export function useRecruitment() {
       }
     }
     if (saved) {
-      setInterviews((prev) => [...prev, { ...saved, status: (saved.status as Interview['status']) ?? 'Scheduled' }]);
+      const savedInterview = saved as unknown as Interview;
+      setInterviews((prev) => [...prev, { ...savedInterview, status: savedInterview.status ?? 'Scheduled' }]);
     }
     try {
       await refreshInterviews();
@@ -746,7 +747,7 @@ export function useRecruitment() {
     if (iv) {
       await pushHistory(iv.candidateId, 'Feedback', fbModal.feedback || `Rated ${fbModal.rating}`);
       if (fbModal.rating) {
-        await updateCandidate(iv.candidateId, { rating: Number(fbModal.rating) } as any);
+        await updateCandidate(iv.candidateId, { rating: Number(fbModal.rating) });
         await refreshCandidates();
       }
     }

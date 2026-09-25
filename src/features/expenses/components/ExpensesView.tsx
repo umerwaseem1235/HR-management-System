@@ -1,6 +1,7 @@
 'use client';
 
 import { CalendarDays, CheckCircle2, Download, Paperclip, Plus, RotateCcw, Trash2, XCircle, ZoomIn, ZoomOut } from 'lucide-react';
+import Image from 'next/image';
 import Avatar from '@/components/ui/Avatar';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -155,9 +156,13 @@ export default function ExpensesView() {
                     }}
                   />
                 ) : e.viewingReceipt ? (
-                  <img
+                  <Image
                     src={e.viewingReceipt}
                     alt="Expense receipt"
+                    width={1200}
+                    height={1200}
+                    unoptimized
+                    loader={({ src }) => src}
                     className="mx-auto block h-auto rounded-lg border border-[#D6E4E8] bg-white shadow-sm object-contain"
                     style={{
                       width: `${Math.round(e.zoom * 100)}%`,

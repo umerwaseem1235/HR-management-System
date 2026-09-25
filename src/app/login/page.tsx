@@ -16,28 +16,35 @@ const DEMO_ACCOUNTS = [
 export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated, user } = useAuth();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('email') ?? '';
+  });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [signupSuccess, setSignupSuccess] = useState(false);
+  // Derive the one-time query params during render instead of syncing them
+  // in an effect (same values the mount effect used to read).
+  const [signupSuccess, setSignupSuccess] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('registered') === '1';
+  });
 
+  // Mount-guard is deferred to the next frame so no setState runs
+  // synchronously inside the effect body (entrance transition still plays).
   useEffect(() => {
-    setMounted(true);
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
+  // Sync with the external system only (clean the URL); state above is
+  // already derived during render, so this effect sets no state.
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const emailQuery = params.get('email');
-    if (emailQuery) {
-      setEmail(emailQuery);
-    }
-    if (params.get('registered') === '1') {
-      setSignupSuccess(true);
-      setPassword('');
-    }
-    if (emailQuery || params.get('registered')) {
+    if (params.get('email') || params.get('registered')) {
       window.history.replaceState({}, '', '/login');
     }
   }, []);

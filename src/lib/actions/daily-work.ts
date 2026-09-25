@@ -3,6 +3,29 @@
 import { createClient } from '@/lib/server';
 import { revalidatePath } from 'next/cache';
 import { DailyWork, DailyWorkStatus } from '@/lib/types';
+import type { Database } from '@/lib/supabase/database.types';
+
+type DailyWorkRow = Database['public']['Tables']['daily_work']['Row'];
+
+type DailyWorkRowWithEmployee = DailyWorkRow & {
+  employees?: { first_name: string | null; last_name: string | null } | null;
+};
+
+function mapDailyWork(row: DailyWorkRowWithEmployee): DailyWork {
+  return {
+    id: row.id,
+    employeeId: row.employee_id,
+    employeeName: row.employees ? `${row.employees.first_name} ${row.employees.last_name}` : 'Unknown',
+    title: row.title,
+    description: row.description || '',
+    date: row.date,
+    fileData: row.file_url ?? undefined,
+    fileName: row.file_name ?? undefined,
+    link: row.link ?? undefined,
+    status: row.status,
+    submittedOn: row.submitted_on,
+  };
+}
 
 export async function getDailyWork(employeeId?: string): Promise<DailyWork[]> {
   const supabase = await createClient();
@@ -24,19 +47,7 @@ export async function getDailyWork(employeeId?: string): Promise<DailyWork[]> {
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  return (data || []).map((row: any) => ({
-    id: row.id,
-    employeeId: row.employee_id,
-    employeeName: row.employees ? `${row.employees.first_name} ${row.employees.last_name}` : 'Unknown',
-    title: row.title,
-    description: row.description,
-    date: row.date,
-    fileData: row.file_url,
-    fileName: row.file_name,
-    link: row.link,
-    status: row.status,
-    submittedOn: row.submitted_on,
-  }));
+  return ((data || []) as unknown as DailyWorkRowWithEmployee[]).map(mapDailyWork);
 }
 
 export async function createDailyWork(data: {
@@ -76,20 +87,7 @@ export async function createDailyWork(data: {
   if (error) throw new Error(error.message);
   revalidatePath('/work');
 
-  const r = row as any;
-  return {
-    id: r.id,
-    employeeId: r.employee_id,
-    employeeName: r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : 'Unknown',
-    title: r.title,
-    description: r.description,
-    date: r.date,
-    fileData: r.file_url,
-    fileName: r.file_name,
-    link: r.link,
-    status: r.status,
-    submittedOn: r.submitted_on,
-  };
+  return mapDailyWork(row as unknown as DailyWorkRowWithEmployee);
 }
 
 export async function updateDailyWork(id: string, data: {

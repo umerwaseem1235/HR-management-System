@@ -3,6 +3,29 @@
 import { createClient } from '@/lib/server';
 import { revalidatePath } from 'next/cache';
 import { ExpenseClaim } from '@/lib/types';
+import type { Database } from '@/lib/supabase/database.types';
+
+type ExpenseClaimRow = Database['public']['Tables']['expense_claims']['Row'];
+type AdminIdRow = Pick<Database['public']['Tables']['users']['Row'], 'id'>;
+
+type ExpenseClaimRowWithEmployee = ExpenseClaimRow & {
+  employees?: { first_name: string | null; last_name: string | null } | null;
+};
+
+function mapExpenseClaim(row: ExpenseClaimRowWithEmployee): ExpenseClaim {
+  return {
+    id: row.id,
+    employeeId: row.employee_id,
+    employeeName: row.employees ? `${row.employees.first_name} ${row.employees.last_name}` : 'Unknown',
+    category: row.category,
+    amount: row.amount,
+    date: row.date,
+    description: row.description || '',
+    status: row.status,
+    receipt: row.receipt_url ?? undefined,
+    submittedOn: row.submitted_on,
+  };
+}
 
 export async function getExpenseClaims(employeeId?: string): Promise<ExpenseClaim[]> {
   const supabase = await createClient();
@@ -24,18 +47,7 @@ export async function getExpenseClaims(employeeId?: string): Promise<ExpenseClai
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  return (data || []).map((row: any) => ({
-    id: row.id,
-    employeeId: row.employee_id,
-    employeeName: row.employees ? `${row.employees.first_name} ${row.employees.last_name}` : 'Unknown',
-    category: row.category,
-    amount: row.amount,
-    date: row.date,
-    description: row.description,
-    status: row.status,
-    receipt: row.receipt_url,
-    submittedOn: row.submitted_on,
-  }));
+  return ((data || []) as unknown as ExpenseClaimRowWithEmployee[]).map(mapExpenseClaim);
 }
 
 export async function createExpenseClaim(data: {
@@ -74,19 +86,7 @@ export async function createExpenseClaim(data: {
 
   revalidatePath('/expenses');
 
-  const r = row as any;
-  return {
-    id: r.id,
-    employeeId: r.employee_id,
-    employeeName: r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : 'Unknown',
-    category: r.category,
-    amount: r.amount,
-    date: r.date,
-    description: r.description,
-    status: r.status,
-    receipt: r.receipt_url,
-    submittedOn: r.submitted_on,
-  };
+  return mapExpenseClaim(row as unknown as ExpenseClaimRowWithEmployee);
 }
 
 export async function updateExpenseStatus(id: string, status: 'Pending' | 'Approved' | 'Rejected' | 'Reimbursed') {
@@ -140,6 +140,9 @@ export async function deleteExpenseClaim(id: string) {
 /* ------------------------------------------------------------------ */
 
 async function loadClaimWithEmployee(supabase: Awaited<ReturnType<typeof createClient>>, claimId: string) {
+  type ClaimRow = Pick<ExpenseClaimRow, 'id' | 'category' | 'amount' | 'date' | 'description' | 'status' | 'employee_id'>;
+  type EmployeeRow = Pick<Database['public']['Tables']['employees']['Row'], 'id' | 'first_name' | 'last_name' | 'user_id'>;
+
   const { data, error } = await supabase
     .from('expense_claims')
     .select('id, category, amount, date, description, status, employee_id')
@@ -147,13 +150,14 @@ async function loadClaimWithEmployee(supabase: Awaited<ReturnType<typeof createC
     .single();
   if (error || !data) throw new Error('Expense claim not found');
 
+  const claim = data as ClaimRow;
   const { data: emp } = await supabase
     .from('employees')
     .select('id, first_name, last_name, user_id')
-    .eq('id', (data as any).employee_id)
+    .eq('id', claim.employee_id)
     .single();
 
-  return { claim: data as any, employee: emp as any };
+  return { claim, employee: emp as EmployeeRow | null };
 }
 
 /**
@@ -176,7 +180,7 @@ export async function notifyAdminsNewClaim(claimId: string): Promise<number> {
   if (adminErr) throw new Error(adminErr.message);
   if (!admins || admins.length === 0) return 0;
 
-  const rows = (admins as any[]).map((a) => ({
+  const rows = (admins as AdminIdRow[]).map((a) => ({
     user_id: a.id,
     title: 'New Expense Claim',
     message: `${employeeName} submitted $${Number(claim.amount).toLocaleString()} for ${claim.category} (${claim.date}). Review pending.`,

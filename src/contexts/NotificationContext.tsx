@@ -19,27 +19,32 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  // Stable primitive for memo deps (same value as user?.id, but the
+  // compiler infers `userId` exactly, preserving manual memoization).
+  const userId = user?.id;
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
-    if (!user?.id) {
+    if (!userId) {
       setNotifications([]);
       return;
     }
     setIsLoading(true);
     try {
-      const data = await getNotifications(user.id);
+      const data = await getNotifications(userId);
       setNotifications(data);
     } catch (error) {
       console.error('Failed to load notifications:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id]);
+  }, [userId]);
 
   useEffect(() => {
-    fetchNotifications();
+    // Deferred to a microtask so no setState runs synchronously in the
+    // effect body; subscription-style callback preserves exact fetch timing.
+    void Promise.resolve().then(() => fetchNotifications());
   }, [fetchNotifications]);
 
   const markAsRead = useCallback(async (id: string) => {
@@ -48,13 +53,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const markAllAsRead = useCallback(async () => {
-    if (!user?.id) return;
-    await markAllAsReadAction(user.id);
+    if (!userId) return;
+    await markAllAsReadAction(userId);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  }, [user?.id]);
+  }, [userId]);
 
   const addNotification = useCallback(async (input: { title: string; message: string; type?: Notification['type']; link?: string; userId?: string }) => {
-    const targetUserId = input.userId || user?.id;
+    const targetUserId = input.userId || userId;
     const n = await createNotificationAction({
       userId: targetUserId,
       title: input.title,
@@ -63,10 +68,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       link: input.link
     });
     // Only update local state if it's meant for the current user
-    if (targetUserId === user?.id) {
+    if (targetUserId === userId) {
       setNotifications((prev) => [n, ...prev]);
     }
-  }, [user?.id]);
+  }, [userId]);
 
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
 

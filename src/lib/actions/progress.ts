@@ -4,6 +4,13 @@ import { createClient } from '@/lib/server';
 import { ensureLinkedEmployee } from '@/lib/actions/leave';
 import { revalidatePath } from 'next/cache';
 import { ProgressEntry } from '@/lib/types';
+import type { Database } from '@/lib/supabase/database.types';
+
+type ProgressEntryRow = Database['public']['Tables']['progress_entries']['Row'];
+
+interface ProgressEntryRowWithEmployee extends ProgressEntryRow {
+  employees?: { first_name: string | null; last_name: string | null } | null;
+}
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -27,10 +34,10 @@ export async function getProgressEntries(employeeId?: string): Promise<ProgressE
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  return (data || []).map((row: any) => ({
+  return ((data ?? []) as unknown as ProgressEntryRowWithEmployee[]).map((row: ProgressEntryRowWithEmployee) => ({
     id: row.id,
     projectName: row.project_name,
-    description: row.description,
+    description: row.description || '',
     submissionDate: row.submission_date,
     employeeId: row.employee_id,
     employeeName: row.employees ? `${row.employees.first_name} ${row.employees.last_name}` : 'Unknown',
@@ -75,11 +82,11 @@ export async function createProgressEntry(data: {
   if (error) throw new Error(error.message);
   revalidatePath('/progress');
 
-  const r = row as any;
+  const r = row as unknown as ProgressEntryRowWithEmployee;
   return {
     id: r.id,
     projectName: r.project_name,
-    description: r.description,
+    description: r.description || '',
     submissionDate: r.submission_date,
     employeeId: r.employee_id,
     employeeName: r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : 'Unknown',

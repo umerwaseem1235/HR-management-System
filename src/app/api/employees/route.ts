@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEmployees, createEmployee, getLookupData, createEmployeeWithAuth } from '@/lib/actions/employees';
+import { getEmployees, createEmployee, createEmployeeWithAuth } from '@/lib/actions/employees';
 
 export async function GET() {
   try {

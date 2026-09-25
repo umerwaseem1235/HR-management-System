@@ -139,12 +139,15 @@ export default function EmployeeDashboard() {
   const [checkInTime, setCheckInTime] = useState<string | null>(
     () => cachedBundle?.checkInTime ?? null,
   );
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const [, setLocationError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // Mount-guard deferred to the next frame so no setState runs
+  // synchronously inside the effect body.
   useEffect(() => {
-    setMounted(true);
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
@@ -169,7 +172,7 @@ export default function EmployeeDashboard() {
       }
     })();
     return () => { cancelled = true; };
-  }, [employee?.id]);
+  }, [employee]);
 
   // Keep the cache in sync after check-in/out so the next visit paints the
   // correct button state instantly instead of refetching. Skipped until the

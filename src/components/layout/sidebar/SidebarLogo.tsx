@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { Menu } from "lucide-react";
 
 interface SidebarLogoProps {
@@ -27,12 +28,12 @@ export function SidebarLogo({
           aria-label="Expand sidebar"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white outline-none transition-transform duration-200 hover:scale-105 active:scale-95"
         >
-          <img src="/logo2.jpg" alt="CodQor" className="h-8 w-8 object-contain" />
+          <Image src="/logo2.jpg" alt="CodQor" width={32} height={32} className="h-8 w-8 object-contain" />
         </button>
       ) : (
         <>
           <div className="flex min-w-0 flex-1 items-center justify-start overflow-hidden">
-            <img src="/logo.jpg" alt="CodQor Technologies" className="-ml-2 h-20 w-auto max-w-[160px] object-contain object-left" />
+            <Image src="/logo.jpg" alt="CodQor Technologies" width={160} height={80} className="-ml-2 h-20 w-auto max-w-[160px] object-contain object-left" />
           </div>
           <button
             onClick={isMobile ? onMobileClose : onToggleCollapse}

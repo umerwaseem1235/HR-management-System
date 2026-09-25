@@ -4,6 +4,20 @@ import { createClient } from '@/lib/server';
 import { revalidatePath } from 'next/cache';
 import type { Department, Designation, Branch, LeaveType } from '@/lib/types';
 import { COMPANY_DEFAULTS, type CompanySettings } from '@/lib/company-settings';
+import type { Database } from '@/lib/supabase/database.types';
+
+type SettingsRow = Database['public']['Tables']['settings']['Row'];
+type DepartmentRow = Database['public']['Tables']['departments']['Row'];
+type BranchRow = Database['public']['Tables']['branches']['Row'];
+type ShiftRow = Database['public']['Tables']['shifts']['Row'];
+type LeaveTypeRow = Database['public']['Tables']['leave_types']['Row'];
+
+type DesignationRow = Database['public']['Tables']['designations']['Row'];
+
+/** database.types.ts omits the designations→departments relationship, so narrow the join here. */
+type DesignationRowWithDepartment = DesignationRow & {
+  departments?: { name: string | null } | null;
+};
 
 export async function getSettings(): Promise<Record<string, string>> {
   const supabase = await createClient();
@@ -43,7 +57,7 @@ export async function getCompanySettings(): Promise<CompanySettings> {
     .select('key, value')
     .in('key', Object.values(COMPANY_KEY_MAP));
   if (error) throw new Error(error.message);
-  const map = new Map((data || []).map((r: any) => [String(r.key), String(r.value ?? '')]));
+  const map = new Map((data || []).map((r) => [String(r.key), String(r.value ?? '')]));
   const out = { ...COMPANY_DEFAULTS };
   (Object.keys(COMPANY_KEY_MAP) as (keyof CompanySettings)[]).forEach((field) => {
     const v = map.get(COMPANY_KEY_MAP[field]);
@@ -92,7 +106,7 @@ export async function getLateArrivalRule(): Promise<LateArrivalRuleDTO> {
     .select('key, value')
     .in('key', ['attendance_grace_minutes', 'attendance_half_day_after_minutes', 'attendance_late_rule_enabled']);
   if (error) throw new Error(error.message);
-  const map = new Map((data || []).map((r: any) => [r.key, String(r.value ?? '')]));
+  const map = new Map((data || []).map((r) => [r.key, String(r.value ?? '')]));
   const enabledRaw = (map.get('attendance_late_rule_enabled') || '').toLowerCase();
   return {
     graceMinutes: parsePositiveInt(map.get('attendance_grace_minutes'), LATE_RULE_DEFAULTS.graceMinutes),
@@ -122,10 +136,10 @@ export async function getDepartments(): Promise<Department[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.from('departments').select('*').order('name');
   if (error) throw new Error(error.message);
-  return (data || []).map((db: any) => ({
+  return (data || []).map((db) => ({
     id: db.id,
     name: db.name,
-    head: db.head,
+    head: db.head || '',
     employeeCount: db.employee_count || 0,
   }));
 }
@@ -155,10 +169,10 @@ export async function getDesignations(): Promise<Designation[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.from('designations').select('*, departments(name)').order('name');
   if (error) throw new Error(error.message);
-  return (data || []).map((db: any) => ({
+  return (data || []).map((db) => ({
     id: db.id,
     name: db.name,
-    department: db.departments?.name || '',
+    department: (db as unknown as DesignationRowWithDepartment).departments?.name || '',
   }));
 }
 
@@ -173,11 +187,11 @@ export async function getBranches(): Promise<Branch[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.from('branches').select('*').order('name');
   if (error) throw new Error(error.message);
-  return (data || []).map((db: any) => ({
+  return (data || []).map((db) => ({
     id: db.id,
     name: db.name,
-    address: db.address,
-    city: db.city,
+    address: db.address || '',
+    city: db.city || '',
   }));
 }
 
@@ -204,7 +218,7 @@ export async function getShifts() {
   const supabase = await createClient();
   const { data, error } = await supabase.from('shifts').select('*').order('name');
   if (error) throw new Error(error.message);
-  return (data || []).map((db: any) => ({
+  return (data || []).map((db) => ({
     id: db.id,
     name: db.name,
     startTime: db.start_time,
@@ -235,14 +249,14 @@ export async function getLeaveTypes(): Promise<LeaveType[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.from('leave_types').select('*').order('name');
   if (error) throw new Error(error.message);
-  return (data || []).map((db: any) => ({
+  return (data || []).map((db) => ({
     id: db.id,
     name: db.name,
     daysAllowed: db.days_allowed,
-    carryForward: db.carry_forward,
-    color: db.color,
-    period: db.period,
-    description: db.description,
+    carryForward: db.carry_forward ?? false,
+    color: db.color || '',
+    period: db.period ?? undefined,
+    description: db.description ?? undefined,
   }));
 }
 
@@ -315,7 +329,7 @@ export async function getSettingsData(): Promise<SettingsSnapshot> {
   if (shiftsRes.error) throw new Error(shiftsRes.error.message);
   if (leaveTypesRes.error) throw new Error(leaveTypesRes.error.message);
 
-  const map = new Map((companyRes.data || []).map((r: any) => [String(r.key), String(r.value ?? '')]));
+  const map = new Map((companyRes.data || []).map((r: Pick<SettingsRow, 'key' | 'value'>): [string, string] => [String(r.key), String(r.value ?? '')]));
   const company = { ...COMPANY_DEFAULTS };
   (Object.keys(COMPANY_KEY_MAP) as (keyof CompanySettings)[]).forEach((field) => {
     const v = map.get(COMPANY_KEY_MAP[field]);
@@ -324,32 +338,32 @@ export async function getSettingsData(): Promise<SettingsSnapshot> {
 
   return {
     company,
-    departments: (departmentsRes.data || []).map((db: any) => ({
+    departments: (departmentsRes.data || []).map((db: DepartmentRow) => ({
       id: db.id,
       name: db.name,
-      head: db.head,
+      head: db.head ?? '',
       employeeCount: db.employee_count || 0,
     })),
-    branches: (branchesRes.data || []).map((db: any) => ({
+    branches: (branchesRes.data || []).map((db: BranchRow) => ({
       id: db.id,
       name: db.name,
-      address: db.address,
-      city: db.city,
+      address: db.address ?? '',
+      city: db.city ?? '',
     })),
-    shifts: (shiftsRes.data || []).map((db: any) => ({
+    shifts: (shiftsRes.data || []).map((db: ShiftRow) => ({
       id: db.id,
       name: db.name,
-      startTime: db.start_time,
-      endTime: db.end_time,
+      startTime: db.start_time ?? '',
+      endTime: db.end_time ?? '',
     })),
-    leaveTypes: (leaveTypesRes.data || []).map((db: any) => ({
+    leaveTypes: (leaveTypesRes.data || []).map((db: LeaveTypeRow) => ({
       id: db.id,
       name: db.name,
-      daysAllowed: db.days_allowed,
-      carryForward: db.carry_forward,
-      color: db.color,
-      period: db.period,
-      description: db.description,
+      daysAllowed: db.days_allowed ?? 0,
+      carryForward: db.carry_forward ?? false,
+      color: db.color ?? '#024fa7',
+      period: (db.period ?? 'year') as LeaveType['period'],
+      description: db.description ?? undefined,
     })),
   };
 }

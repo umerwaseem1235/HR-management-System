@@ -13,7 +13,10 @@ export function useClickOutside<T extends HTMLElement>(
   active = true,
 ) {
   const handlerRef = useRef(onOutside);
-  handlerRef.current = onOutside;
+  // Sync without writing the ref during render (react-hooks/refs).
+  useEffect(() => {
+    handlerRef.current = onOutside;
+  });
 
   useEffect(() => {
     if (!active) return;

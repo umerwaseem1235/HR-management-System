@@ -64,7 +64,7 @@ export default function AttendanceView() {
               <span className="text-xl font-medium text-[#024fa7]">{todayRecord?.employeeName?.charAt(0) || att.user?.name?.charAt(0) || 'E'}</span>
             </div>
             <div>
-              <p className="text-sm font-semibold text-[#17324D]">Today's Attendance</p>
+              <p className="text-sm font-semibold text-[#17324D]">Today&apos;s Attendance</p>
               <p className="text-xs text-gray-500">{todayStr()}</p>
             </div>
           </div>

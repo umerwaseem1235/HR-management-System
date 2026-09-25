@@ -6,6 +6,66 @@ import { revalidatePath } from 'next/cache';
 import type { Database } from '@/lib/supabase/database.types';
 import type { LeaveRequest, LeaveBalance, LeaveType } from '@/lib/types';
 
+type LeaveRequestStatus = Database['public']['Tables']['leave_requests']['Row']['status'];
+type LeaveBalanceUpdate = Database['public']['Tables']['leave_balances']['Update'];
+type LeaveTypeIdRow = Pick<Database['public']['Tables']['leave_types']['Row'], 'id'>;
+type LeaveBalanceUsageRow = Pick<Database['public']['Tables']['leave_balances']['Row'], 'id' | 'used'>;
+
+interface LeaveTypeRow {
+  id: string;
+  name: string;
+  days_allowed: number;
+  carry_forward: boolean | null;
+  color: string | null;
+  period: 'month' | 'year' | null;
+  description: string | null;
+}
+
+interface LeaveRequestRowWithJoins {
+  id: string;
+  employee_id: string;
+  leave_type_id: string;
+  start_date: string;
+  end_date: string;
+  days: number;
+  reason: string | null;
+  status: LeaveRequestStatus;
+  applied_on: string;
+  approved_by: string | null;
+  comments: string | null;
+  leave_types?: { name: string } | Array<{ name: string }> | null;
+  employees?: { first_name: string; last_name: string } | Array<{ first_name: string; last_name: string }> | null;
+}
+
+interface LeaveBalanceRowWithJoin {
+  leave_type_id: string;
+  total: number | null;
+  used: number | null;
+  remaining: number | null;
+  pending: number | null;
+  leave_types?: { name: string } | Array<{ name: string }> | null;
+}
+
+function joinName<T extends { name: string }>(join: T | T[] | null | undefined): string {
+  const first = Array.isArray(join) ? join[0] : join;
+  return first?.name || '';
+}
+
+function joinPerson(join: LeaveRequestRowWithJoins['employees']): string {
+  const first = Array.isArray(join) ? join[0] : join;
+  return first ? `${first.first_name} ${first.last_name}` : '';
+}
+
+interface LeaveRequestPatchInput {
+  leaveTypeId?: string;
+  leaveType?: string;
+  startDate?: string;
+  endDate?: string;
+  days?: number;
+  reason?: string;
+  status?: LeaveRequestStatus;
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
@@ -25,10 +85,10 @@ async function ensureYearBalances(
   ]);
   if (!employees?.length || !types?.length) return;
 
-  const have = new Set((existing || []).map((r: any) => `${r.employee_id}|${r.leave_type_id}`));
+  const have = new Set((existing || []).map((r) => `${r.employee_id}|${r.leave_type_id}`));
   const missing: { employee_id: string; leave_type_id: string; total: number }[] = [];
-  for (const t of types as any[]) {
-    for (const e of employees as any[]) {
+  for (const t of types) {
+    for (const e of employees) {
       if (!have.has(`${e.id}|${t.id}`)) {
         missing.push({ employee_id: e.id, leave_type_id: t.id, total: t.days_allowed ?? 0 });
       }
@@ -47,7 +107,7 @@ async function ensureYearBalances(
     .lt('start_date', `${year + 1}-01-01`);
 
   const usage = new Map<string, { used: number; pending: number }>();
-  for (const r of (reqs || []) as any[]) {
+  for (const r of reqs || []) {
     const k = `${r.employee_id}|${r.leave_type_id}`;
     const u = usage.get(k) || { used: 0, pending: 0 };
     if (r.status === 'Approved') u.used += r.days || 0;
@@ -79,14 +139,14 @@ export async function getLeaveTypes(): Promise<LeaveType[]> {
     .select('*')
     .order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
-  return (data || []).map((db: any) => ({
+  return (data || []).map((db: LeaveTypeRow) => ({
     id: db.id,
     name: db.name,
     daysAllowed: db.days_allowed,
-    carryForward: db.carry_forward,
-    color: db.color,
-    period: db.period,
-    description: db.description,
+    carryForward: db.carry_forward ?? false,
+    color: db.color || '',
+    period: db.period ?? undefined,
+    description: db.description ?? undefined,
   }));
 }
 
@@ -103,19 +163,19 @@ export async function getLeaveRequests(employeeId?: string): Promise<LeaveReques
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return (data || []).map((db: any) => ({
+  return ((data || []) as unknown as LeaveRequestRowWithJoins[]).map((db) => ({
     id: db.id,
     employeeId: db.employee_id,
-    employeeName: db.employees ? `${db.employees.first_name} ${db.employees.last_name}` : '',
-    leaveType: db.leave_types?.name || '',
+    employeeName: joinPerson(db.employees),
+    leaveType: joinName(db.leave_types),
     startDate: db.start_date,
     endDate: db.end_date,
     days: db.days,
-    reason: db.reason,
+    reason: db.reason || '',
     status: db.status,
     appliedOn: db.applied_on,
-    approvedBy: db.approved_by,
-    comments: db.comments,
+    approvedBy: db.approved_by ?? undefined,
+    comments: db.comments ?? undefined,
   }));
 }
 
@@ -142,12 +202,12 @@ export async function getLeaveBalances(employeeId?: string, year?: number): Prom
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return (data || []).map((db: any) => ({
-    leaveType: db.leave_types?.name || '',
-    total: db.total,
-    used: db.used,
-    remaining: db.remaining,
-    pending: db.pending,
+  return ((data || []) as unknown as LeaveBalanceRowWithJoin[]).map((db) => ({
+    leaveType: joinName(db.leave_types),
+    total: db.total ?? 0,
+    used: db.used ?? 0,
+    remaining: db.remaining ?? 0,
+    pending: db.pending ?? 0,
   }));
 }
 
@@ -295,11 +355,11 @@ export async function createLeaveRequest(data: {
 
   revalidatePath('/leave');
 
-  const r = row as any;
+  const r = row as unknown as LeaveRequestRowWithJoins;
   return {
     id: r.id,
     employeeId: r.employee_id,
-    employeeName: r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : '',
+    employeeName: joinPerson(r.employees),
     leaveType: typeName,
     startDate: r.start_date,
     endDate: r.end_date,
@@ -324,7 +384,7 @@ export async function updateLeaveStatus(id: string, status: string, approvedBy?:
   }
 
   const { error } = await supabase.from('leave_requests').update({
-    status: status as any,
+    status: status as LeaveRequestStatus,
     approved_by: approverId,
     comments,
   }).eq('id', id);
@@ -340,10 +400,11 @@ export async function updateLeaveStatus(id: string, status: string, approvedBy?:
       .single();
 
     if (balData) {
-      let updateData: any = { pending: Math.max(0, (balData.pending || 0) - req.days) };
+      const updateData: LeaveBalanceUpdate = { pending: Math.max(0, (balData.pending || 0) - req.days) };
       if (status === 'Approved') {
-        updateData.used = (balData.used || 0) + req.days;
-        updateData.remaining = (balData.total || 0) - updateData.used;
+        const used = (balData.used || 0) + req.days;
+        updateData.used = used;
+        updateData.remaining = (balData.total || 0) - used;
       }
       await supabase.from('leave_balances').update(updateData).eq('id', balData.id);
     }
@@ -352,7 +413,7 @@ export async function updateLeaveStatus(id: string, status: string, approvedBy?:
   revalidatePath('/leave');
 }
 
-export async function updateLeaveRequest(id: string, data: any) {
+export async function updateLeaveRequest(id: string, data: LeaveRequestPatchInput) {
   const supabase = await createClient();
   // Map camelCase form fields to DB columns; resolve type names to ids.
   let leaveTypeId = data.leaveTypeId;
@@ -431,11 +492,11 @@ export async function setLeaveTypeBalanceTotal(leaveType: string, total: number)
   const { data: rows, error: rowsErr } = await supabase
     .from('leave_balances')
     .select('id, used')
-    .eq('leave_type_id', (typeRow as any).id)
+    .eq('leave_type_id', (typeRow as unknown as LeaveTypeIdRow).id)
     .eq('year', currentYear);
   if (rowsErr) throw new Error(rowsErr.message);
 
-  const maxUsed = (rows || []).reduce((m: number, r: any) => Math.max(m, r.used || 0), 0);
+  const maxUsed = (rows || []).reduce((m: number, r: LeaveBalanceUsageRow) => Math.max(m, r.used || 0), 0);
   if (total < maxUsed) {
     throw new Error(
       `Total cannot be less than already used days (${maxUsed}) — at least one employee has used ${maxUsed} day${maxUsed === 1 ? '' : 's'}.`,
@@ -443,7 +504,7 @@ export async function setLeaveTypeBalanceTotal(leaveType: string, total: number)
   }
 
   if ((rows || []).length > 0) {
-    for (const r of rows as any[]) {
+    for (const r of rows as LeaveBalanceUsageRow[]) {
       const used = r.used || 0;
       const { error: rowErr } = await supabase
         .from('leave_balances')
@@ -456,7 +517,7 @@ export async function setLeaveTypeBalanceTotal(leaveType: string, total: number)
   const { error: typeUpdErr } = await supabase
     .from('leave_types')
     .update({ days_allowed: Math.floor(total) })
-    .eq('id', (typeRow as any).id);
+    .eq('id', (typeRow as unknown as LeaveTypeIdRow).id);
   if (typeUpdErr) throw new Error(typeUpdErr.message);
 
   revalidatePath('/leave');

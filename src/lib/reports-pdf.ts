@@ -43,7 +43,6 @@ export const REPORT_META: Record<ReportId, { fileSlug: string; title: string; ca
 
 const NAVY: [number, number, number] = [23, 50, 77];
 const BLUE: [number, number, number] = [2, 79, 167];
-const TEAL: [number, number, number] = [15, 139, 141];
 const DARK: [number, number, number] = [38, 50, 56];
 const GRAY: [number, number, number] = [100, 116, 139];
 const LIGHT: [number, number, number] = [234, 242, 244];
@@ -52,16 +51,15 @@ const WHITE: [number, number, number] = [255, 255, 255];
 const MARGIN = 14;
 const PAGE_W = 210;
 const INNER_W = PAGE_W - 2 * MARGIN;
-const ROW_H = 6;
 const HEADER_H = 7;
 
 import { jsPDF } from 'jspdf';
 
-function rgb(doc: any, c: [number, number, number]) { doc.setTextColor(c[0], c[1], c[2]); }
-function rgbFill(doc: any, c: [number, number, number]) { doc.setFillColor(c[0], c[1], c[2]); }
+type PdfDoc = jsPDF;
 
-function header(doc: any, eyebrow: string, title: string): void {
-  const top = 6;
+function rgb(doc: PdfDoc, c: [number, number, number]) { doc.setTextColor(c[0], c[1], c[2]); }
+
+function header(doc: PdfDoc, eyebrow: string, title: string): void {
   doc.setFillColor(...NAVY);
   doc.rect(0, 0, PAGE_W, 24, 'F');
   doc.setTextColor(...WHITE);
@@ -81,7 +79,7 @@ function header(doc: any, eyebrow: string, title: string): void {
   doc.line(MARGIN, 25, PAGE_W - MARGIN, 25);
 }
 
-function footer(doc: any): void {
+function footer(doc: PdfDoc): void {
   const pageCount = doc.getNumberOfPages();
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
@@ -93,7 +91,7 @@ function footer(doc: any): void {
   }
 }
 
-function ensureSpace(doc: any, y: number, needed: number): number {
+function ensureSpace(doc: PdfDoc, y: number, needed: number): number {
   if (y + needed > 270) {
     doc.addPage();
     header(doc, '', '');
@@ -102,7 +100,7 @@ function ensureSpace(doc: any, y: number, needed: number): number {
   return y;
 }
 
-function titleBlock(doc: any, y: number, title: string, subtitle?: string, meta?: string): number {
+function titleBlock(doc: PdfDoc, y: number, title: string, subtitle?: string, meta?: string): number {
   doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
   rgb(doc, NAVY);
@@ -124,7 +122,7 @@ function titleBlock(doc: any, y: number, title: string, subtitle?: string, meta?
   return y;
 }
 
-function kpiStrip(doc: any, y: number, kpis: { label: string; value: string }[]): number {
+function kpiStrip(doc: PdfDoc, y: number, kpis: { label: string; value: string }[]): number {
   const pad = 12;
   const boxW = (INNER_W - (kpis.length - 1) * 4) / kpis.length;
   kpis.forEach((kpi, i) => {
@@ -143,7 +141,7 @@ function kpiStrip(doc: any, y: number, kpis: { label: string; value: string }[])
   return y + 22;
 }
 
-function sectionBar(doc: any, y: number, title: string): number {
+function sectionBar(doc: PdfDoc, y: number, title: string): number {
   doc.setFillColor(...BLUE);
   doc.rect(MARGIN, y, INNER_W, 9, 'F');
   doc.setFontSize(7.5);
@@ -164,7 +162,7 @@ function cleanCell(val: unknown): string {
 }
 
 function drawTable(
-  doc: any,
+  doc: PdfDoc,
   y: number,
   cols: { label: string; width: number; align: 'left' | 'right' | 'center' }[],
   rows: (string | number)[][],

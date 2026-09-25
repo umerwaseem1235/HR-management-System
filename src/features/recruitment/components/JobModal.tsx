@@ -6,7 +6,7 @@ import Select from '@/components/ui/Select';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
-import { Briefcase, Trash2, XCircle } from 'lucide-react';
+import { Briefcase, Trash2 } from 'lucide-react';
 import { DEPARTMENTS, BRANCHES } from '@/lib/constants';
 import type { Job } from '@/types';
 import { JobModalState } from '../hooks/useRecruitment';

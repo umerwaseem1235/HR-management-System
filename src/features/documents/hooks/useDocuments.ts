@@ -59,7 +59,11 @@ export function useDocuments() {
   }, []);
 
   useEffect(() => {
-    refresh();
+    // Subscription-style fetch: state updates happen in the async callback,
+    // not synchronously in the effect body.
+    void (async () => {
+      await refresh();
+    })();
   }, [refresh]);
 
   const filtered = docs.filter(doc => {

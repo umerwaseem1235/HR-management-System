@@ -5,6 +5,34 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import type { PayrollRun, PayrollLineItem, SalaryComponent, PayrollRunStatus } from '@/lib/payroll';
 import type { Payslip, UserRole } from '@/lib/types';
+import type { Database } from '@/lib/supabase/database.types';
+
+type PayrollRunRow = Database['public']['Tables']['payroll_runs']['Row'];
+type PayrollItemRow = Database['public']['Tables']['payroll_items']['Row'];
+type PayslipRow = Database['public']['Tables']['payslips']['Row'];
+type SalaryComponentRow = Database['public']['Tables']['salary_components']['Row'];
+type PayrollRunUpdate = Database['public']['Tables']['payroll_runs']['Update'];
+type PayrollItemUpdate = Database['public']['Tables']['payroll_items']['Update'];
+type SalaryComponentInsert = Database['public']['Tables']['salary_components']['Insert'];
+type SalaryComponentUpdate = Database['public']['Tables']['salary_components']['Update'];
+
+interface MoneyAmount {
+  name: string;
+  amount: number;
+}
+
+/** payroll_items/payslips store allowance & deduction lines as a JSON array. */
+function asMoneyAmounts(value: unknown): MoneyAmount[] {
+  return value as MoneyAmount[];
+}
+
+type EmployeeRowWithJoins = Database['public']['Tables']['employees']['Row'] & {
+  departments?: { name: string | null } | null;
+  designations?: { name: string | null } | null;
+  branches?: { name: string | null } | null;
+  shifts?: { name: string | null } | null;
+  reporting_manager?: { first_name: string | null; last_name: string | null } | null;
+};
 
 /**
  * Resolve the caller's role from the session (single source of truth).
@@ -48,7 +76,7 @@ export async function getPayrollRuns(): Promise<PayrollRun[]> {
     .order('month_index', { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data || []).map((db: any) => ({
+  return (data || []).map((db: PayrollRunRow) => ({
     id: db.id,
     month: db.month,
     monthIndex: db.month_index,
@@ -81,22 +109,22 @@ export async function getPayrollRun(id: string): Promise<PayrollRun> {
 
   if (itemsError) throw new Error(itemsError.message);
 
-  const items: PayrollLineItem[] = (itemsData || []).map((db: any) => ({
+  const items: PayrollLineItem[] = (itemsData || []).map((db: PayrollItemRow) => ({
     id: db.id,
     employeeId: db.employee_id,
-    employeeName: db.employee_name,
-    department: db.department,
-    basicSalary: db.basic_salary,
-    allowances: db.allowances,
-    deductions: db.deductions,
-    paidLeaveDays: db.paid_leave_days,
-    unpaidLeaveDays: db.unpaid_leave_days,
-    absentDays: db.absent_days,
-    leaveDeduction: db.leave_deduction,
-    grossSalary: db.gross_salary,
-    totalAllowances: db.total_allowances,
-    totalDeductions: db.total_deductions,
-    netSalary: db.net_salary,
+    employeeName: db.employee_name || '',
+    department: db.department || '',
+    basicSalary: db.basic_salary ?? 0,
+    allowances: asMoneyAmounts(db.allowances),
+    deductions: asMoneyAmounts(db.deductions),
+    paidLeaveDays: db.paid_leave_days ?? 0,
+    unpaidLeaveDays: db.unpaid_leave_days ?? 0,
+    absentDays: db.absent_days ?? 0,
+    leaveDeduction: db.leave_deduction ?? 0,
+    grossSalary: db.gross_salary ?? 0,
+    totalAllowances: db.total_allowances ?? 0,
+    totalDeductions: db.total_deductions ?? 0,
+    netSalary: db.net_salary ?? 0,
   }));
 
   return {
@@ -174,7 +202,7 @@ export async function updatePayrollRunStatus(id: string, status: string, finaliz
     await requirePayrollRole(['super_admin', 'hr_manager'], 'finalize payroll');
   }
 
-  const updateData: any = { status };
+  const updateData: PayrollRunUpdate = { status };
   if (status === 'Finalized') {
     updateData.finalized_on = new Date().toISOString();
     updateData.finalized_by = finalizedBy;
@@ -190,7 +218,7 @@ export async function updatePayrollRunStatus(id: string, status: string, finaliz
   revalidatePath('/payroll');
 }
 
-export async function updatePayrollItem(id: string, data: any) {
+export async function updatePayrollItem(id: string, data: PayrollItemUpdate) {
   const supabase = await createClient();
   // Never mutate lines belonging to a locked run — unlock first (Super Admin only).
   const { data: line } = await supabase.from('payroll_items').select('payroll_run_id').eq('id', id).single();
@@ -294,15 +322,15 @@ export async function getPayslips(employeeId?: string): Promise<Payslip[]> {
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  return (data || []).map((db: any) => ({
+  return (data || []).map((db: PayslipRow) => ({
     id: db.id,
     employeeId: db.employee_id,
-    employeeName: db.employee_name,
+    employeeName: db.employee_name || '',
     month: db.month,
     year: db.year,
     basicSalary: db.basic_salary,
-    allowances: db.allowances,
-    deductions: db.deductions,
+    allowances: asMoneyAmounts(db.allowances),
+    deductions: asMoneyAmounts(db.deductions),
     grossSalary: db.gross_salary,
     netSalary: db.net_salary,
     status: db.status,
@@ -314,22 +342,22 @@ export async function getSalaryComponents(): Promise<SalaryComponent[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.from('salary_components').select('*');
   if (error) throw new Error(error.message);
-  return (data || []).map((db: any) => ({
+  return (data || []).map((db: SalaryComponentRow) => ({
     id: db.id,
     name: db.name,
-    amount: db.amount,
-    kind: db.kind,
+    amount: db.amount ?? 0,
+    kind: db.kind as SalaryComponent['kind'],
   }));
 }
 
-export async function createSalaryComponent(data: any) {
+export async function createSalaryComponent(data: SalaryComponentInsert) {
   const supabase = await createClient();
   const { error } = await supabase.from('salary_components').insert([data]);
   if (error) throw new Error(error.message);
   revalidatePath('/payroll');
 }
 
-export async function updateSalaryComponent(id: string, data: any) {
+export async function updateSalaryComponent(id: string, data: SalaryComponentUpdate) {
   const supabase = await createClient();
   const { error } = await supabase.from('salary_components').update(data).eq('id', id);
   if (error) throw new Error(error.message);
@@ -432,47 +460,47 @@ export async function getPayrollData(): Promise<PayrollSnapshot> {
   if (slipsRes.error) throw new Error(slipsRes.error.message);
   if (componentsRes.error) throw new Error(componentsRes.error.message);
 
-  const mapEmployeeRow = (db: any): Employee => ({
+  const mapEmployeeRow = (db: EmployeeRowWithJoins): Employee => ({
     id: db.id,
     employeeCode: db.employee_code,
     firstName: db.first_name,
     lastName: db.last_name,
     email: db.email,
-    phone: db.phone,
+    phone: db.phone || '',
     avatar: undefined,
-    dateOfBirth: db.date_of_birth,
-    gender: db.gender,
-    address: db.address,
-    city: db.city,
-    country: db.country,
-    emergencyContactName: db.emergency_contact_name,
-    emergencyContactPhone: db.emergency_contact_phone,
+    dateOfBirth: db.date_of_birth || '',
+    gender: db.gender || 'Other',
+    address: db.address || '',
+    city: db.city || '',
+    country: db.country || '',
+    emergencyContactName: db.emergency_contact_name || '',
+    emergencyContactPhone: db.emergency_contact_phone || '',
     department: db.departments?.name || '',
-    departmentId: db.department_id,
+    departmentId: db.department_id ?? undefined,
     designation: db.designations?.name || '',
-    designationId: db.designation_id,
+    designationId: db.designation_id ?? undefined,
     branch: db.branches?.name || '',
-    branchId: db.branch_id,
+    branchId: db.branch_id ?? undefined,
     shift: db.shifts?.name || '',
-    shiftId: db.shift_id,
+    shiftId: db.shift_id ?? undefined,
     reportingManager: db.reporting_manager?.first_name
       ? `${db.reporting_manager.first_name} ${db.reporting_manager.last_name}`
       : '',
-    reportingManagerId: db.reporting_manager_id,
+    reportingManagerId: db.reporting_manager_id ?? undefined,
     employmentType: db.employment_type,
     joiningDate: db.joining_date,
-    probationEndDate: db.probation_end_date,
-    confirmationDate: db.confirmation_date,
+    probationEndDate: db.probation_end_date ?? undefined,
+    confirmationDate: db.confirmation_date ?? undefined,
     status: db.status,
-    bankName: db.bank_name,
-    bankAccount: db.bank_account,
-    taxId: db.tax_id,
-    salary: db.salary,
+    bankName: db.bank_name ?? undefined,
+    bankAccount: db.bank_account ?? undefined,
+    taxId: db.tax_id ?? undefined,
+    salary: db.salary ?? undefined,
   });
 
   return {
-    employees: (employeesRes.data || []).map(mapEmployeeRow),
-    runs: (runsRes.data || []).map((db: any) => ({
+    employees: (employeesRes.data || []).map((r) => mapEmployeeRow(r as unknown as EmployeeRowWithJoins)),
+    runs: (runsRes.data || []).map((db: PayrollRunRow) => ({
       id: db.id,
       month: db.month,
       monthIndex: db.month_index,
@@ -486,25 +514,25 @@ export async function getPayrollData(): Promise<PayrollSnapshot> {
       finalizedBy: db.finalized_by || undefined,
       items: [],
     })),
-    payslips: (slipsRes.data || []).map((db: any) => ({
+    payslips: (slipsRes.data || []).map((db: PayslipRow) => ({
       id: db.id,
       employeeId: db.employee_id,
-      employeeName: db.employee_name,
+      employeeName: db.employee_name || '',
       month: db.month,
       year: db.year,
       basicSalary: db.basic_salary,
-      allowances: db.allowances,
-      deductions: db.deductions,
+      allowances: asMoneyAmounts(db.allowances),
+      deductions: asMoneyAmounts(db.deductions),
       grossSalary: db.gross_salary,
       netSalary: db.net_salary,
       status: db.status,
       generatedOn: db.generated_on,
     })),
-    components: (componentsRes.data || []).map((db: any) => ({
+    components: (componentsRes.data || []).map((db: SalaryComponentRow) => ({
       id: db.id,
       name: db.name,
-      amount: db.amount,
-      kind: db.kind,
+      amount: db.amount ?? 0,
+      kind: db.kind as SalaryComponent['kind'],
     })),
   };
 }

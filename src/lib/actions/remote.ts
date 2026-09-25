@@ -4,6 +4,14 @@ import { createClient } from '@/lib/server';
 import { ensureLinkedEmployee } from '@/lib/actions/leave';
 import { revalidatePath } from 'next/cache';
 import { RemoteRequest, RemoteRequestStatus } from '@/lib/types';
+import type { Database } from '@/lib/supabase/database.types';
+
+type RemoteRequestRow = Database['public']['Tables']['remote_requests']['Row'];
+
+interface RemoteRequestRowWithJoins extends RemoteRequestRow {
+  employees?: { first_name: string | null; last_name: string | null } | null;
+  reviewer?: { first_name: string | null; last_name: string | null } | null;
+}
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -31,7 +39,7 @@ export async function getRemoteRequests(employeeId?: string): Promise<RemoteRequ
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  return (data || []).map((row: any) => ({
+  return ((data || []) as unknown as RemoteRequestRowWithJoins[]).map((row) => ({
     id: row.id,
     employeeId: row.employee_id,
     employeeName: row.employees ? `${row.employees.first_name} ${row.employees.last_name}` : 'Unknown',
@@ -39,11 +47,11 @@ export async function getRemoteRequests(employeeId?: string): Promise<RemoteRequ
     toDate: row.to_date,
     days: row.days,
     reason: row.reason,
-    workPlan: row.work_plan,
+    workPlan: row.work_plan ?? undefined,
     status: row.status,
     requestedOn: row.requested_on,
-    reviewedBy: row.reviewer ? `${row.reviewer.first_name} ${row.reviewer.last_name}` : row.reviewed_by,
-    reviewComments: row.review_comments,
+    reviewedBy: (row.reviewer ? `${row.reviewer.first_name} ${row.reviewer.last_name}` : row.reviewed_by) ?? undefined,
+    reviewComments: row.review_comments ?? undefined,
   }));
 }
 
@@ -89,7 +97,7 @@ export async function createRemoteRequest(data: {
   if (error) throw new Error(error.message);
   revalidatePath('/remote');
 
-  const r = row as any;
+  const r = row as unknown as RemoteRequestRowWithJoins;
   return {
     id: r.id,
     employeeId: r.employee_id,
@@ -98,7 +106,7 @@ export async function createRemoteRequest(data: {
     toDate: r.to_date,
     days: r.days,
     reason: r.reason,
-    workPlan: r.work_plan,
+    workPlan: r.work_plan ?? undefined,
     status: r.status,
     requestedOn: r.requested_on,
   };

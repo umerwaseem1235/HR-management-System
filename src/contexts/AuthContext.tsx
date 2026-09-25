@@ -36,7 +36,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    fetchUser();
+    let cancelled = false;
+    // Initial load is deferred to a promise callback so no setState runs
+    // synchronously in the effect body (same handling as fetchUser).
+    void Promise.resolve().then(async () => {
+      const { user: current, error } = await getCurrentUser();
+      if (cancelled) return;
+      if (!error && current) {
+        setUser(current);
+      } else {
+        setUser(null);
+      }
+      setIsLoading(false);
+    });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
@@ -48,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
     };
   }, [supabase]);

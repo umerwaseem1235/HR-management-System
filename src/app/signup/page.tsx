@@ -27,7 +27,12 @@ export default function SignupPage() {
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [confirmFocused, setConfirmFocused] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  // Mount-guard deferred to the next frame so no setState runs
+  // synchronously inside the effect body (entrance transition still plays).
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {

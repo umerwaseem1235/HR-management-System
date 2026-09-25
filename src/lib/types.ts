@@ -221,19 +221,6 @@ export interface ExpenseClaim {
   submittedOn: string;
 }
 
-export interface Asset {
-  id: string;
-  name: string;
-  type: string;
-  serialNumber: string;
-  assignedTo?: string;
-  assignedToName?: string;
-  issueDate?: string;
-  returnDate?: string;
-  condition: 'New' | 'Good' | 'Fair' | 'Damaged';
-  status: 'Available' | 'Assigned' | 'Returned' | 'Retired';
-}
-
 export interface Notification {
   id: string;
   title: string;

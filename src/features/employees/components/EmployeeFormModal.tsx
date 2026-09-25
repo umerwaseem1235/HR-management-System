@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ImagePlus, Trash2, UserPlus, Loader2, Eye, EyeOff, Key, AlertCircle, CheckCircle2 } from 'lucide-react';
+import NextImage from 'next/image';
+import { ImagePlus, Trash2, UserPlus, Eye, EyeOff } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
@@ -57,6 +58,16 @@ export default function EmployeeFormModal({
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [loginTouched, setLoginTouched] = useState(false);
 
+  // Reset the custom-login-email override each time the modal opens.
+  // Adjusted during render (instead of an effect) to avoid a cascading render.
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (prevIsOpen !== isOpen) {
+    setPrevIsOpen(isOpen);
+    if (isOpen) setLoginTouched(false);
+  }
+
+  const hasEmployee = employee != null;
+
   useEffect(() => {
     const avatar = employee?.avatar;
     const isImageUrl = (url: string) => {
@@ -65,12 +76,11 @@ export default function EmployeeFormModal({
     };
     if (isOpen && avatar && isImageUrl(avatar)) {
       setTimeout(() => setPhotoPreview(avatar), 0);
-    } else if (isOpen && !employee) {
+    } else if (isOpen && !hasEmployee) {
       setTimeout(() => setPhotoPreview(null), 0);
     }
     setTimeout(() => setPhotoError(''), 0);
-    if (isOpen) setLoginTouched(false);
-  }, [isOpen, employee?.avatar]);
+  }, [isOpen, employee?.avatar, hasEmployee]);
 
   // Keep Login Email in sync with the employee email until the admin
   // types a custom login email (typical case: both are identical).
@@ -227,7 +237,15 @@ export default function EmployeeFormModal({
               <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-lg border border-dashed border-[#B9D0D6] bg-[#F8FBFC] p-4">
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EAF2F4] border border-[#D6E4E8]">
                   {photoPreview ? (
-                    <img src={photoPreview} alt="Profile preview" className="h-full w-full object-cover" />
+                    <NextImage
+                      src={photoPreview}
+                      alt="Profile preview"
+                      width={80}
+                      height={80}
+                      unoptimized
+                      loader={({ src }) => src}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <ImagePlus size={24} className="text-[#024fa7]" />
                   )}
