@@ -1,5 +1,6 @@
 'use client';
 
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { CalendarDays, Download, Eye } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -15,12 +16,100 @@ interface PayslipListProps {
   onMonthChange: (v: string) => void;
   search: string;
   onSearchChange: (v: string) => void;
-  viewSlip: Payslip | null;
-  onView: (slip: Payslip | null) => void;
-  onDownload: (slip: Payslip) => void;
+  /**
+   * Legacy props, kept optional for compatibility. The view modal is driven
+   * purely by LOCAL state now: any state update in usePayroll re-renders the
+   * entire payroll page (stat cards + runs + every payslip row) before the
+   * modal can paint — that round-trip was the visible "buffering" delay.
+   */
+  viewSlip?: Payslip | null;
+  onView?: (slip: Payslip | null) => void;
+  onDownload: (slip: Payslip) => void | Promise<void>;
 }
 
-export default function PayslipList({ slips, month, onMonthChange, search, onSearchChange, viewSlip, onView, onDownload }: PayslipListProps) {
+const PayslipRow = memo(function PayslipRow({
+  slip,
+  downloading,
+  onOpen,
+  onDownload,
+}: {
+  slip: Payslip;
+  downloading: boolean;
+  onOpen: (slip: Payslip) => void;
+  onDownload: (slip: Payslip) => void;
+}) {
+  const totalDeductions = slip.deductions.reduce((s, d) => s + d.amount, 0);
+  return (
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8] gap-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-[#263238]">{slip.employeeName} — {slip.month} {slip.year}</p>
+        <p className="text-xs text-gray-500">Gross: {money(slip.grossSalary)} | Deductions: {money(totalDeductions)} | Net: {money(slip.netSalary)}</p>
+      </div>
+      <div className="flex shrink-0 items-center gap-1">
+        <StatusBadge status={slip.status} />
+        <button
+          type="button"
+          onClick={() => onOpen(slip)}
+          title="View payslip"
+          aria-label={`View payslip for ${slip.employeeName}`}
+          className="p-2 rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4] transition-colors cursor-pointer"
+        >
+          <Eye size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={() => onDownload(slip)}
+          disabled={downloading}
+          title="Download payslip (PDF)"
+          aria-label={`Download payslip for ${slip.employeeName}`}
+          className="p-2 rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4] transition-colors cursor-pointer disabled:opacity-50"
+        >
+          {downloading ? (
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          ) : (
+            <Download size={16} />
+          )}
+        </button>
+      </div>
+    </div>
+  );
+});
+
+export default function PayslipList({ slips, month, onMonthChange, search, onSearchChange, onDownload }: PayslipListProps) {
+  // Local-only modal state: opening the view NEVER touches usePayroll state,
+  // so the click paints the modal immediately (no page-wide re-render).
+  const [activeSlip, setActiveSlip] = useState<Payslip | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  // Keep stable callback identities so PayslipRow memo actually hits — inline
+  // closures were defeating the memo and re-rendering every row per click.
+  const downloadRef = useRef(onDownload);
+  useEffect(() => { downloadRef.current = onDownload; });
+  const downloadingRef = useRef(false);
+
+  const openSlip = useCallback((slip: Payslip) => {
+    setActiveSlip(slip);
+  }, []);
+
+  const closeSlip = useCallback(() => {
+    setActiveSlip(null);
+  }, []);
+
+  const downloadSlip = useCallback(async (slip: Payslip) => {
+    if (downloadingRef.current) return;
+    downloadingRef.current = true;
+    setDownloadingId(slip.id);
+    try {
+      await downloadRef.current(slip);
+    } finally {
+      downloadingRef.current = false;
+      setDownloadingId(null);
+    }
+  }, []);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -67,53 +156,49 @@ export default function PayslipList({ slips, month, onMonthChange, search, onSea
       ) : (
         <div className="space-y-3">
           {slips.map(slip => (
-            <div key={slip.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8] gap-3">
-              <div>
-                <p className="text-sm font-medium text-[#263238]">{slip.employeeName} — {slip.month} {slip.year}</p>
-                <p className="text-xs text-gray-500">Gross: {money(slip.grossSalary)} | Deductions: {money(slip.deductions.reduce((s, d) => s + d.amount, 0))} | Net: {money(slip.netSalary)}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <StatusBadge status={slip.status} />
-                <button onClick={() => onView(slip)} title="View payslip" className="p-2 rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4]"><Eye size={16} /></button>
-                <button onClick={() => onDownload(slip)} title="Download payslip (PDF)" className="p-2 rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4]"><Download size={16} /></button>
-              </div>
-            </div>
+            <PayslipRow
+              key={slip.id}
+              slip={slip}
+              downloading={downloadingId === slip.id}
+              onOpen={openSlip}
+              onDownload={downloadSlip}
+            />
           ))}
         </div>
       )}
 
-      {/* ============ Payslip view modal ============ */}
-      <Modal isOpen={!!viewSlip} onClose={() => onView(null)} title={viewSlip ? `Payslip — ${viewSlip.month} ${viewSlip.year}` : 'Payslip'} size="lg">
-        {viewSlip && (
+      {/* ============ Payslip view modal (opens instantly, no data fetch) ============ */}
+      <Modal isOpen={!!activeSlip} onClose={closeSlip} title={activeSlip ? `Payslip — ${activeSlip.month} ${activeSlip.year}` : 'Payslip'} size="lg">
+        {activeSlip && (
           <div className="space-y-4 text-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-base font-bold text-[#17324D]">{viewSlip.employeeName}</p>
-                <p className="text-xs text-gray-500">Generated {viewSlip.generatedOn}</p>
+                <p className="text-base font-bold text-[#17324D]">{activeSlip.employeeName}</p>
+                <p className="text-xs text-gray-500">Generated {activeSlip.generatedOn}</p>
               </div>
-              <StatusBadge status={viewSlip.status} />
+              <StatusBadge status={activeSlip.status} />
             </div>
             <div className="rounded-xl border border-[#D6E4E8] overflow-hidden">
               <div className="flex justify-between bg-[#EAF2F4]/60 px-4 py-2.5 font-semibold text-[#17324D]">
                 <span>Earnings</span><span>Amount</span>
               </div>
-              <div className="flex justify-between px-4 py-2 border-t border-[#D6E4E8]"><span>Basic Salary</span><span className="font-medium">{money(viewSlip.basicSalary)}</span></div>
-              {viewSlip.allowances.map(a => (
+              <div className="flex justify-between px-4 py-2 border-t border-[#D6E4E8]"><span>Basic Salary</span><span className="font-medium">{money(activeSlip.basicSalary)}</span></div>
+              {activeSlip.allowances.map(a => (
                 <div key={a.name} className="flex justify-between px-4 py-2 border-t border-[#D6E4E8] text-gray-600"><span>{a.name}</span><span>+{money(a.amount)}</span></div>
               ))}
-              <div className="flex justify-between bg-[#EAF2F4]/40 px-4 py-2.5 border-t border-[#D6E4E8] font-bold text-[#17324D]"><span>Gross Salary</span><span>{money(viewSlip.grossSalary)}</span></div>
+              <div className="flex justify-between bg-[#EAF2F4]/40 px-4 py-2.5 border-t border-[#D6E4E8] font-bold text-[#17324D]"><span>Gross Salary</span><span>{money(activeSlip.grossSalary)}</span></div>
             </div>
             <div className="rounded-xl border border-[#D6E4E8] overflow-hidden">
               <div className="flex justify-between bg-red-50 px-4 py-2.5 font-semibold text-red-800">
                 <span>Deductions</span><span>Amount</span>
               </div>
-              {viewSlip.deductions.map(d => (
+              {activeSlip.deductions.map(d => (
                 <div key={d.name} className="flex justify-between px-4 py-2 border-t border-[#D6E4E8] text-gray-600"><span>{d.name}</span><span>-{money(d.amount)}</span></div>
               ))}
-              <div className="flex justify-between bg-[#17324D] px-4 py-3 font-bold text-white"><span>Net Salary</span><span>{money(viewSlip.netSalary)}</span></div>
+              <div className="flex justify-between bg-[#17324D] px-4 py-3 font-bold text-white"><span>Net Salary</span><span>{money(activeSlip.netSalary)}</span></div>
             </div>
             <div className="flex justify-end">
-              <Button variant="outline" size="sm" onClick={() => onDownload(viewSlip)}><Download size={14} /> Download</Button>
+              <Button variant="outline" size="sm" onClick={() => downloadSlip(activeSlip)}><Download size={14} /> Download</Button>
             </div>
           </div>
         )}

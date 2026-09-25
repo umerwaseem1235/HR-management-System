@@ -45,7 +45,10 @@ export default function AdminDashboard() {
     const prefix = new Date().toISOString().slice(0, 7);
     return (data?.attendanceTrend ?? []).filter((d) => d.date.startsWith(prefix));
   }, [data]);
-  const pendingLeaves = leaveRequests.filter(l => l.status === 'Pending');
+  const pendingLeaves = leaveRequests
+    .filter(l => l.status === 'Pending')
+    .sort((a, b) => new Date(b.appliedOn).getTime() - new Date(a.appliedOn).getTime())
+    .slice(0, 3);
   // Payroll label comes from the single dashboard query (same Pending/In Process/Finalized semantics as payroll page).
   const payrollStatusValue = stats?.payrollStatus ?? 'Pending';
   const [confirmApproveLeave, setConfirmApproveLeave] = useState<LeaveRequest | null>(null);
@@ -346,20 +349,24 @@ export default function AdminDashboard() {
 
         {/* Upcoming Events */}
         <Card className="h-full flex flex-col">
-          <h3 className="text-base font-semibold text-[#17324D] pb-3 mb-2 border-b border-[#EDF2FA]">Upcoming Events</h3>
-          <div className="flex-1 flex flex-col justify-evenly space-y-2">
-            {upcomingEvents.map((event, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
-                <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
-                  <event.icon size={18} className="text-[#024fa7]" />
+          <h3 className="shrink-0 text-base font-semibold text-[#17324D] pb-3 mb-3 border-b border-[#EDF2FA]">Upcoming Events</h3>
+          <div className="flex flex-col justify-start gap-2.5">
+            {upcomingEvents.length === 0 ? (
+              <p className="text-gray-500 text-sm text-center py-8">No upcoming events</p>
+            ) : (
+              upcomingEvents.map((event, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
+                  <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
+                    <event.icon size={18} className="text-[#024fa7]" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-[#263238] truncate">{event.name}</p>
+                    <p className="text-xs text-gray-500 capitalize">{event.type}</p>
+                  </div>
+                  <span className="shrink-0 text-xs text-gray-500 whitespace-nowrap">{event.date}</span>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#263238]">{event.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{event.type}</p>
-                </div>
-                <span className="text-xs text-gray-400 ml-auto">{event.date}</span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </Card>
       </div>

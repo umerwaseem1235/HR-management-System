@@ -1,7 +1,6 @@
 'use client';
 
-import { AlertTriangle, Calculator, CheckCircle2, Lock, LockOpen, Trash2, X } from 'lucide-react';
-import Button from '@/components/ui/Button';
+import { AlertTriangle, CheckCircle2, Lock, LockOpen, Trash2, X } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Modal from '@/components/ui/Modal';
@@ -25,11 +24,6 @@ export default function PayrollView() {
     <div className="space-y-6">
       <PageHeader
         title="Payroll"
-        actions={isAdmin && (
-          <Button variant="primary" onClick={() => setActiveTab('runs')}>
-            <Calculator size={16} /> Process Payroll
-          </Button>
-        )}
       />
 
       {p.successMsg && (
@@ -72,8 +66,6 @@ export default function PayrollView() {
               onMonthChange={p.setPayslipMonth}
               search={p.payslipSearch}
               onSearchChange={p.setPayslipSearch}
-              viewSlip={p.viewSlip}
-              onView={p.setViewSlip}
               onDownload={p.downloadSlip}
             />
           )}

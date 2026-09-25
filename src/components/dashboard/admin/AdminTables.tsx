@@ -12,6 +12,7 @@ export function PendingLeavesCard({
   leaves: LeaveRequest[];
   onViewAll: () => void;
 }) {
+  const visibleLeaves = leaves.slice(0, 3);
   return (
     <Card>
       <div className="flex items-center justify-between mb-4">
@@ -24,10 +25,10 @@ export function PendingLeavesCard({
         </button>
       </div>
       <div className="space-y-3">
-        {leaves.length === 0 ? (
+        {visibleLeaves.length === 0 ? (
           <p className="text-gray-500 text-sm text-center py-8">No pending approvals</p>
         ) : (
-          leaves.map(leave => (
+          visibleLeaves.map(leave => (
             <div key={leave.id} className="flex items-center justify-between p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
               <div className="flex items-center gap-3">
                 <Avatar name={leave.employeeName} size="sm" />

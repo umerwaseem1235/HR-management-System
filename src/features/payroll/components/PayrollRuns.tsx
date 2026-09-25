@@ -82,22 +82,24 @@ export default function PayrollRuns({
               return isNaN(d.getTime()) ? ts : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
             };
             return (
-              <div key={run.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg bg-white border border-[#D6E4E8] gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-[#17324D]">{run.month} {run.year} <span className="font-normal text-gray-400">· {run.id}</span></p>
-                  <p className="text-xs text-gray-500 mt-1">
+              <div key={run.id} className="flex flex-col gap-3 p-4 rounded-xl bg-white border border-[#D6E4E8] sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-[#17324D] truncate">{run.month} {run.year} <span className="font-normal text-gray-400">· {run.id}</span></p>
+                  <p className="text-xs text-gray-500 mt-1 truncate">
                     {run.items.length} employees · Gross {money(run.totalGross)} · Net {money(run.totalNet)} ·
                     Created {formatTs(run.createdOn)}{run.finalizedOn ? ` · Finalized ${formatTs(run.finalizedOn)}` : ''}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex shrink-0 items-center gap-2 sm:justify-end">
                   <StatusBadge status={run.status} />
                   <Button variant="outline" size="sm" onClick={() => onReview(run.id)}>
                     <Eye size={14} /> {run.status === 'Finalized' ? 'View' : 'Review'}
                   </Button>
-                  <button onClick={() => onExport(run)} title="Export payroll summary (PDF)" className="p-2 rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4]"><Download size={16} /></button>
-                  {run.status === 'Draft' && (
-                    <button onClick={() => onDeleteRequest(run)} title="Delete draft run" className="p-2 rounded-lg text-red-500 hover:bg-red-50"><Trash2 size={16} /></button>
+                  <button onClick={() => onExport(run)} title="Export payroll summary (PDF)" aria-label="Export payroll summary" className="flex h-9 w-9 items-center justify-center rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4] transition-colors"><Download size={16} /></button>
+                  {run.status === 'Draft' ? (
+                    <button onClick={() => onDeleteRequest(run)} title="Delete draft run" aria-label="Delete draft run" className="flex h-9 w-9 items-center justify-center rounded-lg text-red-500 hover:bg-red-50 transition-colors"><Trash2 size={16} /></button>
+                  ) : (
+                    <span className="hidden h-9 w-9 shrink-0 sm:block" aria-hidden="true" />
                   )}
                 </div>
               </div>
