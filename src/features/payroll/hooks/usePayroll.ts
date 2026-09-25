@@ -480,7 +480,6 @@ export function usePayroll() {
   const tabs = isAdmin ? [
     { id: 'payslips', label: 'Payslips' },
     { id: 'runs', label: 'Payroll Runs' },
-    { id: 'structures', label: 'Salary Structures' },
     { id: 'emp-rules', label: 'Monthly Leaves' },
   ] : [{ id: 'payslips', label: 'My Payslips' }];
 

@@ -58,7 +58,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pageTitle = Object.entries(PAGE_TITLES).find(([path]) => pathname.startsWith(path))?.[1] || '';
 
   return (
-    <div className="flex min-h-screen bg-[#EAF2F4]">
+    <div className="flex h-screen overflow-hidden bg-[#EAF2F4]">
       <Sidebar
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}

@@ -69,6 +69,15 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
     try {
       const data = await cachedQuery(EMPLOYEES_CACHE_KEY, getEmployees);
       setEmployees(data);
+      
+      // Fetch avatars in the background after setting initial data
+      import('@/lib/actions/employees').then(({ getEmployeeAvatars }) => {
+        getEmployeeAvatars(data.map(e => e.id)).then(avatars => {
+          setEmployees(prev => prev.map(emp => 
+            avatars[emp.id] ? { ...emp, avatar: avatars[emp.id] } : emp
+          ));
+        }).catch(err => console.error('Failed to fetch avatars:', err));
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {

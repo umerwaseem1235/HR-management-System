@@ -76,27 +76,33 @@ export default function PayrollRuns({
           </div>
         </div>
         <div className="space-y-3">
-          {runs.map(run => (
-            <div key={run.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg bg-white border border-[#D6E4E8] gap-3">
-              <div>
-                <p className="text-sm font-semibold text-[#17324D]">{run.month} {run.year} <span className="font-normal text-gray-400">· {run.id}</span></p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {run.items.length} employees · Gross {money(run.totalGross)} · Net {money(run.totalNet)} ·
-                  Created {run.createdOn}{run.finalizedOn ? ` · Finalized ${run.finalizedOn}` : ''}
-                </p>
+          {runs.map(run => {
+            const formatTs = (ts: string) => {
+              const d = new Date(ts);
+              return isNaN(d.getTime()) ? ts : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            };
+            return (
+              <div key={run.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg bg-white border border-[#D6E4E8] gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-[#17324D]">{run.month} {run.year} <span className="font-normal text-gray-400">· {run.id}</span></p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {run.items.length} employees · Gross {money(run.totalGross)} · Net {money(run.totalNet)} ·
+                    Created {formatTs(run.createdOn)}{run.finalizedOn ? ` · Finalized ${formatTs(run.finalizedOn)}` : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <StatusBadge status={run.status} />
+                  <Button variant="outline" size="sm" onClick={() => onReview(run.id)}>
+                    <Eye size={14} /> {run.status === 'Finalized' ? 'View' : 'Review'}
+                  </Button>
+                  <button onClick={() => onExport(run)} title="Export payroll summary (PDF)" className="p-2 rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4]"><Download size={16} /></button>
+                  {run.status === 'Draft' && (
+                    <button onClick={() => onDeleteRequest(run)} title="Delete draft run" className="p-2 rounded-lg text-red-500 hover:bg-red-50"><Trash2 size={16} /></button>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <StatusBadge status={run.status} />
-                <Button variant="outline" size="sm" onClick={() => onReview(run.id)}>
-                  <Eye size={14} /> {run.status === 'Finalized' ? 'View' : 'Review'}
-                </Button>
-                <button onClick={() => onExport(run)} title="Export payroll summary (PDF)" className="p-2 rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4]"><Download size={16} /></button>
-                {run.status === 'Draft' && (
-                  <button onClick={() => onDeleteRequest(run)} title="Delete draft run" className="p-2 rounded-lg text-red-500 hover:bg-red-50"><Trash2 size={16} /></button>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

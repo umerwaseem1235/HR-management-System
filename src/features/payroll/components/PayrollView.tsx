@@ -16,7 +16,6 @@ import MonthlyLeaves from './MonthlyLeaves';
 import PayslipList from './PayslipList';
 import PayrollRuns from './PayrollRuns';
 import RunDetail from './RunDetail';
-import SalaryStructure from './SalaryStructure';
 
 export default function PayrollView() {
   const p = usePayroll();
@@ -118,16 +117,6 @@ export default function PayrollView() {
               onReopen={() => p.reopenToDraft(p.selectedRun!)}
               onFinalizeRequest={() => p.setShowFinalize(true)}
               onUnlockRequest={() => p.setShowUnlock(true)}
-            />
-          )}
-
-          {/* ==================== SALARY STRUCTURES ==================== */}
-          {activeTab === 'structures' && isAdmin && (
-            <SalaryStructure
-              components={p.components}
-              onAdd={p.setCompModal}
-              onEdit={p.setCompModal}
-              onRemove={p.removeComponent}
             />
           )}
 
