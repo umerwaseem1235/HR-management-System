@@ -1,7 +1,6 @@
 'use client';
 
-import { CalendarDays, CheckCircle2, Trash2, UserPlus, XCircle, LogIn, LogOut } from 'lucide-react';
-import Badge from '@/components/ui/Badge';
+import { CalendarDays, CheckCircle2, UserPlus, XCircle, LogIn, LogOut } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -15,10 +14,8 @@ import { useAttendance } from '../hooks/useAttendance';
 import { STATUS_OPTIONS } from '../utils';
 import { DailyLogTable, MyAttendanceTable } from './AttendanceTable';
 import { MyAttendanceStats, TodaySnapshot } from './AttendanceStats';
-import AttendanceSummary from './AttendanceSummary';
 import CorrectionQueue from './CorrectionQueue';
 import EditAttendanceModal from './EditAttendanceModal';
-import HolidayManager from './HolidayManager';
 import LateArrivalRules from './LateArrivalRules';
 import ManualEntryModal from './ManualEntryModal';
 
@@ -162,15 +159,6 @@ export default function AttendanceView() {
     <div className="space-y-6">
       <PageHeader
         title="Attendance"
-        actions={
-          <>
-            <Badge variant="success">{att.stats.presentToday} Present</Badge>
-            <Badge variant="danger">{att.stats.absentToday} Absent</Badge>
-            <Badge variant="warning">{att.stats.lateToday} Late</Badge>
-            <Badge variant="warning">{halfDayToday} Half Day</Badge>
-            <Badge variant="info">{att.stats.onLeaveToday} On Leave</Badge>
-          </>
-        }
       />
 
       {att.error && (
@@ -225,19 +213,6 @@ export default function AttendanceView() {
         </>
       )}
 
-      {/* ---------------- SUMMARIES ---------------- */}
-      {att.activeTab === 'summaries' && (
-        <AttendanceSummary
-          summaryMode={att.summaryMode}
-          setSummaryMode={att.setSummaryMode}
-          viewDate={att.viewDate}
-          setViewDate={att.setViewDate}
-          agg={att.agg}
-          summaryCounts={att.summaryCounts}
-          summaryLabel={att.summaryLabel}
-        />
-      )}
-
       {/* ---------------- CORRECTIONS ---------------- */}
       {att.activeTab === 'corrections' && (
         <CorrectionQueue
@@ -246,16 +221,6 @@ export default function AttendanceView() {
           correctionHistory={att.correctionHistory}
           onApprove={att.setConfirmApproveCorrection}
           onReject={att.setConfirmRejectCorrection}
-        />
-      )}
-
-      {/* ---------------- CONFIG (HOLIDAYS ONLY) ---------------- */}
-      {att.activeTab === 'config' && (
-        <HolidayManager
-          holidays={att.holidays}
-          holidayMsg={att.holidayMsg}
-          onAddHoliday={att.handleAddHoliday}
-          onDelete={att.setConfirmDeleteHoliday}
         />
       )}
 
@@ -329,27 +294,6 @@ export default function AttendanceView() {
         confirmLabel="Confirm Reject"
         confirmIcon={<XCircle size={16} />}
         onConfirm={() => { if (att.confirmRejectCorrection) att.handleRejectCorrection(att.confirmRejectCorrection.id); att.setConfirmRejectCorrection(null); }}
-      />
-
-      <ConfirmDialog
-        isOpen={!!att.confirmDeleteHoliday}
-        onClose={() => att.setConfirmDeleteHoliday(null)}
-        title="Delete Holiday?"
-        variant="delete"
-        headline={
-          <>
-            Delete <span className="font-semibold text-[#17324D]">{att.confirmDeleteHoliday?.name}</span>?
-          </>
-        }
-        subline={att.confirmDeleteHoliday ? `${att.confirmDeleteHoliday.date} · ${att.confirmDeleteHoliday.type} holiday` : undefined}
-        note={
-          <>
-            This action <span className="font-semibold">cannot be undone</span>. The holiday will be permanently removed from the calendar.
-          </>
-        }
-        confirmLabel="Delete"
-        confirmIcon={<Trash2 size={16} />}
-        onConfirm={() => { if (att.confirmDeleteHoliday) { att.handleDeleteHoliday(att.confirmDeleteHoliday.id); att.setConfirmDeleteHoliday(null); } }}
       />
     </div>
   );

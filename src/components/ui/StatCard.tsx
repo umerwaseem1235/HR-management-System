@@ -15,6 +15,7 @@ interface StatCardProps {
   iconName?: StatIconName;
   change?: string;
   changeType?: 'positive' | 'negative' | 'neutral';
+  showDot?: boolean;
   iconBg?: string;
   iconColor?: string;
 }
@@ -29,6 +30,7 @@ export default function StatCard({
   iconName,
   change,
   changeType = 'neutral',
+  showDot = true,
   iconBg,
   iconColor
 }: StatCardProps) {
@@ -59,7 +61,7 @@ export default function StatCard({
           <p className="mt-1.5 text-lg xl:text-xl 2xl:text-2xl font-bold leading-none tracking-tight text-[#17324D]">{value}</p>
           {change && (
             <span className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold ring-1 ring-inset ${changeStyles[changeType]}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${dotStyles[changeType]}`} />
+              {showDot && <span className={`h-1.5 w-1.5 rounded-full ${dotStyles[changeType]}`} />}
               {change}
             </span>
           )}

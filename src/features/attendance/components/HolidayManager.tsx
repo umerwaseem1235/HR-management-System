@@ -13,11 +13,13 @@ export default function HolidayManager({
   holidayMsg,
   onAddHoliday,
   onDelete,
+  readOnly = false,
 }: {
   holidays: Holiday[];
   holidayMsg: string;
   onAddHoliday: (e: React.FormEvent<HTMLFormElement>) => void;
   onDelete: (holiday: Holiday) => void;
+  readOnly?: boolean;
 }) {
   return (
     <div className="w-full min-w-0">
@@ -31,6 +33,7 @@ export default function HolidayManager({
           <Badge variant="default">{holidays.length} Holidays</Badge>
         </div>
 
+        {!readOnly && (
         <form onSubmit={onAddHoliday} className="mb-4 rounded-lg border border-dashed border-[#D6E4E8] bg-[#F8FBFC] p-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Input name="holidayName" label="Holiday Name" placeholder="e.g. Independence Day" required />
@@ -65,6 +68,7 @@ export default function HolidayManager({
           )}
 
         </form>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -73,7 +77,7 @@ export default function HolidayManager({
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Holiday</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Date</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Type</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase"></th>
+                {!readOnly && <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase"></th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#D6E4E8]">
@@ -84,6 +88,7 @@ export default function HolidayManager({
                   <td className="px-4 py-3">
                     <Badge variant={h.type === 'Public' ? 'info' : h.type === 'Company' ? 'success' : 'neutral'}>{h.type}</Badge>
                   </td>
+                  {!readOnly && (
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={() => onDelete(h)}
@@ -93,6 +98,7 @@ export default function HolidayManager({
                       <Trash2 size={15} />
                     </button>
                   </td>
+                  )}
                 </tr>
               ))}
             </tbody>

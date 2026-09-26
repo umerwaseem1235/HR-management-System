@@ -15,11 +15,11 @@ const ICON_BG = 'bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]';
 export function TodaySnapshot({ stats, halfDayToday = 0 }: { stats: TodayAttendanceStats; halfDayToday?: number }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-      <StatCard title="Present" value={stats.presentToday} icon={<UserCheck size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} change="Today" />
-      <StatCard title="Absent" value={stats.absentToday} icon={<UserX size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} change="Today" />
-      <StatCard title="Late" value={stats.lateToday} icon={<Clock size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} change="Today" />
-      <StatCard title="Half Day" value={halfDayToday} icon={<Sun size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} change="Today" />
-      <StatCard title="On Leave" value={stats.onLeaveToday} icon={<CalendarDays size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} change="Today" />
+      <StatCard title="Present" value={stats.presentToday} icon={<UserCheck size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} change="Today" showDot={false} />
+      <StatCard title="Absent" value={stats.absentToday} icon={<UserX size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} change="Today" showDot={false} />
+      <StatCard title="Late" value={stats.lateToday} icon={<Clock size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} change="Today" showDot={false} />
+      <StatCard title="Half Day" value={halfDayToday} icon={<Sun size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} change="Today" showDot={false} />
+      <StatCard title="On Leave" value={stats.onLeaveToday} icon={<CalendarDays size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} change="Today" showDot={false} />
     </div>
   );
 }
@@ -41,11 +41,11 @@ export function MyAttendanceStats({
 }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-      <StatCard title="Present Days" value={presentDays} change={monthLabel} icon={<UserCheck size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} />
-      <StatCard title="Absent Days" value={absentDays} change={monthLabel} icon={<UserX size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} />
-      <StatCard title="Late Days" value={lateDays} change={monthLabel} icon={<Clock size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} />
-      <StatCard title="Half Days" value={halfDayDays} change={monthLabel} icon={<Sun size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} />
-      <StatCard title="Leaves Taken" value={leavesTaken} change={monthLabel} icon={<CalendarDays size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} />
+      <StatCard title="Present Days" value={presentDays} change={monthLabel} showDot={false} icon={<UserCheck size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} />
+      <StatCard title="Absent Days" value={absentDays} change={monthLabel} showDot={false} icon={<UserX size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} />
+      <StatCard title="Late Days" value={lateDays} change={monthLabel} showDot={false} icon={<Clock size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} />
+      <StatCard title="Half Days" value={halfDayDays} change={monthLabel} showDot={false} icon={<Sun size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} />
+      <StatCard title="Leaves Taken" value={leavesTaken} change={monthLabel} showDot={false} icon={<CalendarDays size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} />
     </div>
   );
 }

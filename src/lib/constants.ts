@@ -9,6 +9,7 @@ export const NAVIGATION: NavItem[] = [
   { name: 'Recruitment', href: '/recruitment', icon: 'UserPlus', roles: ['super_admin', 'hr_manager'] },
   { name: 'Attendance', href: '/attendance', icon: 'Clock', roles: ['super_admin', 'hr_manager', 'employee'] },
   { name: 'Leave', href: '/leave', icon: 'CalendarDays', roles: ['super_admin', 'hr_manager', 'employee'] },
+  { name: 'Holidays', href: '/holidays', icon: 'Palmtree', roles: ['super_admin', 'hr_manager', 'employee'] },
   { name: 'Remote', href: '/remote', icon: 'Wifi', roles: ['super_admin', 'hr_manager', 'employee'] },
   { name: 'Payroll', href: '/payroll', icon: 'Wallet', roles: ['super_admin', 'hr_manager', 'employee'] },
   { name: 'Progress', href: '/progress', icon: 'TrendingUp', roles: ['super_admin', 'hr_manager', 'employee'] },

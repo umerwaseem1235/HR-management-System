@@ -389,13 +389,11 @@ export function useAttendance() {
 
   const adminTabs = [
     { id: 'daily', label: 'Daily Log' },
-    { id: 'summaries', label: 'Summaries' },
     {
       id: 'corrections',
       label: 'Corrections',
       count: pendingCorrections.length,
     },
-    { id: 'config', label: 'Holidays' },
     { id: 'rules', label: 'Rules' },
   ];
 
