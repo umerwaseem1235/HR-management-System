@@ -104,6 +104,7 @@ export interface LeaveBalance {
 export interface LeaveRequest {
   id: string;
   employeeId: string;
+  employeeCode?: string;
   employeeName: string;
   employeeAvatar?: string;
   leaveType: string;

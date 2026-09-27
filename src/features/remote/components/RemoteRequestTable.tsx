@@ -44,8 +44,8 @@ export default function RemoteRequestTable({
             <tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
               <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase w-12">#</th>
               {!isEmployee && <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Employee</th>}
-              <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">From - To</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Reason</th>
+              {isEmployee && <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">From - To</th>}
+              {isEmployee && <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Reason</th>}
               <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Requested On</th>
               <th className="px-6 py-3 text-right text-xs font-semibold text-[#17324D] uppercase">Actions</th>
@@ -63,14 +63,18 @@ export default function RemoteRequestTable({
                     </div>
                   </td>
                 )}
+                {isEmployee && (
                 <td className="px-6 py-4">
                   <p className="text-sm font-medium text-[#263238] whitespace-nowrap">{formatRange(req.fromDate, req.toDate)}</p>
                   <p className="text-xs text-gray-500">{req.days} day{req.days > 1 ? 's' : ''}</p>
                 </td>
+                )}
+                {isEmployee && (
                 <td className="px-6 py-4 max-w-[280px]">
                   <p className="text-sm text-[#263238] truncate" title={req.reason}>{req.reason}</p>
                   {req.workPlan && <p className="text-xs text-gray-500 truncate" title={req.workPlan}>{req.workPlan}</p>}
                 </td>
+                )}
                 <td className="px-6 py-4"><StatusBadge status={req.status} /></td>
                 <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{req.requestedOn}</td>
                 <td className="px-6 py-4">

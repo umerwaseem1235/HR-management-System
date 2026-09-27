@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/ui/PageHeader';
 import Button from '@/components/ui/Button';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import Pagination from '@/components/ui/Pagination';
+import { usePagination } from '@/hooks/usePagination';
 import { UserPlus, AlertCircle, Trash2 } from 'lucide-react';
 import EmployeeFilters from './EmployeeFilters';
 import EmployeeTable from './EmployeeTable';
@@ -38,6 +40,12 @@ export default function EmployeesView() {
   } = useEmployeesSupabase();
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // 10 employees per page — resets to page 1 whenever filters change.
+  const { page, totalPages, pageItems, setPage } = usePagination(filtered, 10);
+  useEffect(() => {
+    setPage(1);
+  }, [search, deptFilter, statusFilter, setPage]);
 
   const confirmDelete = async () => {
     if (!employeeToDelete) return;
@@ -81,11 +89,23 @@ export default function EmployeesView() {
       />
 
       <EmployeeTable
-        employees={filtered}
+        employees={pageItems}
         onView={(emp) => router.push(`/employees/${emp.id}`)}
         onEdit={openEditor}
         onDelete={(id) => setEmployeeToDelete(filtered.find((e) => e.id === id) ?? null)}
         isLoading={isLoading}
+        footer={
+          !isLoading && filtered.length > 0 ? (
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              totalItems={filtered.length}
+              perPage={10}
+              itemLabel="employees"
+            />
+          ) : undefined
+        }
       />
 
       <EmployeeFormModal
