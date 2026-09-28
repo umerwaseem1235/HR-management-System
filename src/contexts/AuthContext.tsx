@@ -31,6 +31,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(user);
     } else {
       setUser(null);
+      // A session that belongs to a deactivated employee is already cleared
+      // server-side — send them to login with the reason so the banner shows.
+      if (error?.toLowerCase().includes('deactivat') && typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        router.replace('/login?deactivated=1');
+      }
     }
     setIsLoading(false);
   };

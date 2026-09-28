@@ -1,4 +1,5 @@
 'use client';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { CheckCircle2, Plus, Trash2, XCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -13,6 +14,7 @@ import { BalanceViewModal, EditBalanceModal, EditLeaveModal } from './LeaveReque
 import LeaveRequestTable from './LeaveRequestTable';
 
 export default function LeaveView() {
+  const { t } = useLanguage();
   const lv = useLeaveView();
 
   if (!lv.user) return null;
@@ -27,7 +29,7 @@ export default function LeaveView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={lv.isEmployee ? 'My Leave' : 'Leave Management'}
+        title={lv.isEmployee ? t('nav.myLeave') : t('nav.leaveManagement')}
         actions={
           lv.user.role !== 'super_admin' ? (
             <Button variant="primary" onClick={lv.goToRequestLeave}>
@@ -99,16 +101,16 @@ export default function LeaveView() {
         headline={
           <>
             Approve{' '}
-            <span className="font-semibold text-[#17324D]">
+            <span className="font-semibold text-primary dark:text-blue-gray-light">
               {lv.confirmApproveLeave?.days} day{(lv.confirmApproveLeave?.days ?? 1) > 1 ? 's' : ''} — {lv.confirmApproveLeave?.leaveType}
             </span>{' '}
-            for <span className="font-semibold text-[#17324D]">{lv.confirmApproveLeave?.employeeName}</span>?
+            for <span className="font-semibold text-primary dark:text-blue-gray-light">{lv.confirmApproveLeave?.employeeName}</span>?
           </>
         }
         subline={lv.confirmApproveLeave ? `${lv.confirmApproveLeave.startDate} to ${lv.confirmApproveLeave.endDate} · ${lv.confirmApproveLeave.reason}` : undefined}
         note={
           <>
-            This will mark the request as <span className="font-semibold text-green-700">Approved</span>. The employee&apos;s leave balance
+            This will mark the request as <span className="font-semibold text-green-700 dark:text-green-400">Approved</span>. The employee&apos;s leave balance
             will be updated.
           </>
         }
@@ -127,16 +129,16 @@ export default function LeaveView() {
         headline={
           <>
             Reject{' '}
-            <span className="font-semibold text-[#17324D]">
+            <span className="font-semibold text-primary dark:text-blue-gray-light">
               {lv.confirmRejectLeave?.days} day{(lv.confirmRejectLeave?.days ?? 1) > 1 ? 's' : ''} — {lv.confirmRejectLeave?.leaveType}
             </span>{' '}
-            for <span className="font-semibold text-[#17324D]">{lv.confirmRejectLeave?.employeeName}</span>?
+            for <span className="font-semibold text-primary dark:text-blue-gray-light">{lv.confirmRejectLeave?.employeeName}</span>?
           </>
         }
         subline={lv.confirmRejectLeave ? `${lv.confirmRejectLeave.startDate} to ${lv.confirmRejectLeave.endDate} · ${lv.confirmRejectLeave.reason}` : undefined}
         note={
           <>
-            This will mark the request as <span className="font-semibold text-red-600">Rejected</span>. The employee will be able to see this
+            This will mark the request as <span className="font-semibold text-red-600 dark:text-red-400">Rejected</span>. The employee will be able to see this
             status.
           </>
         }
@@ -154,7 +156,7 @@ export default function LeaveView() {
         variant="delete"
         headline={
           <>
-            Delete <span className="font-semibold text-[#17324D]">{lv.confirmDeleteLeave?.leaveType}</span> —{' '}
+            Delete <span className="font-semibold text-primary dark:text-blue-gray-light">{lv.confirmDeleteLeave?.leaveType}</span> —{' '}
             {lv.confirmDeleteLeave?.startDate} to {lv.confirmDeleteLeave?.endDate}?
           </>
         }
@@ -178,3 +180,7 @@ export default function LeaveView() {
     </div>
   );
 }
+
+
+
+

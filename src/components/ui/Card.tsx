@@ -27,7 +27,7 @@ export default function Card({
 
   return (
     <div
-      className={`relative rounded-2xl border border-[#D6E4E8]/70 bg-white ${paddings[padding]} card-hover ${
+      className={`relative rounded-2xl border border-medium-gray/70 bg-card text-card-foreground ${paddings[padding]} card-hover ${
         elevated
           ? 'shadow-[0_2px_4px_rgba(23,50,77,0.06),0_12px_40px_-12px_rgba(23,50,77,0.2)]'
           : 'shadow-[0_1px_2px_rgba(23,50,77,0.05),0_10px_30px_-14px_rgba(23,50,77,0.18)]'
@@ -38,7 +38,7 @@ export default function Card({
       } ${className}`}
     >
       {hover && (
-        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#024fa7]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 card-hover-fade" />
+        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-teal/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 card-hover-fade" />
       )}
       {children}
     </div>

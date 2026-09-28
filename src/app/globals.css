@@ -11,6 +11,7 @@
   --color-teal-light: #0265cc;
   --color-teal-dark: #013a7c;
   --color-blue-gray: #EAF2F4;
+  --color-blue-gray-light: #F8FBFC;
   --color-medium-gray: #D6E4E8;
   --color-dark-text: #263238;
   --color-background: #ffffff;
@@ -73,6 +74,15 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #024fa7;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #0a1220;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #243449;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
 }
 
 /* Sidebar hover expand/collapse — single explicit transition so the width
@@ -332,6 +342,20 @@ body {
 }
 
 .dark {
+  /* Brand blues stay constant — never flip to light blue in dark mode.
+     Sidebar / surfaces use dedicated deep-navy tokens instead. */
+  --color-primary: #17324D;
+  --color-primary-light: #1e3f5f;
+  --color-teal: #024fa7;
+  --color-teal-light: #0265cc;
+  --color-teal-dark: #013a7c;
+  --color-blue-gray: #0a1220;
+  --color-blue-gray-light: #0f1b2e;
+  --color-medium-gray: #243449;
+  --color-dark-text: #e6ebf2;
+  --color-background: #0a1220;
+  --color-foreground: #e6ebf2;
+
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -376,3 +400,5 @@ body {
     @apply font-sans;
   }
 }
+
+

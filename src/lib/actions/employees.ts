@@ -15,6 +15,36 @@ function assertAvatarWithinLimit(avatar: string | null | undefined): void {
   if (error) throw new Error(error);
 }
 
+/**
+ * Mirrors an employee's Active/Inactive state onto their Supabase auth user.
+ * Banning at the auth level means a deactivated employee cannot obtain a
+ * session at all — the app-level checks in signIn/getCurrentUser are the
+ * user-friendly layer on top. Never throws: a failed admin call is logged
+ * and the app-level checks still block the account.
+ */
+async function syncAuthBanState(authUserId: string | null | undefined, status: string): Promise<void> {
+  if (!authUserId) return;
+  try {
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js');
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const secret = process.env.SUPABASE_SECRET_KEY;
+    if (!url || !secret) {
+      console.error('Cannot sync auth ban state: Supabase admin credentials missing.');
+      return;
+    }
+    const adminClient = createAdminClient(url, secret, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await adminClient.auth.admin.updateUserById(authUserId, {
+      // A ~10-year ban effectively disables the account; 'none' lifts it.
+      ban_duration: status === 'Inactive' ? '87600h' : 'none',
+    });
+    if (error) console.error('Failed to sync auth ban state:', error.message);
+  } catch (err) {
+    console.error('Failed to sync auth ban state:', err instanceof Error ? err.message : err);
+  }
+}
+
 interface LookupItem {
   id: string;
   name: string;
@@ -422,13 +452,55 @@ export async function updateEmployee(id: string, input: Partial<EmployeeInput>):
 
   revalidatePath('/employees');
   revalidatePath(`/employees/${id}`);
+
+  const linkedUserId = (data as unknown as { user_id?: string | null }).user_id;
+
+  // Enforce login lockout at the auth level when status changes.
+  if (input.status !== undefined) {
+    await syncAuthBanState(linkedUserId, input.status);
+  }
+
+  // Keep the login profile photo in sync so the employee topbar shows the
+  // same photo HR / Super Admin uploaded in the employee form.
+  if (input.avatar !== undefined && linkedUserId) {
+    const { error: avatarSyncError } = await supabase
+      .from('users')
+      .update({ avatar: input.avatar || null })
+      .eq('id', linkedUserId);
+    if (avatarSyncError) console.error('Failed to sync user avatar:', avatarSyncError.message);
+  }
+
   return mapEmployee(asEmployeeRow(data));
 }
 
 export async function deleteEmployee(id: string): Promise<void> {
   const supabase = await createClient();
+  // Capture the linked auth user first so the login can be removed too —
+  // otherwise a deleted employee could still sign in with an orphan session.
+  const { data: existing } = await supabase
+    .from('employees')
+    .select('user_id')
+    .eq('id', id)
+    .maybeSingle();
   const { error } = await supabase.from('employees').delete().eq('id', id);
   if (error) throw new Error(error.message);
+  const authUserId = (existing as { user_id?: string | null } | null)?.user_id;
+  if (authUserId) {
+    try {
+      const { createClient: createAdminClient } = await import('@supabase/supabase-js');
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const secret = process.env.SUPABASE_SECRET_KEY;
+      if (url && secret) {
+        const adminClient = createAdminClient(url, secret, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+        const { error: deleteAuthError } = await adminClient.auth.admin.deleteUser(authUserId);
+        if (deleteAuthError) console.error('Failed to delete auth user:', deleteAuthError.message);
+      }
+    } catch (err) {
+      console.error('Failed to delete auth user:', err instanceof Error ? err.message : err);
+    }
+  }
   revalidatePath('/employees');
 }
 
@@ -542,7 +614,16 @@ export async function createEmployeeWithAuth(input: EmployeeInput & {
     throw new Error(error.message);
   }
 
-  // Create user profile in public.users
+  // Rare edge case: employee created directly as Inactive — lock the login now.
+  if ((input.status || 'Active') === 'Inactive') {
+    const { error: banError } = await adminClient.auth.admin.updateUserById(authUserId, {
+      ban_duration: '87600h',
+    });
+    if (banError) console.error('Failed to ban inactive employee account:', banError.message);
+  }
+
+  // Create user profile in public.users — carry the uploaded photo so the
+  // employee topbar shows it from the very first login.
   const { error: userError } = await supabase
     .from('users')
     .insert({
@@ -550,7 +631,7 @@ export async function createEmployeeWithAuth(input: EmployeeInput & {
       email: input.loginEmail,
       name: `${input.firstName} ${input.lastName}`,
       role: 'employee',
-      avatar: null
+      avatar: input.avatar || null
     });
 
   if (userError) {

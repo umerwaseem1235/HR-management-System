@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Employee } from '@/lib/types';
-import { getEmployee, getEmployees, getLookupData } from '@/lib/actions/employees';
-import { cachedQuery, invalidateQuery, peekQuery } from '@/lib/query-cache';
+import { getEmployee, getEmployees, getEmployeeAvatars, getLookupData } from '@/lib/actions/employees';
+import { cachedQuery, invalidateQuery, peekQuery, primeQuery } from '@/lib/query-cache';
 
 export const EMPLOYEES_CACHE_KEY = 'employees';
 export const EMPLOYEE_LOOKUP_CACHE_KEY = 'employees:lookup';
@@ -78,15 +78,24 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
     try {
       const data = await cachedQuery(EMPLOYEES_CACHE_KEY, getEmployees);
       setEmployees(data);
-      
-      // Fetch avatars in the background after setting initial data
-      import('@/lib/actions/employees').then(({ getEmployeeAvatars }) => {
-        getEmployeeAvatars(data.map(e => e.id)).then(avatars => {
-          setEmployees(prev => prev.map(emp => 
-            avatars[emp.id] ? { ...emp, avatar: avatars[emp.id] } : emp
-          ));
-        }).catch(err => console.error('Failed to fetch avatars:', err));
-      });
+
+      // The list query omits `avatar` for speed — fill photos in the
+      // background and persist the merged list so remounts paint photos
+      // instantly instead of initials.
+      try {
+        const avatars = await getEmployeeAvatars(data.map((e) => e.id));
+        if (Object.keys(avatars).length > 0) {
+          setEmployees((prev) => {
+            const merged = prev.map((emp) =>
+              avatars[emp.id] ? { ...emp, avatar: avatars[emp.id] } : emp,
+            );
+            primeQuery(EMPLOYEES_CACHE_KEY, merged);
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch avatars:', err);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -170,7 +179,20 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
         const err = await res.json();
         throw new Error(err.message || 'Failed to create employee');
       }
+      // POST returns the created row WITH avatar — keep it so the new
+      // employee's photo shows instantly instead of waiting for the
+      // background avatar merge (the refreshed list omits avatars).
+      const created = (await res.json()) as Employee;
       await refreshEmployees();
+      if (created?.id && created.avatar) {
+        setEmployees((prev) => {
+          const merged = prev.map((e) =>
+            e.id === created.id ? { ...e, avatar: created.avatar } : e,
+          );
+          primeQuery(EMPLOYEES_CACHE_KEY, merged);
+          return merged;
+        });
+      }
       setIsAddEmployeeOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create employee');
@@ -194,7 +216,17 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
         const err = await res.json();
         throw new Error(err.message || 'Failed to update employee');
       }
+      const updated = (await res.json()) as Employee;
       await refreshEmployees();
+      if (updated?.id) {
+        setEmployees((prev) => {
+          const merged = prev.map((e) =>
+            e.id === updated.id ? { ...e, avatar: updated.avatar ?? e.avatar } : e,
+          );
+          primeQuery(EMPLOYEES_CACHE_KEY, merged);
+          return merged;
+        });
+      }
       setEditingEmployee(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update employee');

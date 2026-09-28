@@ -11,6 +11,18 @@ export const EMPLOYEE_PHOTO_MAX_BYTES = 1 * 1024 * 1024;
 /** Human-readable form of {@link EMPLOYEE_PHOTO_MAX_BYTES}, for messages/UI. */
 export const EMPLOYEE_PHOTO_MAX_LABEL = '1 MB';
 
+/**
+ * Maximum size of the SOURCE file picked in the form: 10 MB.
+ * Phone photos are routinely 3–8 MB — rejecting them before downscaling is
+ * why uploads "succeeded" in the form but no photo ever appeared in admin.
+ * The file is downscaled to a 256px JPEG (~20–50KB) before storing, and the
+ * stored payload is still guarded by {@link EMPLOYEE_PHOTO_MAX_BYTES}.
+ */
+export const EMPLOYEE_PHOTO_SOURCE_MAX_BYTES = 10 * 1024 * 1024;
+
+/** Human-readable form of {@link EMPLOYEE_PHOTO_SOURCE_MAX_BYTES}. */
+export const EMPLOYEE_PHOTO_SOURCE_MAX_LABEL = '10 MB';
+
 /** Image formats accepted by the employee form. */
 export const EMPLOYEE_PHOTO_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
 
@@ -42,6 +54,9 @@ export function dataUrlByteSize(dataUrl: string): number {
 
 /**
  * Validates a file selected in the form.
+ * Allows generous source files (phone photos) — the form downscales to a
+ * tiny 256px JPEG before storing, and the stored payload is validated
+ * separately by {@link validateEmployeePhotoPayload}.
  * Returns a user-facing error message, or `null` when the file is acceptable.
  */
 export function validateEmployeePhotoFile(file: File): string | null {
@@ -51,8 +66,8 @@ export function validateEmployeePhotoFile(file: File): string | null {
   if (!(EMPLOYEE_PHOTO_MIME_TYPES as readonly string[]).includes(file.type)) {
     return 'Please choose a PNG, JPG or WEBP image.';
   }
-  if (file.size > EMPLOYEE_PHOTO_MAX_BYTES) {
-    return `Profile photo must be ${EMPLOYEE_PHOTO_MAX_LABEL} or smaller. The selected image is ${formatBytes(file.size)}.`;
+  if (file.size > EMPLOYEE_PHOTO_SOURCE_MAX_BYTES) {
+    return `Profile photo must be ${EMPLOYEE_PHOTO_SOURCE_MAX_LABEL} or smaller. The selected image is ${formatBytes(file.size)}.`;
   }
   return null;
 }

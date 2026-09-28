@@ -81,8 +81,8 @@ export default function CandidateModal(props: CandidateModalProps) {
             <Select name="jobId" label="Applied For" options={[{ value: '', label: 'Select Job' }, ...jobs.filter(j => j.status === 'Open').map(j => ({ value: j.id, label: j.title }))]} required />
             <Select name="stage" label="Stage" options={STAGES.map(s => ({ value: s, label: s }))} required />
             <Select name="source" label="Source" options={SOURCES.map(s => ({ value: s, label: s }))} required />
-            <div className="sm:col-span-2"><label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-[#B9D0D6] bg-[#F8FBFC] px-4 py-3"><Upload size={17} /><span className="text-sm">Upload CV (PDF/DOC)</span><input name="cv" type="file" accept=".pdf,.doc,.docx" className="sr-only" /></label></div>
-            <div className="sm:col-span-2"><label className="block text-sm font-medium mb-1.5">Notes</label><textarea name="notes" rows={3} className="w-full rounded-lg border border-[#D6E4E8] px-4 py-2.5 text-sm" /></div>
+            <div className="sm:col-span-2"><label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-[#B9D0D6] bg-blue-gray-light px-4 py-3"><Upload size={17} /><span className="text-sm">Upload CV (PDF/DOC)</span><input name="cv" type="file" accept=".pdf,.doc,.docx" className="sr-only" /></label></div>
+            <div className="sm:col-span-2"><label className="block text-sm font-medium mb-1.5">Notes</label><textarea name="notes" rows={3} className="w-full rounded-lg border border-medium-gray px-4 py-2.5 text-sm" /></div>
           </div>
           <div className="flex justify-end gap-3"><Button variant="outline" type="button" onClick={onCloseCandModal}>Cancel</Button><Button type="submit"><UserPlus size={16} /> Save</Button></div>
         </form>
@@ -100,11 +100,11 @@ export default function CandidateModal(props: CandidateModalProps) {
               <Select label="Stage" value={editCandModal.stage} onChange={e => onEditCandChange({ stage: e.target.value as CandidateExt['stage'] })} options={STAGES.map(s => ({ value: s, label: s }))} required />
               <Select label="Source" value={editCandModal.source} onChange={e => onEditCandChange({ source: e.target.value })} options={SOURCES.map(s => ({ value: s, label: s }))} required />
               {editCandModal.resume
-                ? <div className="sm:col-span-2 flex items-center gap-2 rounded-lg border border-[#D6E4E8] bg-[#F8FBFC] px-4 py-2.5 text-sm"><Download size={15} className="text-purple-600" /><span className="flex-1 truncate text-gray-600">{cvDisplayName(editCandModal.resume)}</span><button type="button" onClick={() => onDownloadResume(editCandModal.resume)} className="font-semibold text-purple-700 hover:underline cursor-pointer">Download</button></div>
+                ? <div className="sm:col-span-2 flex items-center gap-2 rounded-lg border border-medium-gray bg-blue-gray-light px-4 py-2.5 text-sm"><Download size={15} className="text-purple-600" /><span className="flex-1 truncate text-gray-600 dark:text-gray-300">{cvDisplayName(editCandModal.resume)}</span><button type="button" onClick={() => onDownloadResume(editCandModal.resume)} className="font-semibold text-purple-700 dark:text-purple-400 hover:underline cursor-pointer">Download</button></div>
                 : null}
-              <div className="sm:col-span-2"><label className="block text-sm font-medium mb-1.5">Notes</label><textarea rows={3} value={editCandModal.notes} onChange={e => onEditCandChange({ notes: e.target.value })} className="w-full rounded-lg border border-[#D6E4E8] px-4 py-2.5 text-sm" /></div>
+              <div className="sm:col-span-2"><label className="block text-sm font-medium mb-1.5">Notes</label><textarea rows={3} value={editCandModal.notes} onChange={e => onEditCandChange({ notes: e.target.value })} className="w-full rounded-lg border border-medium-gray px-4 py-2.5 text-sm" /></div>
             </div>
-            <div className="flex justify-end gap-3 pt-2 border-t border-[#D6E4E8]"><Button variant="outline" type="button" onClick={onCloseEditCand} disabled={isSavingCand}>Cancel</Button><Button type="submit" loading={isSavingCand}><Pencil size={16} /> {isSavingCand ? 'Saving…' : 'Save Changes'}</Button></div>
+            <div className="flex justify-end gap-3 pt-2 border-t border-medium-gray"><Button variant="outline" type="button" onClick={onCloseEditCand} disabled={isSavingCand}>Cancel</Button><Button type="submit" loading={isSavingCand}><Pencil size={16} /> {isSavingCand ? 'Saving…' : 'Save Changes'}</Button></div>
           </form>
         )}
       </Modal>
@@ -113,17 +113,17 @@ export default function CandidateModal(props: CandidateModalProps) {
       <Modal isOpen={!!detail} onClose={onCloseDetail} title="Candidate Profile & History" size="lg">
         {detail && (
           <div className="space-y-4">
-            <div className="flex items-center gap-3"><Avatar name={detail.name} size="sm" /><div className="flex-1"><p className="font-semibold text-[#17324D]">{detail.name}</p><p className="text-xs text-gray-500">{detail.email} · {detail.phone} · {detail.source}</p></div><StatusBadge status={detail.stage} /></div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 rounded-xl bg-[#EAF2F4]/60 border p-4 text-sm">
-              <div><p className="text-[11px] text-gray-500 uppercase">Job</p><p className="font-semibold">{detail.jobTitle}</p></div>
-              <div><p className="text-[11px] text-gray-500 uppercase">CV</p>{detail.resume
-                ? <button onClick={() => onDownloadResume(detail.resume)} title={`Download ${cvDisplayName(detail.resume)}`} className="inline-flex items-center gap-1.5 font-semibold text-purple-700 hover:underline cursor-pointer"><Download size={13} />{cvDisplayName(detail.resume)}</button>
+            <div className="flex items-center gap-3"><Avatar name={detail.name} size="sm" /><div className="flex-1"><p className="font-semibold text-primary dark:text-blue-gray-light">{detail.name}</p><p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{detail.email} · {detail.phone} · {detail.source}</p></div><StatusBadge status={detail.stage} /></div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 rounded-xl bg-blue-gray/60 border p-4 text-sm">
+              <div><p className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Job</p><p className="font-semibold">{detail.jobTitle}</p></div>
+              <div><p className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">CV</p>{detail.resume
+                ? <button onClick={() => onDownloadResume(detail.resume)} title={`Download ${cvDisplayName(detail.resume)}`} className="inline-flex items-center gap-1.5 font-semibold text-purple-700 dark:text-purple-400 hover:underline cursor-pointer"><Download size={13} />{cvDisplayName(detail.resume)}</button>
                 : <p className="font-semibold">—</p>}</div>
-              <div><p className="text-[11px] text-gray-500 uppercase">Applied</p><p className="font-semibold">{detail.appliedDate}</p></div>
+              <div><p className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase">Applied</p><p className="font-semibold">{detail.appliedDate}</p></div>
             </div>
-            {detail.notes && <p className="text-sm text-gray-600 rounded-lg border p-3">Notes: {detail.notes}</p>}
-            <div><p className="text-sm font-semibold mb-2">Interviews</p>{interviews.filter(i => i.candidateId === detail.id).map(i => <p key={i.id} className="text-xs text-gray-600">{i.date} {i.time} · {i.round} · {i.interviewer} · {i.status}</p>)}{interviews.filter(i => i.candidateId === detail.id).length === 0 && <p className="text-xs text-gray-400">No interviews.</p>}</div>
-            <div><p className="text-sm font-semibold mb-2">History</p><div className="space-y-1.5 max-h-40 overflow-auto">{[...detail.history].reverse().map((h, i) => <div key={i} className="flex gap-2 text-xs"><span className="text-gray-400 whitespace-nowrap">{h.date}</span><span className="font-semibold">{h.action}</span><span className="text-gray-500">{h.note || ''}</span></div>)}</div></div>
+            {detail.notes && <p className="text-sm text-gray-600 dark:text-gray-300 rounded-lg border p-3">Notes: {detail.notes}</p>}
+            <div><p className="text-sm font-semibold mb-2">Interviews</p>{interviews.filter(i => i.candidateId === detail.id).map(i => <p key={i.id} className="text-xs text-gray-600 dark:text-gray-300">{i.date} {i.time} · {i.round} · {i.interviewer} · {i.status}</p>)}{interviews.filter(i => i.candidateId === detail.id).length === 0 && <p className="text-xs text-gray-400 dark:text-gray-500">No interviews.</p>}</div>
+            <div><p className="text-sm font-semibold mb-2">History</p><div className="space-y-1.5 max-h-40 overflow-auto">{[...detail.history].reverse().map((h, i) => <div key={i} className="flex gap-2 text-xs"><span className="text-gray-400 dark:text-gray-500 whitespace-nowrap">{h.date}</span><span className="font-semibold">{h.action}</span><span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{h.note || ''}</span></div>)}</div></div>
             <div className="flex gap-2"><Input placeholder="Add a note…" value={noteText} onChange={e => onNoteTextChange(e.target.value)} /><Button variant="outline" size="sm" onClick={onAddNote}>Add</Button></div>
           </div>
         )}
@@ -136,7 +136,7 @@ export default function CandidateModal(props: CandidateModalProps) {
           <div className="grid grid-cols-2 gap-3"><Input label="Date" type="date" value={intModal.date} onChange={e => onIntModalChange({ date: e.target.value })} /><Input label="Time" type="time" value={intModal.time} onChange={e => onIntModalChange({ time: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-3"><Select label="Mode" value={intModal.mode} onChange={e => onIntModalChange({ mode: e.target.value })} options={INTERVIEW_MODES.map(m => ({ value: m, label: m }))} /><Input label="Round" value={intModal.round} onChange={e => onIntModalChange({ round: e.target.value })} /></div>
           <Select label="Interviewer (employee)" value={intModal.interviewer} onChange={e => onIntModalChange({ interviewer: e.target.value })} options={[{ value: '', label: 'Select employee interviewer…' }, ...employees.map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName} — ${e.designation}` }))]} />
-          <p className="text-xs text-gray-500">Selected employee will get a notification to take this interview.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Selected employee will get a notification to take this interview.</p>
           <div className="flex justify-end gap-3"><Button variant="outline" onClick={onCloseIntModal}>Cancel</Button><Button variant="primary" onClick={onScheduleInterview} disabled={!intModal.interviewer || !intModal.date}><CalendarDays size={16} /> Schedule</Button></div>
         </div>}
       </Modal>
@@ -188,7 +188,7 @@ export default function CandidateModal(props: CandidateModalProps) {
         variant="delete"
         headline={
           <>
-            Delete <span className="font-semibold text-[#17324D]">{confirmDeleteCand?.name}</span>?
+            Delete <span className="font-semibold text-primary dark:text-blue-gray-light">{confirmDeleteCand?.name}</span>?
           </>
         }
         subline={confirmDeleteCand ? `${confirmDeleteCand.jobTitle} · ${confirmDeleteCand.stage} · Applied ${confirmDeleteCand.appliedDate}` : undefined}
@@ -209,8 +209,8 @@ export default function CandidateModal(props: CandidateModalProps) {
         variant="warning"
         headline={
           <>
-            Cancel <span className="font-semibold text-[#17324D]">{confirmCancelInterview?.round}</span> for{' '}
-            <span className="font-semibold text-[#17324D]">{candidates.find(c => c.id === confirmCancelInterview?.candidateId)?.name}</span>?
+            Cancel <span className="font-semibold text-primary dark:text-blue-gray-light">{confirmCancelInterview?.round}</span> for{' '}
+            <span className="font-semibold text-primary dark:text-blue-gray-light">{candidates.find(c => c.id === confirmCancelInterview?.candidateId)?.name}</span>?
           </>
         }
         subline={confirmCancelInterview ? `${confirmCancelInterview.date} ${confirmCancelInterview.time} · ${confirmCancelInterview.mode} · ${confirmCancelInterview.interviewer}` : undefined}

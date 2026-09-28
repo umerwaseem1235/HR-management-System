@@ -13,7 +13,7 @@ export function NotificationBell({ unreadCount, open, onToggle }: NotificationBe
   return (
     <button
       onClick={onToggle}
-      className={`relative rounded-xl p-2.5 transition-all active:scale-95 ${open ? 'bg-[#EAF2F4] text-[#024fa7]' : 'text-[#263238] hover:bg-[#EAF2F4] hover:text-[#024fa7]'}`}
+      className={`relative rounded-xl p-2.5 transition-all active:scale-95 ${open ? 'bg-blue-gray text-teal' : 'text-dark-text dark:text-gray-100 hover:bg-blue-gray dark:hover:bg-white/10 hover:text-teal'}`}
       aria-label="Notifications"
     >
       <Bell size={20} />

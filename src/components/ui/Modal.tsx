@@ -33,10 +33,10 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-full items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose} />
-        <div className={`relative w-full ${sizes[size]} bg-white rounded-xl shadow-xl transform transition-all max-h-[90vh] flex flex-col overflow-hidden`}>
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#D6E4E8] shrink-0">
-            <h3 className="text-lg font-semibold text-[#17324D]">{title}</h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-[#EAF2F4]">
+        <div className={`relative w-full ${sizes[size]} bg-card text-card-foreground rounded-xl shadow-xl transform transition-all max-h-[90vh] flex flex-col overflow-hidden`}>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-medium-gray shrink-0">
+            <h3 className="text-lg font-semibold text-primary dark:text-blue-gray-light">{title}</h3>
+            <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300 p-1 rounded-lg hover:bg-blue-gray dark:hover:bg-white/10">
               <X size={20} />
             </button>
           </div>

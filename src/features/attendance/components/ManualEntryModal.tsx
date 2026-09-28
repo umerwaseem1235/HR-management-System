@@ -109,7 +109,7 @@ export default function ManualEntryModal({
             <Input label="Notes" placeholder="Reason for manual entry (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
         </div>
-        <div className="flex justify-end gap-3 pt-2 border-t border-[#D6E4E8]">
+        <div className="flex justify-end gap-3 pt-2 border-t border-medium-gray">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           <Button type="submit"><UserPlus size={16} /> Save Entry</Button>
         </div>

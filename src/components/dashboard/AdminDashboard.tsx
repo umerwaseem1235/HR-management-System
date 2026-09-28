@@ -27,7 +27,7 @@ const DEPT_PALETTE = [
   { color: 'bg-indigo-500', fill: 'linear-gradient(90deg, #818CF8 0%, #6366F1 100%)' },
   { color: 'bg-yellow-500', fill: 'linear-gradient(90deg, #FBBF24 0%, #F59E0B 100%)' },
   { color: 'bg-emerald-500', fill: 'linear-gradient(90deg, #34D399 0%, #059669 100%)' },
-  { color: 'bg-red-500', fill: 'linear-gradient(90deg, #F87171 0%, #EF4444 100%)' },
+  { color: 'bg-red-50 dark:bg-red-950/300', fill: 'linear-gradient(90deg, #F87171 0%, #EF4444 100%)' },
 ];
 
 export default function AdminDashboard() {
@@ -187,56 +187,56 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 2xl:gap-4">
         <Card padding="none" hover className="min-w-0 overflow-hidden p-3 xl:p-4">
           <div className="flex items-center gap-2 xl:gap-3">
-            <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
-              <Briefcase size={18} className="text-[#024fa7]" />
+            <div className="shrink-0 bg-blue-50 dark:bg-blue-950/30 p-2 rounded-lg">
+              <Briefcase size={18} className="text-teal" />
             </div>
             <div className="min-w-0">
-              <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{s.openVacancies}</p>
-              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500">Open Vacancies</p>
+              <p className="text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{s.openVacancies}</p>
+              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Open Vacancies</p>
             </div>
           </div>
         </Card>
         <Card padding="none" hover className="min-w-0 overflow-hidden p-3 xl:p-4">
           <div className="flex items-center gap-2 xl:gap-3">
-            <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
-              <UserPlus size={18} className="text-[#024fa7]" />
+            <div className="shrink-0 bg-blue-50 dark:bg-blue-950/30 p-2 rounded-lg">
+              <UserPlus size={18} className="text-teal" />
             </div>
             <div className="min-w-0">
-              <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{s.newJoinersThisMonth}</p>
-              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500">New Joiners</p>
+              <p className="text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{s.newJoinersThisMonth}</p>
+              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">New Joiners</p>
             </div>
           </div>
         </Card>
         <Card padding="none" hover className="min-w-0 overflow-hidden p-3 xl:p-4">
           <div className="flex items-center gap-2 xl:gap-3">
-            <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
-              <Clock size={18} className="text-[#024fa7]" />
+            <div className="shrink-0 bg-blue-50 dark:bg-blue-950/30 p-2 rounded-lg">
+              <Clock size={18} className="text-teal" />
             </div>
             <div className="min-w-0">
-              <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{s.lateToday}</p>
-              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500">Late Today</p>
+              <p className="text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{s.lateToday}</p>
+              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Late Today</p>
             </div>
           </div>
         </Card>
         <Card padding="none" hover className="min-w-0 overflow-hidden p-3 xl:p-4">
           <div className="flex items-center gap-2 xl:gap-3">
-            <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
-              <DollarSign size={18} className="text-[#024fa7]" />
+            <div className="shrink-0 bg-blue-50 dark:bg-blue-950/30 p-2 rounded-lg">
+              <DollarSign size={18} className="text-teal" />
             </div>
             <div className="min-w-0">
-              <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{payrollStatusValue}</p>
-              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500">Payroll Status</p>
+              <p className="text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{payrollStatusValue}</p>
+              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Payroll Status</p>
             </div>
           </div>
         </Card>
         <Card padding="none" hover className="min-w-0 overflow-hidden p-3 xl:p-4">
           <div className="flex items-center gap-2 xl:gap-3">
-            <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
-              <ClipboardCheck size={18} className="text-[#024fa7]" />
+            <div className="shrink-0 bg-blue-50 dark:bg-blue-950/30 p-2 rounded-lg">
+              <ClipboardCheck size={18} className="text-teal" />
             </div>
             <div className="min-w-0">
-              <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{s.attendanceRate}%</p>
-              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500">Attendance Rate</p>
+              <p className="text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{s.attendanceRate}%</p>
+              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Attendance Rate</p>
             </div>
           </div>
         </Card>
@@ -247,12 +247,12 @@ export default function AdminDashboard() {
         {/* Attendance Trend */}
         <Card>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-[#17324D]">Attendance Trend</h3>
+            <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light">Attendance Trend</h3>
             <div className="flex items-center gap-2">
               <select
                 value={trendRange}
                 onChange={(e) => setTrendRange(e.target.value as 'week' | 'month')}
-                className="px-3 py-1.5 text-sm border border-[#D6E4E8] rounded-lg focus:border-[#024fa7] focus:ring-2 focus:ring-[#024fa7]/20 focus:outline-none"
+                className="px-3 py-1.5 text-sm border border-medium-gray rounded-lg focus:border-teal focus:ring-2 focus:ring-teal/20 focus:outline-none"
               >
                 <option value="week">Week</option>
                 <option value="month">Month</option>
@@ -265,25 +265,25 @@ export default function AdminDashboard() {
         {/* Pending Leave Approvals */}
         <Card>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-[#17324D]">Pending Leave Approvals</h3>
+            <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light">Pending Leave Approvals</h3>
             <button
               onClick={() => router.push('/leave')}
-              className="text-sm text-[#024fa7] hover:underline font-medium flex items-center gap-1"
+              className="text-sm text-teal hover:underline font-medium flex items-center gap-1"
             >
               View All <ArrowUpRight size={14} />
             </button>
           </div>
           <div className="space-y-3">
             {pendingLeaves.length === 0 ? (
-              <p className="text-gray-500 text-sm text-center py-8">No pending approvals</p>
+              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm text-center py-8">No pending approvals</p>
             ) : (
               pendingLeaves.map(leave => (
-                <div key={leave.id} className="flex items-center justify-between p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
+                <div key={leave.id} className="flex items-center justify-between p-4 rounded-lg bg-blue-gray/50 border border-medium-gray">
                   <div className="flex items-center gap-3">
                     <Avatar name={leave.employeeName} size="sm" />
                     <div>
-                      <p className="text-sm font-medium text-[#263238]">{leave.employeeName}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm font-medium text-dark-text dark:text-gray-100">{leave.employeeName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
                         {leave.leaveType} · {leave.startDate} to {leave.endDate} · {leave.days} day{leave.days > 1 ? 's' : ''}
                       </p>
                     </div>
@@ -292,14 +292,14 @@ export default function AdminDashboard() {
                     <button
                       title="Approve"
                       onClick={() => setConfirmApproveLeave(leave)}
-                      className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition-colors cursor-pointer"
+                      className="p-1.5 rounded-lg bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-200 transition-colors cursor-pointer"
                     >
                       <CheckCircle2 size={18} />
                     </button>
                     <button
                       title="Reject"
                       onClick={() => setConfirmRejectLeave(leave)}
-                      className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors cursor-pointer"
+                      className="p-1.5 rounded-lg bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-200 transition-colors cursor-pointer"
                     >
                       <XCircle size={18} />
                     </button>
@@ -338,7 +338,7 @@ export default function AdminDashboard() {
                     }}
                   />
                 </div>
-                <span className="w-6 text-right text-[13px] font-bold tabular-nums text-[#17324D]">{dept.count}</span>
+                <span className="w-6 text-right text-[13px] font-bold tabular-nums text-primary dark:text-blue-gray-light">{dept.count}</span>
               </div>
             ))}
           </div>
@@ -346,18 +346,18 @@ export default function AdminDashboard() {
 
         {/* Upcoming Events */}
         <Card className="h-full flex flex-col">
-          <h3 className="text-base font-semibold text-[#17324D] pb-3 mb-2 border-b border-[#EDF2FA]">Upcoming Events</h3>
+          <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light pb-3 mb-2 border-b border-[#EDF2FA]">Upcoming Events</h3>
           <div className="flex-1 flex flex-col justify-evenly space-y-2">
             {upcomingEvents.map((event, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
-                <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
-                  <event.icon size={18} className="text-[#024fa7]" />
+              <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-blue-gray/50 border border-medium-gray">
+                <div className="shrink-0 bg-blue-50 dark:bg-blue-950/30 p-2 rounded-lg">
+                  <event.icon size={18} className="text-teal" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#263238]">{event.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{event.type}</p>
+                  <p className="text-sm font-medium text-dark-text dark:text-gray-100">{event.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 capitalize">{event.type}</p>
                 </div>
-                <span className="text-xs text-gray-400 ml-auto">{event.date}</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">{event.date}</span>
               </div>
             ))}
           </div>
@@ -371,14 +371,14 @@ export default function AdminDashboard() {
         variant="approve"
         headline={
           <>
-            Approve <span className="font-semibold text-[#17324D]">{confirmApproveLeave?.days} day{(confirmApproveLeave?.days ?? 1) > 1 ? 's' : ''} — {confirmApproveLeave?.leaveType}</span> for{' '}
-            <span className="font-semibold text-[#17324D]">{confirmApproveLeave?.employeeName}</span>?
+            Approve <span className="font-semibold text-primary dark:text-blue-gray-light">{confirmApproveLeave?.days} day{(confirmApproveLeave?.days ?? 1) > 1 ? 's' : ''} — {confirmApproveLeave?.leaveType}</span> for{' '}
+            <span className="font-semibold text-primary dark:text-blue-gray-light">{confirmApproveLeave?.employeeName}</span>?
           </>
         }
         subline={confirmApproveLeave ? `${confirmApproveLeave.startDate} to ${confirmApproveLeave.endDate} · ${confirmApproveLeave.reason}` : undefined}
         note={
           <>
-            This will mark the request as <span className="font-semibold text-green-700">Approved</span>. The employee&apos;s leave balance will be updated.
+            This will mark the request as <span className="font-semibold text-green-700 dark:text-green-400">Approved</span>. The employee&apos;s leave balance will be updated.
           </>
         }
         confirmLabel="Confirm Approve"
@@ -396,14 +396,14 @@ export default function AdminDashboard() {
         variant="reject"
         headline={
           <>
-            Reject <span className="font-semibold text-[#17324D]">{confirmRejectLeave?.days} day{(confirmRejectLeave?.days ?? 1) > 1 ? 's' : ''} — {confirmRejectLeave?.leaveType}</span> for{' '}
-            <span className="font-semibold text-[#17324D]">{confirmRejectLeave?.employeeName}</span>?
+            Reject <span className="font-semibold text-primary dark:text-blue-gray-light">{confirmRejectLeave?.days} day{(confirmRejectLeave?.days ?? 1) > 1 ? 's' : ''} — {confirmRejectLeave?.leaveType}</span> for{' '}
+            <span className="font-semibold text-primary dark:text-blue-gray-light">{confirmRejectLeave?.employeeName}</span>?
           </>
         }
         subline={confirmRejectLeave ? `${confirmRejectLeave.startDate} to ${confirmRejectLeave.endDate} · ${confirmRejectLeave.reason}` : undefined}
         note={
           <>
-            This will mark the request as <span className="font-semibold text-red-600">Rejected</span>. The employee will be able to see this status.
+            This will mark the request as <span className="font-semibold text-red-600 dark:text-red-400">Rejected</span>. The employee will be able to see this status.
           </>
         }
         confirmLabel="Confirm Reject"

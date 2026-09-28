@@ -41,51 +41,51 @@ export default function RemoteRequestTable({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[860px]">
           <thead>
-            <tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
-              <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase w-12">#</th>
-              {!isEmployee && <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Employee</th>}
-              <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">From - To</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Reason</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Requested On</th>
-              <th className="px-6 py-3 text-right text-xs font-semibold text-[#17324D] uppercase">Actions</th>
+            <tr className="bg-blue-gray border-b border-medium-gray">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase w-12">#</th>
+              {!isEmployee && <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Employee</th>}
+              <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">From - To</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Reason</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Requested On</th>
+              <th className="px-6 py-3 text-right text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#D6E4E8]">
+          <tbody className="divide-y divide-medium-gray">
             {paged.map((req, idx) => (
-              <tr key={req.id} className="hover:bg-[#EAF2F4]/50">
-                <td className="px-6 py-4 text-sm text-gray-400">{(safePage - 1) * perPage + idx + 1}</td>
+              <tr key={req.id} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
+                <td className="px-6 py-4 text-sm text-gray-400 dark:text-gray-500">{(safePage - 1) * perPage + idx + 1}</td>
                 {!isEmployee && (
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2.5">
                       <Avatar name={req.employeeName} size="sm" />
-                      <span className="text-sm font-medium text-[#263238] whitespace-nowrap">{req.employeeName}</span>
+                      <span className="text-sm font-medium text-dark-text dark:text-gray-100 whitespace-nowrap">{req.employeeName}</span>
                     </div>
                   </td>
                 )}
                 <td className="px-6 py-4">
-                  <p className="text-sm font-medium text-[#263238] whitespace-nowrap">{formatRange(req.fromDate, req.toDate)}</p>
-                  <p className="text-xs text-gray-500">{req.days} day{req.days > 1 ? 's' : ''}</p>
+                  <p className="text-sm font-medium text-dark-text dark:text-gray-100 whitespace-nowrap">{formatRange(req.fromDate, req.toDate)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{req.days} day{req.days > 1 ? 's' : ''}</p>
                 </td>
                 <td className="px-6 py-4 max-w-[280px]">
-                  <p className="text-sm text-[#263238] truncate" title={req.reason}>{req.reason}</p>
-                  {req.workPlan && <p className="text-xs text-gray-500 truncate" title={req.workPlan}>{req.workPlan}</p>}
+                  <p className="text-sm text-dark-text dark:text-gray-100 truncate" title={req.reason}>{req.reason}</p>
+                  {req.workPlan && <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate" title={req.workPlan}>{req.workPlan}</p>}
                 </td>
                 <td className="px-6 py-4"><StatusBadge status={req.status} /></td>
-                <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{req.requestedOn}</td>
+                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 whitespace-nowrap">{req.requestedOn}</td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-end gap-1.5">
-                    <button title="View details" onClick={() => onView(req)} className="p-2 rounded-lg text-[#0F8B8D] hover:bg-[#EAF2F4] cursor-pointer">
+                    <button title="View details" onClick={() => onView(req)} className="p-2 rounded-lg text-[#0F8B8D] hover:bg-blue-gray dark:hover:bg-white/10 cursor-pointer">
                       <Eye size={16} />
                     </button>
                     {req.status === 'Pending' && (
                       <>
                         {!isEmployee && (
                           <>
-                            <button title="Approve" onClick={() => onReview(req, 'Approved')} className="p-2 rounded-lg text-green-600 hover:bg-green-50 cursor-pointer">
+                            <button title="Approve" onClick={() => onReview(req, 'Approved')} className="p-2 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:bg-green-950/30 cursor-pointer">
                               <Check size={16} />
                             </button>
-                            <button title="Reject" onClick={() => onReview(req, 'Rejected')} className="p-2 rounded-lg text-red-500 hover:bg-red-50 cursor-pointer">
+                            <button title="Reject" onClick={() => onReview(req, 'Rejected')} className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 dark:bg-red-950/30 cursor-pointer">
                               <X size={16} />
                             </button>
                           </>
@@ -93,7 +93,7 @@ export default function RemoteRequestTable({
                         <button
                           title="Cancel request"
                           onClick={() => onCancel(req)}
-                          className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:bg-gray-100 hover:text-red-600 cursor-pointer"
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:bg-white/10 hover:text-red-600 dark:text-red-400 cursor-pointer"
                         >
                           Cancel
                         </button>
@@ -114,8 +114,8 @@ export default function RemoteRequestTable({
         )}
       </div>
       {/* Pagination footer */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-6 py-4 border-t border-[#D6E4E8]">
-        <div className="flex items-center gap-2 text-sm text-gray-500 sm:ml-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-6 py-4 border-t border-medium-gray">
+        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 sm:ml-auto">
           <span className="whitespace-nowrap">Records per page:</span>
           <div className="w-24">
             <Select
@@ -125,13 +125,13 @@ export default function RemoteRequestTable({
             />
           </div>
         </div>
-        <p className="text-sm text-gray-500 tabular-nums">{rangeStart} - {rangeEnd} of {filteredCount}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 tabular-nums">{rangeStart} - {rangeEnd} of {filteredCount}</p>
         <div className="flex items-center gap-2">
           <button
             onClick={() => onPageChange(Math.max(1, safePage - 1))}
             disabled={safePage <= 1}
             title="Previous page"
-            className="p-2 rounded-lg border border-[#D6E4E8] text-gray-500 hover:bg-[#EAF2F4] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="p-2 rounded-lg border border-medium-gray text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-blue-gray dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
             <ChevronLeft size={16} />
           </button>
@@ -139,7 +139,7 @@ export default function RemoteRequestTable({
             onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
             disabled={safePage >= totalPages}
             title="Next page"
-            className="p-2 rounded-lg border border-[#D6E4E8] text-gray-500 hover:bg-[#EAF2F4] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="p-2 rounded-lg border border-medium-gray text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-blue-gray dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
             <ChevronRight size={16} />
           </button>

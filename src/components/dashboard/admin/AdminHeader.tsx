@@ -1,6 +1,7 @@
 'use client';
 
 import { CalendarDays } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AdminHeaderProps {
   welcomeName: string;
@@ -8,14 +9,15 @@ interface AdminHeaderProps {
 }
 
 export default function AdminHeader({ welcomeName, todayLabel }: AdminHeaderProps) {
+  const { t } = useLanguage();
   return (
     <div className="flex flex-col gap-1">
-      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">
-        <CalendarDays size={14} className="text-[#024fa7]" aria-hidden="true" />
+      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
+        <CalendarDays size={14} className="text-teal" aria-hidden="true" />
         {todayLabel}
       </p>
-      <h1 className="text-xl font-bold leading-tight tracking-tight text-[#17324D] sm:text-2xl">
-        Welcome back, {welcomeName}!
+      <h1 className="text-xl font-bold leading-tight tracking-tight text-primary dark:text-blue-gray-light sm:text-2xl">
+        {t('dashboard.welcome')}, {welcomeName}!
       </h1>
     </div>
   );

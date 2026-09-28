@@ -3,6 +3,7 @@
 import React, { type RefObject } from "react";
 import type { NavItem } from "../../../lib/types";
 import { SidebarNavItem } from "./SidebarNavItem";
+import { useNavTranslation } from "./useNavTranslation";
 
 interface SidebarNavProps {
   items: NavItem[];
@@ -21,6 +22,8 @@ export function SidebarNav({
   saveNavScroll,
   onMobileClose,
 }: SidebarNavProps) {
+  const tNav = useNavTranslation();
+
   return (
     <nav
       ref={navRef}
@@ -28,17 +31,25 @@ export function SidebarNav({
     >
       {items.map((item) => {
         const isActive =
-          pathname === item.href || pathname.startsWith(item.href + "/");
+          item.href ? (pathname === item.href || pathname.startsWith(item.href + "/")) : false;
+
+        // Translate sub-item names too
+        const translatedSubItems = item.subItems?.map(sub => ({
+          ...sub,
+          name: tNav(sub.name),
+        }));
 
         return (
           <SidebarNavItem
-            key={item.href}
-            href={item.href}
-            name={item.name}
+            key={item.name}
+            href={item.href || ""}
+            name={tNav(item.name)}
             icon={item.icon}
             badge={item.badge}
             isActive={isActive}
             compact={compact}
+            subItems={translatedSubItems}
+            pathname={pathname}
             onNavigate={() => {
               saveNavScroll();
               onMobileClose();

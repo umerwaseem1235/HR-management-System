@@ -3,15 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ShieldCheck, Briefcase, UserRound } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import LoginForm from '../../components/auth/LoginForm';
-
-const DEMO_ACCOUNTS = [
-  { role: 'Super Admin', email: 'admin@codqor.com', pass: 'admin123', icon: ShieldCheck },
-  { role: 'HR Manager', email: 'hr@codqor.com', pass: 'hr1234', icon: Briefcase },
-  { role: 'Employee', email: 'employee@codqor.com', pass: 'emp123', icon: UserRound },
-];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,6 +25,10 @@ export default function LoginPage() {
     if (typeof window === 'undefined') return false;
     return new URLSearchParams(window.location.search).get('registered') === '1';
   });
+  const [deactivated, setDeactivated] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('deactivated') === '1';
+  });
 
   // Mount-guard is deferred to the next frame so no setState runs
   // synchronously inside the effect body (entrance transition still plays).
@@ -44,7 +41,7 @@ export default function LoginPage() {
   // already derived during render, so this effect sets no state.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('email') || params.get('registered')) {
+    if (params.get('email') || params.get('registered') || params.get('deactivated')) {
       window.history.replaceState({}, '', '/login');
     }
   }, []);
@@ -60,6 +57,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setSignupSuccess(false);
+    setDeactivated(false);
     setLoading(true);
 
     try {
@@ -291,6 +289,26 @@ export default function LoginPage() {
               </p>
             </div>
 
+            {/* Deactivated-account banner (kicked session or blocked login) */}
+            {deactivated && (
+              <div className="login-fade-up mb-5 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50/90 px-4 py-3">
+                <svg
+                  className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                </svg>
+                <div className="text-[13px] leading-relaxed text-red-700">
+                  <span className="font-semibold">Account deactivated.</span>
+                  <br />
+                  Your account has been deactivated. Please contact HR or your administrator.
+                </div>
+              </div>
+            )}
+
             {/* Signup success banner */}
             {signupSuccess && (
               <div className="login-fade-up mb-5 flex items-start gap-2.5 rounded-xl border border-emerald-100 bg-emerald-50/90 px-4 py-3">
@@ -325,58 +343,6 @@ export default function LoginPage() {
               onRememberMeChange={setRememberMe}
               onSubmit={handleSubmit}
             />
-
-            {/* Demo Accounts */}
-            <div className="mt-7 border-t border-[#E5E7EB] pt-5">
-              <div className="mb-2.5 flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">
-                  Demo Accounts
-                </span>
-                <span className="text-[11px] text-[#9CA3AF]">Click to auto-fill</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {DEMO_ACCOUNTS.map((demo) => {
-                  const isSelected = email === demo.email;
-                  const Icon = demo.icon;
-                  return (
-                    <button
-                      key={demo.role}
-                      type="button"
-                      onClick={() => {
-                        setEmail(demo.email);
-                        setPassword(demo.pass);
-                        setError('');
-                      }}
-                      className={`group flex cursor-pointer flex-col items-center rounded-xl border px-2 py-3 text-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#1565D8]/30 focus:ring-offset-2 ${
-                        isSelected
-                          ? 'border-[#1565D8]/40 bg-[#1565D8]/[0.06] shadow-sm ring-1 ring-[#1565D8]/20'
-                          : 'border-[#E5E7EB] bg-[#F9FAFB] hover:border-[#CBD5E1] hover:bg-white hover:shadow-sm'
-                      }`}
-                    >
-                      <span
-                        className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors duration-200 ${
-                          isSelected
-                            ? 'bg-[#1565D8]/10 text-[#1565D8]'
-                            : 'bg-white text-[#9CA3AF] ring-1 ring-[#E5E7EB] group-hover:text-[#1565D8]'
-                        }`}
-                      >
-                        <Icon size={17} />
-                      </span>
-                      <span
-                        className={`mt-2 text-[11px] font-semibold leading-tight transition-colors ${
-                          isSelected ? 'text-[#1565D8]' : 'text-[#1a1a2e]'
-                        }`}
-                      >
-                        {demo.role}
-                      </span>
-                      <span className="mt-0.5 font-mono text-[10px] text-[#6B7280]">
-                        {demo.pass}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
 
             {/* Footer */}
             <p className="mt-8 text-center text-[12px] text-[#9CA3AF]">

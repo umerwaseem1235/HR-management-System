@@ -1,4 +1,5 @@
 'use client';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { CalendarDays, CheckCircle2, Download, Paperclip, Plus, RotateCcw, Trash2, XCircle, ZoomIn, ZoomOut } from 'lucide-react';
 import Image from 'next/image';
@@ -16,6 +17,7 @@ import ExpenseStats from './ExpenseStats';
 import ExpenseTable from './ExpenseTable';
 
 export default function ExpensesView() {
+  const { t } = useLanguage();
   const e = useExpensesView();
 
   if (!e.user) return null;
@@ -23,7 +25,7 @@ export default function ExpensesView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={e.isEmployee ? 'My Expenses' : 'Expenses'}
+        title={e.isEmployee ? t('nav.myExpenses') : t('nav.expenses')}
         actions={
           e.isEmployee ? (
             <Button variant="primary" onClick={e.openNew}><Plus size={16} /> New Claim</Button>
@@ -44,8 +46,8 @@ export default function ExpensesView() {
       {!e.isEmployee && (
         <Card padding="sm">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex items-center gap-2 text-sm font-medium text-[#17324D]">
-              <CalendarDays size={16} className="text-[#024fa7]" /> Expense Month
+            <div className="flex items-center gap-2 text-sm font-medium text-primary dark:text-blue-gray-light">
+              <CalendarDays size={16} className="text-teal" /> Expense Month
             </div>
             <div className="sm:w-64 flex items-center gap-2">
               <div className="relative flex-1">
@@ -57,7 +59,7 @@ export default function ExpensesView() {
                   className={e.expenseMonth === 'all' ? 'text-transparent' : ''}
                 />
                 {e.expenseMonth === 'all' && (
-                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-gray-500">
                     All months
                   </span>
                 )}
@@ -67,13 +69,13 @@ export default function ExpensesView() {
                   type="button"
                   title="Show all months"
                   onClick={() => e.setExpenseMonth('all')}
-                  className="shrink-0 rounded-lg border border-[#D6E4E8] px-3 py-2.5 text-xs font-semibold text-[#263238] hover:bg-[#EAF2F4] transition-colors cursor-pointer"
+                  className="shrink-0 rounded-lg border border-medium-gray px-3 py-2.5 text-xs font-semibold text-dark-text dark:text-gray-100 hover:bg-blue-gray dark:hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   All
                 </button>
               )}
             </div>
-            <p className="text-xs text-gray-500 sm:ml-auto">
+            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 sm:ml-auto">
               {e.visibleExpenses.length} claim{e.visibleExpenses.length !== 1 ? 's' : ''} · {e.expensePeriodLabel} · $
               {e.visibleExpenses.reduce((s, x) => s + x.amount, 0).toLocaleString()} total
             </p>
@@ -118,37 +120,37 @@ export default function ExpensesView() {
             <div className="flex items-start gap-3">
               <Avatar name={e.viewingExp.employeeName} size="sm" />
               <div className="flex-1">
-                <p className="text-base font-semibold text-[#17324D]">{e.viewingExp.employeeName}</p>
-                <p className="text-xs text-gray-500">{e.viewingExp.description}</p>
+                <p className="text-base font-semibold text-primary dark:text-blue-gray-light">{e.viewingExp.employeeName}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{e.viewingExp.description}</p>
               </div>
               <StatusBadge status={e.viewingExp.status} />
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-xl bg-[#EAF2F4]/60 border border-[#D6E4E8] p-4">
-              <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Category</p><p className="text-sm font-semibold text-[#17324D]">{e.viewingExp.category}</p></div>
-              <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Amount</p><p className="text-sm font-semibold text-[#17324D]">PKR {e.viewingExp.amount.toLocaleString()}</p></div>
-              <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Date</p><p className="text-sm font-semibold text-[#17324D]">{e.viewingExp.date}</p></div>
-              <div><p className="text-[11px] uppercase tracking-wide text-gray-500">Submitted</p><p className="text-sm font-semibold text-[#17324D]">{e.viewingExp.submittedOn}</p></div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-xl bg-blue-gray/60 border border-medium-gray p-4">
+              <div><p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 dark:text-gray-500">Category</p><p className="text-sm font-semibold text-primary dark:text-blue-gray-light">{e.viewingExp.category}</p></div>
+              <div><p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 dark:text-gray-500">Amount</p><p className="text-sm font-semibold text-primary dark:text-blue-gray-light">PKR {e.viewingExp.amount.toLocaleString()}</p></div>
+              <div><p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 dark:text-gray-500">Date</p><p className="text-sm font-semibold text-primary dark:text-blue-gray-light">{e.viewingExp.date}</p></div>
+              <div><p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 dark:text-gray-500">Submitted</p><p className="text-sm font-semibold text-primary dark:text-blue-gray-light">{e.viewingExp.submittedOn}</p></div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-semibold text-[#17324D]">Receipt</p>
+                <p className="text-sm font-semibold text-primary dark:text-blue-gray-light">Receipt</p>
                 {e.viewingReceipt && (
                   <div className="flex items-center gap-2">
-                    <button type="button" title="Zoom out" onClick={e.zoomOut} disabled={e.zoom <= 0.25} className="p-1.5 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8] disabled:opacity-40 disabled:cursor-not-allowed"><ZoomOut size={14} /></button>
-                    <span className="text-xs font-medium text-[#263238] w-12 text-center">{Math.round(e.zoom * 100)}%</span>
-                    <button type="button" title="Zoom in" onClick={e.zoomIn} disabled={e.zoom >= 3} className="p-1.5 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8] disabled:opacity-40 disabled:cursor-not-allowed"><ZoomIn size={14} /></button>
-                    <button type="button" title="Reset zoom" onClick={() => e.setZoom(1)} className="p-1.5 rounded-lg bg-[#EAF2F4] text-[#17324D] hover:bg-[#D6E4E8]"><RotateCcw size={14} /></button>
+                    <button type="button" title="Zoom out" onClick={e.zoomOut} disabled={e.zoom <= 0.25} className="p-1.5 rounded-lg bg-blue-gray text-primary dark:text-blue-gray-light hover:bg-medium-gray disabled:opacity-40 disabled:cursor-not-allowed"><ZoomOut size={14} /></button>
+                    <span className="text-xs font-medium text-dark-text dark:text-gray-100 w-12 text-center">{Math.round(e.zoom * 100)}%</span>
+                    <button type="button" title="Zoom in" onClick={e.zoomIn} disabled={e.zoom >= 3} className="p-1.5 rounded-lg bg-blue-gray text-primary dark:text-blue-gray-light hover:bg-medium-gray disabled:opacity-40 disabled:cursor-not-allowed"><ZoomIn size={14} /></button>
+                    <button type="button" title="Reset zoom" onClick={() => e.setZoom(1)} className="p-1.5 rounded-lg bg-blue-gray text-primary dark:text-blue-gray-light hover:bg-medium-gray"><RotateCcw size={14} /></button>
                   </div>
                 )}
               </div>
-              <div className="overflow-auto max-h-[55vh] min-h-[240px] rounded-xl border border-[#D6E4E8] bg-[#EAF2F4]/40 p-3">
+              <div className="overflow-auto max-h-[55vh] min-h-[240px] rounded-xl border border-medium-gray bg-blue-gray/40 p-3">
                 {e.viewingReceipt?.startsWith('data:application/pdf') ? (
                   <iframe
                     src={e.viewingReceipt}
                     title="Receipt"
-                    className="mx-auto block rounded-lg bg-white border border-[#D6E4E8]"
+                    className="mx-auto block rounded-lg bg-white dark:bg-[#1b263b] border border-medium-gray"
                     style={{
                       height: '50vh',
                       width: e.zoom > 1 ? `${Math.round(e.zoom * 100)}%` : '100%',
@@ -163,7 +165,7 @@ export default function ExpensesView() {
                     height={1200}
                     unoptimized
                     loader={({ src }) => src}
-                    className="mx-auto block h-auto rounded-lg border border-[#D6E4E8] bg-white shadow-sm object-contain"
+                    className="mx-auto block h-auto rounded-lg border border-medium-gray bg-white dark:bg-[#1b263b] shadow-sm object-contain"
                     style={{
                       width: `${Math.round(e.zoom * 100)}%`,
                       maxWidth: e.zoom > 1 ? 'none' : '100%',
@@ -171,9 +173,9 @@ export default function ExpensesView() {
                   />
                 ) : (
                   <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 py-10 text-center">
-                    <div className="p-3 rounded-full bg-white border border-[#D6E4E8]"><Paperclip size={20} className="text-gray-400" /></div>
-                    <p className="text-sm font-medium text-[#17324D]">No receipt attached</p>
-                    <p className="text-xs text-gray-500">Employee did not upload a receipt for this claim.</p>
+                    <div className="p-3 rounded-full bg-white dark:bg-[#1b263b] border border-medium-gray"><Paperclip size={20} className="text-gray-400 dark:text-gray-500" /></div>
+                    <p className="text-sm font-medium text-primary dark:text-blue-gray-light">No receipt attached</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Employee did not upload a receipt for this claim.</p>
                   </div>
                 )}
               </div>
@@ -189,14 +191,14 @@ export default function ExpensesView() {
         variant="approve"
         headline={
           <>
-            Approve <span className="font-semibold text-[#17324D]">PKR {e.confirmApproveExp?.amount.toLocaleString()}</span> for{' '}
-            <span className="font-semibold text-[#17324D]">{e.confirmApproveExp?.employeeName}</span>?
+            Approve <span className="font-semibold text-primary dark:text-blue-gray-light">PKR {e.confirmApproveExp?.amount.toLocaleString()}</span> for{' '}
+            <span className="font-semibold text-primary dark:text-blue-gray-light">{e.confirmApproveExp?.employeeName}</span>?
           </>
         }
         subline={e.confirmApproveExp ? `${e.confirmApproveExp.category} · ${e.confirmApproveExp.date} · ${e.confirmApproveExp.description}` : undefined}
         note={
           <>
-            This will mark the claim as <span className="font-semibold text-green-700">Approved</span>. You can still reimburse or delete it later.
+            This will mark the claim as <span className="font-semibold text-green-700 dark:text-green-400">Approved</span>. You can still reimburse or delete it later.
           </>
         }
         confirmLabel="Confirm Approve"
@@ -211,14 +213,14 @@ export default function ExpensesView() {
         variant="reject"
         headline={
           <>
-            Reject <span className="font-semibold text-[#17324D]">PKR {e.confirmRejectExp?.amount.toLocaleString()}</span> for{' '}
-            <span className="font-semibold text-[#17324D]">{e.confirmRejectExp?.employeeName}</span>?
+            Reject <span className="font-semibold text-primary dark:text-blue-gray-light">PKR {e.confirmRejectExp?.amount.toLocaleString()}</span> for{' '}
+            <span className="font-semibold text-primary dark:text-blue-gray-light">{e.confirmRejectExp?.employeeName}</span>?
           </>
         }
         subline={e.confirmRejectExp ? `${e.confirmRejectExp.category} · ${e.confirmRejectExp.date} · ${e.confirmRejectExp.description}` : undefined}
         note={
           <>
-            This will mark the claim as <span className="font-semibold text-red-600">Rejected</span>. The employee will be able to see this status.
+            This will mark the claim as <span className="font-semibold text-red-600 dark:text-red-400">Rejected</span>. The employee will be able to see this status.
           </>
         }
         confirmLabel="Confirm Reject"
@@ -233,7 +235,7 @@ export default function ExpensesView() {
         variant="delete"
         headline={
           <>
-            Delete <span className="font-semibold text-[#17324D]">PKR {e.confirmDeleteExp?.amount.toLocaleString()}</span> — {e.confirmDeleteExp?.category}?
+            Delete <span className="font-semibold text-primary dark:text-blue-gray-light">PKR {e.confirmDeleteExp?.amount.toLocaleString()}</span> — {e.confirmDeleteExp?.category}?
           </>
         }
         subline={e.confirmDeleteExp ? `${e.confirmDeleteExp.employeeName} · ${e.confirmDeleteExp.date} · ${e.confirmDeleteExp.description}` : undefined}
@@ -249,3 +251,7 @@ export default function ExpensesView() {
     </div>
   );
 }
+
+
+
+

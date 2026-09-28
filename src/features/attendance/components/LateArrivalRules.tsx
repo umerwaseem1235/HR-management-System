@@ -91,40 +91,40 @@ export default function LateArrivalRules({
     <Card>
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
-          <AlarmClockCheck size={18} className="text-[#024fa7]" />
-          <h3 className="text-base font-semibold text-[#17324D]">Late-Arrival Rules</h3>
+          <AlarmClockCheck size={18} className="text-teal" />
+          <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light">Late-Arrival Rules</h3>
         </div>
         <Badge variant={enabled ? 'success' : 'neutral'}>{enabled ? 'Active' : 'Paused'}</Badge>
       </div>
-      <p className="text-xs text-gray-500 mb-4">
-        Office start <span className="font-semibold text-[#263238]">{STANDARD_START}</span> · arriving
+      <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4">
+        Office start <span className="font-semibold text-dark-text dark:text-gray-100">{STANDARD_START}</span> · arriving
         later than the threshold below is automatically marked <span className="font-semibold">Half Day</span>.
       </p>
 
       {loading ? (
         <div className="space-y-3 animate-pulse">
-          <div className="h-10 rounded-lg bg-[#EAF2F4]" />
+          <div className="h-10 rounded-lg bg-blue-gray" />
           <div className="grid grid-cols-2 gap-3">
-            <div className="h-10 rounded-lg bg-[#EAF2F4]" />
-            <div className="h-10 rounded-lg bg-[#EAF2F4]" />
+            <div className="h-10 rounded-lg bg-blue-gray" />
+            <div className="h-10 rounded-lg bg-blue-gray" />
           </div>
         </div>
       ) : (
         <form onSubmit={handleSave} className="space-y-4">
-          <label className="flex items-center justify-between gap-3 rounded-lg border border-[#D6E4E8] bg-[#F8FBFC] px-4 py-3 cursor-pointer">
-            <span className="text-sm font-medium text-[#263238]">
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-medium-gray bg-blue-gray-light px-4 py-3 cursor-pointer">
+            <span className="text-sm font-medium text-dark-text dark:text-gray-100">
               Auto-mark Half Day on extreme lateness
-              <span className="block text-xs font-normal text-gray-500">Applies to manual entries & edits</span>
+              <span className="block text-xs font-normal text-gray-500 dark:text-gray-400 dark:text-gray-500">Applies to manual entries & edits</span>
             </span>
             <button
               type="button"
               role="switch"
               aria-checked={enabled}
               onClick={() => setEnabled((v) => !v)}
-              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${enabled ? 'bg-[#024fa7]' : 'bg-gray-300'}`}
+              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${enabled ? 'bg-teal' : 'bg-gray-300'}`}
             >
               <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${enabled ? 'left-[22px]' : 'left-0.5'}`}
+                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white dark:bg-[#1b263b] shadow transition-all ${enabled ? 'left-[22px]' : 'left-0.5'}`}
               />
             </button>
           </label>
@@ -149,36 +149,36 @@ export default function LateArrivalRules({
                 onChange={(e) => setHalfAfter(e.target.value)}
                 placeholder="e.g. 0"
               />
-              <p className="mt-1 text-[11px] text-gray-500">Tip: set equal to grace so even 1 minute late = Half Day.</p>
+              <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">Tip: set equal to grace so even 1 minute late = Half Day.</p>
             </div>
           </div>
 
           {error && (
-            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+            <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/60 rounded-lg px-3 py-2">{error}</p>
           )}
           {savedMsg && (
-            <p className="text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">{savedMsg}</p>
+            <p className="text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/60 rounded-lg px-3 py-2">{savedMsg}</p>
           )}
 
-          <div className="rounded-lg border border-[#D6E4E8] bg-[#EAF2F4]/60 px-4 py-3 text-xs leading-relaxed text-[#17324D]">
+          <div className="rounded-lg border border-medium-gray bg-blue-gray/60 px-4 py-3 text-xs leading-relaxed text-primary dark:text-blue-gray-light">
             <p className="font-semibold mb-1">Live preview</p>
             {enabled ? (
               strictMode ? (
                 <p>
                   Up to <span className="font-semibold">{presentUntil}</span> → Present · after{' '}
                   <span className="font-semibold">{presentUntil}</span> (even 1 minute late) →{' '}
-                  <span className="font-semibold text-yellow-700">Half Day</span> for all employees
+                  <span className="font-semibold text-yellow-700 dark:text-yellow-400">Half Day</span> for all employees
                 </p>
               ) : (
                 <p>
                   Up to <span className="font-semibold">{presentUntil}</span> → Present ·{' '}
                   <span className="font-semibold">{presentUntil}</span>–<span className="font-semibold">{halfFrom}</span> → Late ·{' '}
                   after <span className="font-semibold">{halfFrom}</span> ({formatDuration(halfNum)} late) →{' '}
-                  <span className="font-semibold text-yellow-700">Half Day</span>
+                  <span className="font-semibold text-yellow-700 dark:text-yellow-400">Half Day</span>
                 </p>
               )
             ) : (
-              <p className="text-gray-500">Rule is paused — check-in times won&apos;t auto-mark Half Day.</p>
+              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Rule is paused — check-in times won&apos;t auto-mark Half Day.</p>
             )}
           </div>
 

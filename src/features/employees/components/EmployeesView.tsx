@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/ui/PageHeader';
 import Button from '@/components/ui/Button';
@@ -13,6 +14,7 @@ import { useEmployeesSupabase } from '../hooks/useEmployeesSupabase';
 import type { Employee } from '@/types';
 
 export default function EmployeesView() {
+  const { t } = useLanguage();
   const router = useRouter();
   const {
     search,
@@ -53,7 +55,7 @@ export default function EmployeesView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Employees"
+        title={t('nav.employees')}
         actions={
           <Button
             variant="primary"
@@ -65,7 +67,7 @@ export default function EmployeesView() {
       />
 
       {error && (
-        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50/80 px-4 py-3 text-red-700">
+        <div className="flex items-center gap-2 rounded-lg border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/30/80 px-4 py-3 text-red-700 dark:text-red-400">
           <AlertCircle size={18} />
           <span className="text-sm">{error}</span>
         </div>
@@ -84,7 +86,6 @@ export default function EmployeesView() {
         employees={filtered}
         onView={(emp) => router.push(`/employees/${emp.id}`)}
         onEdit={openEditor}
-        onDelete={(id) => setEmployeeToDelete(filtered.find((e) => e.id === id) ?? null)}
         isLoading={isLoading}
       />
 
@@ -120,7 +121,7 @@ export default function EmployeesView() {
         headline={
           <>
             Delete{' '}
-            <span className="font-semibold text-[#17324D]">
+            <span className="font-semibold text-primary dark:text-blue-gray-light">
               {employeeToDelete?.firstName} {employeeToDelete?.lastName}
             </span>
             {employeeToDelete?.employeeCode ? ` (${employeeToDelete.employeeCode})` : ''}?
@@ -144,3 +145,5 @@ export default function EmployeesView() {
     </div>
   );
 }
+
+

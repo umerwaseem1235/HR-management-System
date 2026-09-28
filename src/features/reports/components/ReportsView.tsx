@@ -1,4 +1,5 @@
 'use client';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { FileDown } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -11,6 +12,7 @@ import ReportFilters from './ReportFilters';
 import ReportPreview from './ReportPreview';
 
 export default function ReportsView() {
+  const { t } = useLanguage();
   const r = useReports();
 
   if (!r.user) return null;
@@ -18,7 +20,7 @@ export default function ReportsView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Reports"
+        title={t('nav.reports')}
         actions={
           <Button variant="primary" size="md" onClick={r.handleDownloadPDF} loading={r.downloading} disabled={r.downloading}>
             {!r.downloading && <FileDown size={16} />}
@@ -28,14 +30,14 @@ export default function ReportsView() {
       />
 
       {/* Tab switcher */}
-      <div className="inline-flex rounded-xl bg-[#EAF2F4] p-1">
+      <div className="inline-flex rounded-xl bg-blue-gray p-1">
         {(['attendance', 'progress', 'task'] as TabId[]).map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => r.switchTab(t)}
             className={`rounded-lg px-6 py-2 text-sm capitalize transition-all cursor-pointer ${
-              r.tab === t ? 'bg-white font-semibold text-[#17324D] shadow-sm' : 'font-medium text-gray-500 hover:text-[#17324D]'
+              r.tab === t ? 'bg-white dark:bg-[#1b263b] font-semibold text-primary dark:text-blue-gray-light shadow-sm' : 'font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-primary dark:text-blue-gray-light'
             }`}
           >
             {t}
@@ -97,24 +99,24 @@ export default function ReportsView() {
         {r.viewDay && (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-lg bg-[#EAF2F4]/60 border border-[#D6E4E8] px-4 py-3">
-                <p className="text-xs text-gray-500">Clock In</p>
-                <p className="font-semibold text-green-600">{r.viewDay.clockIn}</p>
+              <div className="rounded-lg bg-blue-gray/60 border border-medium-gray px-4 py-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Clock In</p>
+                <p className="font-semibold text-green-600 dark:text-green-400">{r.viewDay.clockIn}</p>
               </div>
-              <div className="rounded-lg bg-[#EAF2F4]/60 border border-[#D6E4E8] px-4 py-3">
-                <p className="text-xs text-gray-500">Clock Out</p>
+              <div className="rounded-lg bg-blue-gray/60 border border-medium-gray px-4 py-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Clock Out</p>
                 <p className="font-semibold text-orange-600">{r.viewDay.clockOut}</p>
               </div>
-              <div className="rounded-lg bg-[#EAF2F4]/60 border border-[#D6E4E8] px-4 py-3">
-                <p className="text-xs text-gray-500">Working Hours</p>
-                <p className="font-semibold text-[#17324D]">{r.viewDay.hours}</p>
+              <div className="rounded-lg bg-blue-gray/60 border border-medium-gray px-4 py-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Working Hours</p>
+                <p className="font-semibold text-primary dark:text-blue-gray-light">{r.viewDay.hours}</p>
               </div>
-              <div className="rounded-lg bg-[#EAF2F4]/60 border border-[#D6E4E8] px-4 py-3">
-                <p className="text-xs text-gray-500 mb-1">Status</p>
+              <div className="rounded-lg bg-blue-gray/60 border border-medium-gray px-4 py-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Status</p>
                 <StatusBadge status={r.viewDay.status} />
               </div>
             </div>
-            <p className="text-xs text-gray-500">{r.viewDay.weekday} · {r.scopeName}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{r.viewDay.weekday} · {r.scopeName}</p>
           </div>
         )}
       </Modal>
@@ -123,10 +125,10 @@ export default function ReportsView() {
       <Modal isOpen={!!r.viewNote} onClose={() => r.setViewNote(null)} title={r.viewNote?.project ?? 'Progress Note'} size="lg">
         {r.viewNote && (
           <div className="space-y-4">
-            <p className="text-xs text-gray-500">Submitted on {dash(r.viewNote.date)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Submitted on {dash(r.viewNote.date)}</p>
             <div
               dangerouslySetInnerHTML={{ __html: r.viewNote.html }}
-              className="max-h-[50vh] space-y-2 overflow-y-auto rounded-lg border border-[#D6E4E8] bg-[#F8FBFC] p-4 text-sm leading-relaxed text-[#263238] [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-[#024fa7] [&_a]:underline"
+              className="max-h-[50vh] space-y-2 overflow-y-auto rounded-lg border border-medium-gray bg-blue-gray-light p-4 text-sm leading-relaxed text-dark-text dark:text-gray-100 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-teal [&_a]:underline"
             />
           </div>
         )}
@@ -138,11 +140,11 @@ export default function ReportsView() {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <StatusBadge status={r.viewTask.status} />
-              <span className="text-xs text-gray-500">{slash(r.viewTask.date)} · {r.viewTask.employeeName}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{slash(r.viewTask.date)} · {r.viewTask.employeeName}</span>
             </div>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-600">{r.viewTask.description}</p>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-gray-300">{r.viewTask.description}</p>
             {r.viewTask.link && (
-              <a href={r.viewTask.link} target="_blank" rel="noreferrer" className="text-sm font-medium text-[#024fa7] hover:underline">
+              <a href={r.viewTask.link} target="_blank" rel="noreferrer" className="text-sm font-medium text-teal hover:underline">
                 View attached link
               </a>
             )}
@@ -152,3 +154,6 @@ export default function ReportsView() {
     </div>
   );
 }
+
+
+

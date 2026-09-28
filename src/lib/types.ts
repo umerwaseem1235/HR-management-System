@@ -245,10 +245,11 @@ export interface AuditLog {
 
 export interface NavItem {
   name: string;
-  href: string;
+  href?: string;
   icon: string;
   roles: UserRole[];
   badge?: number;
+  subItems?: { name: string; href: string; roles: UserRole[] }[];
 }
 
 export interface DashboardStats {

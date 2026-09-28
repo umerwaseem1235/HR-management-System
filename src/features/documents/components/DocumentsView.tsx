@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import Card from '@/components/ui/Card';
 import PageHeader from '@/components/ui/PageHeader';
 import Button from '@/components/ui/Button';
@@ -12,17 +13,18 @@ import { useDocuments } from '../hooks/useDocuments';
 import { CATEGORIES } from '../types';
 
 export default function DocumentsView() {
+  const { t } = useLanguage();
   const d = useDocuments();
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={d.isEmployee ? 'My Documents' : 'Documents'}
+        title={d.isEmployee ? t('nav.myDocuments') : t('nav.documents')}
         actions={!d.isEmployee && <Button variant="primary" onClick={d.openUpload} className="cursor-pointer whitespace-nowrap"><Upload size={16} /> Upload</Button>}
       />
 
       {d.isEmployee && (
-        <p className="text-xs text-gray-500 -mt-3">
+        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 -mt-3">
           Showing only your personal documents and company-wide shared files.
         </p>
       )}
@@ -32,7 +34,7 @@ export default function DocumentsView() {
           <SearchBar value={d.search} onChange={d.setSearch} placeholder="Search documents..." className="flex-1" />
           <div className="flex gap-2 flex-wrap">
             {CATEGORIES.map(cat => (
-              <button key={cat} onClick={() => d.setCategory(cat)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${d.category === cat ? 'bg-[#024fa7] text-white' : 'bg-[#EAF2F4] text-[#263238] hover:bg-[#D6E4E8]'}`}>
+              <button key={cat} onClick={() => d.setCategory(cat)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${d.category === cat ? 'bg-teal text-white' : 'bg-blue-gray text-dark-text dark:text-gray-100 hover:bg-medium-gray'}`}>
                 {cat}
               </button>
             ))}
@@ -78,3 +80,6 @@ export default function DocumentsView() {
     </div>
   );
 }
+
+
+

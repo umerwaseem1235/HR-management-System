@@ -15,8 +15,8 @@ export default function LeaveBalances({
 }) {
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-teal/20 bg-teal/5 px-4 py-3 text-xs leading-relaxed text-gray-600">
-        <span className="font-semibold text-primary">Monthly Leave</span> gives{' '}
+      <div className="rounded-lg border border-teal/20 bg-teal/5 px-4 py-3 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
+        <span className="font-semibold text-primary dark:text-blue-gray-light">Monthly Leave</span> gives{' '}
         <span className="font-semibold">2 paid days every calendar month</span> — it resets on the 1st and does not carry forward. Any
         approved days beyond the monthly quota are automatically treated as unpaid in payroll.
       </div>
@@ -30,15 +30,15 @@ export default function LeaveBalances({
           return (
             <div
               key={bal.leaveType}
-              className="card-hover relative rounded-xl border border-medium-gray bg-white p-5"
+              className="card-hover relative rounded-xl border border-medium-gray bg-white dark:bg-[#1b263b] p-5"
             >
               <div className="relative flex items-start justify-between gap-3">
-                <h4 className="text-[15px] font-semibold tracking-tight text-primary">{bal.leaveType}</h4>
+                <h4 className="text-[15px] font-semibold tracking-tight text-primary dark:text-blue-gray-light">{bal.leaveType}</h4>
                 {isSuperAdmin && (
                   <button
                     title="Edit balance"
                     onClick={() => onEditBalance(bal)}
-                    className="rounded-lg bg-[#024fa7]/10 p-1.5 text-[#024fa7] transition-colors hover:bg-[#024fa7]/15"
+                    className="rounded-lg bg-teal/10 p-1.5 text-teal transition-colors hover:bg-teal/15"
                   >
                     <Pencil size={14} />
                   </button>
@@ -56,7 +56,7 @@ export default function LeaveBalances({
                   {isMonthly ? 'Resets monthly' : meta?.carryForward ? 'Carry forward' : 'Annual quota'}
                 </span>
                 {bal.pending > 0 && (
-                  <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                  <span className="inline-flex items-center rounded-full border border-amber-200 dark:border-amber-800/60 bg-amber-50 px-2.5 py-0.5 text-[10px] font-semibold text-amber-700">
                     {bal.pending} pending
                   </span>
                 )}
@@ -64,32 +64,32 @@ export default function LeaveBalances({
               {isSuperAdmin ? (
                 <div className="relative mt-4">
                   <div className="flex items-end gap-2">
-                    <span className="text-2xl font-extrabold tracking-tight text-[#024fa7]">{bal.total}</span>
-                    <span className="mb-1 text-sm text-gray-500">{unit}</span>
+                    <span className="text-2xl font-extrabold tracking-tight text-teal">{bal.total}</span>
+                    <span className="mb-1 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{unit}</span>
                   </div>
-                  <p className="mt-1.5 text-xs text-gray-500">{meta?.description ?? 'Company leave quota'}</p>
+                  <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{meta?.description ?? 'Company leave quota'}</p>
                 </div>
               ) : (
                 <>
                   <div className="relative mt-4 flex items-end gap-2">
-                    <span className="text-2xl font-extrabold tracking-tight text-[#024fa7]">{bal.remaining}</span>
-                    <span className="mb-1 text-sm text-gray-500">
+                    <span className="text-2xl font-extrabold tracking-tight text-teal">{bal.remaining}</span>
+                    <span className="mb-1 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                       / {bal.total} {isMonthly ? 'days this month' : 'days'}
                     </span>
                   </div>
-                  <div className="relative mt-3 h-2 w-full overflow-hidden rounded-full bg-[#EAF2F4]">
+                  <div className="relative mt-3 h-2 w-full overflow-hidden rounded-full bg-blue-gray">
                     <div
-                      className="h-2 rounded-full bg-gradient-to-r from-[#013a7c] via-[#024fa7] to-[#0265cc]"
+                      className="h-2 rounded-full bg-gradient-to-r from-[#013a7c] via-teal to-teal-light"
                       style={{
                         width: `${pct}%`,
                       }}
                     />
                   </div>
-                  <div className="relative mt-2.5 flex justify-between text-xs text-gray-500">
+                  <div className="relative mt-2.5 flex justify-between text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     <span>Used: {bal.used}</span>
                     <span>Remaining: {bal.remaining}</span>
                   </div>
-                  {isMonthly && <p className="mt-2 text-[11px] text-gray-500">Fresh quota every month · no carry forward</p>}
+                  {isMonthly && <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">Fresh quota every month · no carry forward</p>}
                 </>
               )}
             </div>

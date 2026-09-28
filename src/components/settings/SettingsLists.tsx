@@ -42,14 +42,14 @@ function SkeletonRows() {
   return (
     <div className="space-y-2 animate-pulse">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-14 rounded-lg bg-[#EAF2F4]" />
+        <div key={i} className="h-14 rounded-lg bg-blue-gray" />
       ))}
     </div>
   );
 }
 
 function ErrorBox({ message }: { message: string }) {
-  return <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">{message}</p>;
+  return <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/60 rounded-lg px-4 py-2.5">{message}</p>;
 }
 
 function AddFormShell({ children, onCancel, onSave, saving, saveLabel }: {
@@ -60,7 +60,7 @@ function AddFormShell({ children, onCancel, onSave, saving, saveLabel }: {
   saveLabel: string;
 }) {
   return (
-    <form onSubmit={onSave} className="mb-4 rounded-lg border border-dashed border-[#D6E4E8] bg-[#F8FBFC] p-4 space-y-3">
+    <form onSubmit={onSave} className="mb-4 rounded-lg border border-dashed border-medium-gray bg-blue-gray-light p-4 space-y-3">
       {children}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
@@ -166,15 +166,15 @@ export function DepartmentList() {
         {loading ? <SkeletonRows /> : items.length === 0 ? (
           <EmptyState title="No departments" description="Departments you add here are stored in the database and used across the system." />
         ) : items.map((dept) => (
-          <div key={dept.id} className="flex items-center justify-between p-3 rounded-lg border border-[#D6E4E8] hover:bg-[#EAF2F4]/50">
+          <div key={dept.id} className="flex items-center justify-between p-3 rounded-lg border border-medium-gray hover:bg-blue-gray dark:hover:bg-white/10/50">
             <div className="flex items-center gap-3">
-              <Building2 size={16} className="text-[#024fa7]" />
+              <Building2 size={16} className="text-teal" />
               <div>
-                <span className="text-sm font-medium text-[#263238]">{dept.name}</span>
-                {dept.head && <p className="text-xs text-gray-500">Head: {dept.head}</p>}
+                <span className="text-sm font-medium text-dark-text dark:text-gray-100">{dept.name}</span>
+                {dept.head && <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Head: {dept.head}</p>}
               </div>
             </div>
-            <button onClick={() => setDeleting({ id: dept.id, name: dept.name })} title="Delete department" className="p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"><Trash2 size={14} /></button>
+            <button onClick={() => setDeleting({ id: dept.id, name: dept.name })} title="Delete department" className="p-1.5 rounded text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 dark:bg-red-950/30 cursor-pointer"><Trash2 size={14} /></button>
           </div>
         ))}
       </SettingsSection>
@@ -183,7 +183,7 @@ export function DepartmentList() {
         onClose={() => setDeleting(null)}
         title="Delete Department?"
         variant="delete"
-        headline={<>Delete <span className="font-semibold text-[#17324D]">{deleting?.name}</span>?</>}
+        headline={<>Delete <span className="font-semibold text-primary dark:text-blue-gray-light">{deleting?.name}</span>?</>}
         note={<>This action <span className="font-semibold">cannot be undone</span>. Employees linked to this department will keep their records.</>}
         confirmLabel="Delete"
         confirmIcon={<Trash2 size={16} />}
@@ -295,15 +295,15 @@ export function BranchList() {
         {loading ? <SkeletonRows /> : items.length === 0 ? (
           <EmptyState title="No branches" description="Branches you add here are stored in the database and used across the system." />
         ) : items.map((branch) => (
-          <div key={branch.id} className="flex items-center justify-between p-3 rounded-lg border border-[#D6E4E8]">
+          <div key={branch.id} className="flex items-center justify-between p-3 rounded-lg border border-medium-gray">
             <div className="flex items-center gap-3">
-              <MapPin size={16} className="text-[#024fa7]" />
+              <MapPin size={16} className="text-teal" />
               <div>
-                <p className="text-sm font-medium text-[#263238]">{branch.name}</p>
-                {(branch.city || branch.address) && <p className="text-xs text-gray-500">{[branch.city, branch.address].filter(Boolean).join(' · ')}</p>}
+                <p className="text-sm font-medium text-dark-text dark:text-gray-100">{branch.name}</p>
+                {(branch.city || branch.address) && <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{[branch.city, branch.address].filter(Boolean).join(' · ')}</p>}
               </div>
             </div>
-            <button onClick={() => setDeleting({ id: branch.id, name: branch.name })} title="Delete branch" className="p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"><Trash2 size={14} /></button>
+            <button onClick={() => setDeleting({ id: branch.id, name: branch.name })} title="Delete branch" className="p-1.5 rounded text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 dark:bg-red-950/30 cursor-pointer"><Trash2 size={14} /></button>
           </div>
         ))}
       </SettingsSection>
@@ -312,7 +312,7 @@ export function BranchList() {
         onClose={() => setDeleting(null)}
         title="Delete Branch?"
         variant="delete"
-        headline={<>Delete <span className="font-semibold text-[#17324D]">{deleting?.name}</span>?</>}
+        headline={<>Delete <span className="font-semibold text-primary dark:text-blue-gray-light">{deleting?.name}</span>?</>}
         note={<>This action <span className="font-semibold">cannot be undone</span>.</>}
         confirmLabel="Delete"
         confirmIcon={<Trash2 size={16} />}
@@ -420,15 +420,15 @@ export function ShiftList() {
         {loading ? <SkeletonRows /> : items.length === 0 ? (
           <EmptyState title="No shifts" description="Shifts you add here are stored in the database and used across the system." />
         ) : items.map((shift) => (
-          <div key={shift.id} className="flex items-center justify-between p-3 rounded-lg border border-[#D6E4E8]">
+          <div key={shift.id} className="flex items-center justify-between p-3 rounded-lg border border-medium-gray">
             <div className="flex items-center gap-3">
-              <Clock size={16} className="text-[#024fa7]" />
+              <Clock size={16} className="text-teal" />
               <div>
-                <p className="text-sm font-medium text-[#263238]">{shift.name}</p>
-                {(shift.startTime || shift.endTime) && <p className="text-xs text-gray-500">{shift.startTime} — {shift.endTime}</p>}
+                <p className="text-sm font-medium text-dark-text dark:text-gray-100">{shift.name}</p>
+                {(shift.startTime || shift.endTime) && <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{shift.startTime} — {shift.endTime}</p>}
               </div>
             </div>
-            <button onClick={() => setDeleting({ id: shift.id, name: shift.name })} title="Delete shift" className="p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"><Trash2 size={14} /></button>
+            <button onClick={() => setDeleting({ id: shift.id, name: shift.name })} title="Delete shift" className="p-1.5 rounded text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 dark:bg-red-950/30 cursor-pointer"><Trash2 size={14} /></button>
           </div>
         ))}
       </SettingsSection>
@@ -437,7 +437,7 @@ export function ShiftList() {
         onClose={() => setDeleting(null)}
         title="Delete Shift?"
         variant="delete"
-        headline={<>Delete <span className="font-semibold text-[#17324D]">{deleting?.name}</span>?</>}
+        headline={<>Delete <span className="font-semibold text-primary dark:text-blue-gray-light">{deleting?.name}</span>?</>}
         note={<>This action <span className="font-semibold">cannot be undone</span>.</>}
         confirmLabel="Delete"
         confirmIcon={<Trash2 size={16} />}
@@ -572,8 +572,8 @@ export function LeaveTypeList() {
                 ]}
               />
               <div className="flex items-end pb-2.5">
-                <label className="flex items-center gap-2 text-sm text-[#263238] cursor-pointer">
-                  <input type="checkbox" checked={carryForward} onChange={(e) => setCarryForward(e.target.checked)} className="h-4 w-4 accent-[#024fa7]" />
+                <label className="flex items-center gap-2 text-sm text-dark-text dark:text-gray-100 cursor-pointer">
+                  <input type="checkbox" checked={carryForward} onChange={(e) => setCarryForward(e.target.checked)} className="h-4 w-4 accent-teal" />
                   Carry forward unused days
                 </label>
               </div>
@@ -587,20 +587,20 @@ export function LeaveTypeList() {
         {loading ? <SkeletonRows /> : items.length === 0 ? (
           <EmptyState title="No leave types" description="Leave types you add here are stored in the database and used across the system." />
         ) : items.map((lt) => (
-          <div key={lt.id} className="flex items-center justify-between p-3 rounded-lg border border-[#D6E4E8]">
+          <div key={lt.id} className="flex items-center justify-between p-3 rounded-lg border border-medium-gray">
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: lt.color }} />
               <div>
-                <p className="text-sm font-medium text-[#263238]">
+                <p className="text-sm font-medium text-dark-text dark:text-gray-100">
                   {lt.name}
                   {lt.period === 'month' && (
-                    <span className="ml-2 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-teal-700">Monthly</span>
+                    <span className="ml-2 rounded-full bg-teal-50 dark:bg-teal-950/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-400">Monthly</span>
                   )}
                 </p>
-                <p className="text-xs text-gray-500">{lt.daysAllowed} days/{lt.period === 'month' ? 'month · resets monthly' : 'year'} · {lt.carryForward ? 'Carry forward' : 'No carry forward'}{lt.description ? ` · ${lt.description}` : ''}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{lt.daysAllowed} days/{lt.period === 'month' ? 'month · resets monthly' : 'year'} · {lt.carryForward ? 'Carry forward' : 'No carry forward'}{lt.description ? ` · ${lt.description}` : ''}</p>
               </div>
             </div>
-            <button onClick={() => setDeleting({ id: lt.id, name: lt.name })} title="Delete leave type" className="p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"><Trash2 size={14} /></button>
+            <button onClick={() => setDeleting({ id: lt.id, name: lt.name })} title="Delete leave type" className="p-1.5 rounded text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 dark:bg-red-950/30 cursor-pointer"><Trash2 size={14} /></button>
           </div>
         ))}
       </SettingsSection>
@@ -609,7 +609,7 @@ export function LeaveTypeList() {
         onClose={() => setDeleting(null)}
         title="Delete Leave Type?"
         variant="delete"
-        headline={<>Delete <span className="font-semibold text-[#17324D]">{deleting?.name}</span>?</>}
+        headline={<>Delete <span className="font-semibold text-primary dark:text-blue-gray-light">{deleting?.name}</span>?</>}
         note={<>This action <span className="font-semibold">cannot be undone</span>. Existing requests keep their history.</>}
         confirmLabel="Delete"
         confirmIcon={<Trash2 size={16} />}
@@ -618,7 +618,7 @@ export function LeaveTypeList() {
       />
       <div className="mt-3 flex items-center gap-2">
         <Badge variant="default">Live from database</Badge>
-        <p className="text-xs text-gray-500">Adds and deletes save to the database and apply system-wide immediately.</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Adds and deletes save to the database and apply system-wide immediately.</p>
       </div>
     </>
   );

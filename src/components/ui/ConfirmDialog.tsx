@@ -12,33 +12,33 @@ const VARIANT_STYLES: Record<
   { card: string; iconBox: string; icon: React.ReactNode; confirmVariant: 'primary' | 'danger' }
 > = {
   approve: {
-    card: 'bg-green-50 border-green-200',
-    iconBox: 'border-green-200',
-    icon: <CheckCircle2 size={20} className="text-green-600" />,
+    card: 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800/60',
+    iconBox: 'border-green-200 dark:border-green-800/60',
+    icon: <CheckCircle2 size={20} className="text-green-600 dark:text-green-400" />,
     confirmVariant: 'primary',
   },
   reject: {
-    card: 'bg-red-50 border-red-200',
-    iconBox: 'border-red-200',
-    icon: <XCircle size={20} className="text-red-600" />,
+    card: 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/60',
+    iconBox: 'border-red-200 dark:border-red-800/60',
+    icon: <XCircle size={20} className="text-red-600 dark:text-red-400" />,
     confirmVariant: 'danger',
   },
   delete: {
-    card: 'bg-gray-50 border-[#D6E4E8]',
-    iconBox: 'border-[#D6E4E8]',
-    icon: <Trash2 size={20} className="text-red-600" />,
+    card: 'bg-gray-50 dark:bg-white/5 border-medium-gray',
+    iconBox: 'border-medium-gray',
+    icon: <Trash2 size={20} className="text-red-600 dark:text-red-400" />,
     confirmVariant: 'danger',
   },
   warning: {
-    card: 'bg-amber-50 border-amber-200',
-    iconBox: 'border-amber-200',
+    card: 'bg-amber-50 border-amber-200 dark:border-amber-800/60',
+    iconBox: 'border-amber-200 dark:border-amber-800/60',
     icon: <AlertTriangle size={20} className="text-amber-600" />,
     confirmVariant: 'danger',
   },
   info: {
-    card: 'bg-blue-50 border-blue-200',
-    iconBox: 'border-blue-200',
-    icon: <Info size={20} className="text-[#024fa7]" />,
+    card: 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/60',
+    iconBox: 'border-blue-200 dark:border-blue-800/60',
+    icon: <Info size={20} className="text-teal" />,
     confirmVariant: 'primary',
   },
 };
@@ -94,15 +94,15 @@ export default function ConfirmDialog({
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <div className="space-y-4">
         <div className={`flex items-start gap-3 rounded-xl border p-4 ${styles.card}`}>
-          <div className={`p-2 rounded-full bg-white border ${styles.iconBox}`}>
+          <div className={`p-2 rounded-full bg-white dark:bg-[#1b263b] border ${styles.iconBox}`}>
             {icon ?? styles.icon}
           </div>
           <div className="flex-1">
-            <p className="text-sm text-gray-600">{headline}</p>
-            {subline && <p className="text-xs text-gray-500 mt-1">{subline}</p>}
+            <p className="text-sm text-gray-600 dark:text-gray-300">{headline}</p>
+            {subline && <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{subline}</p>}
           </div>
         </div>
-        {note && <p className="text-xs text-gray-500">{note}</p>}
+        {note && <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{note}</p>}
         {children}
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={onClose} disabled={loading}>

@@ -1,4 +1,5 @@
 'use client';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AlertTriangle, Calculator, CheckCircle2, Lock, LockOpen, Trash2, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -18,13 +19,14 @@ import PayrollRuns from './PayrollRuns';
 import RunDetail from './RunDetail';
 
 export default function PayrollView() {
+  const { t } = useLanguage();
   const p = usePayroll();
   const { isAdmin, activeTab, setActiveTab, tabs } = p;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Payroll"
+        title={t('nav.payroll')}
         actions={isAdmin && (
           <Button variant="primary" onClick={() => setActiveTab('runs')}>
             <Calculator size={16} /> Process Payroll
@@ -33,20 +35,20 @@ export default function PayrollView() {
       />
 
       {p.successMsg && (
-        <div key={p.successMsgKey} className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+        <div key={p.successMsgKey} className="flex items-start gap-3 rounded-xl border border-green-200 dark:border-green-800/60 bg-green-50 dark:bg-green-950/30 p-4 text-sm text-green-800">
           <CheckCircle2 size={18} className="mt-0.5 flex-shrink-0" />
           <p className="flex-1">{p.successMsg}</p>
-          <button onClick={() => { p.setSuccessMsg(''); p.setSuccessMsgKey(0); }} title="Dismiss" aria-label="Dismiss success message" className="rounded p-0.5 hover:bg-green-100">
+          <button onClick={() => { p.setSuccessMsg(''); p.setSuccessMsgKey(0); }} title="Dismiss" aria-label="Dismiss success message" className="rounded p-0.5 hover:bg-green-100 dark:bg-green-950/40">
             <X size={14} />
           </button>
         </div>
       )}
 
       {p.runError && p.selectedRun && (
-        <div key={p.runErrorKey} className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div key={p.runErrorKey} className="flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/30 p-4 text-sm text-red-700 dark:text-red-400">
           <AlertTriangle size={18} className="mt-0.5 flex-shrink-0" />
           <p className="flex-1">{p.runError}</p>
-          <button onClick={() => { p.setRunError(''); p.setRunErrorKey(0); }} title="Dismiss" aria-label="Dismiss error message" className="rounded p-0.5 hover:bg-red-100">
+          <button onClick={() => { p.setRunError(''); p.setRunErrorKey(0); }} title="Dismiss" aria-label="Dismiss error message" className="rounded p-0.5 hover:bg-red-100 dark:bg-red-950/40">
             <X size={14} />
           </button>
         </div>
@@ -158,10 +160,10 @@ export default function PayrollView() {
         onClose={() => !p.busy && p.setShowFinalize(false)}
         title="Finalize Payroll"
         variant="info"
-        icon={<Lock size={20} className="text-[#024fa7]" />}
+        icon={<Lock size={20} className="text-teal" />}
         headline={
           <>
-            Finalize <span className="font-semibold text-[#17324D]">{p.selectedRun?.month} {p.selectedRun?.year}</span>?
+            Finalize <span className="font-semibold text-primary dark:text-blue-gray-light">{p.selectedRun?.month} {p.selectedRun?.year}</span>?
             This will <span className="font-semibold">lock the run</span> and generate{' '}
             <span className="font-semibold">{p.selectedRun?.items.length} payslips</span>.
           </>
@@ -172,10 +174,10 @@ export default function PayrollView() {
         loading={p.busy}
       >
         {p.selectedRun && (
-          <div className="rounded-xl bg-[#EAF2F4]/60 p-4 space-y-1.5 text-sm">
-            <div className="flex justify-between"><span className="text-gray-500">Total Gross</span><span className="font-bold">{money(p.selectedRun.totalGross)}</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Total Deductions</span><span className="font-bold text-red-600">{money(p.selectedRun.totalDeductions)}</span></div>
-            <div className="flex justify-between border-t border-[#D6E4E8] pt-1.5"><span className="text-gray-500">Total Net Payable</span><span className="font-bold text-[#17324D]">{money(p.selectedRun.totalNet)}</span></div>
+          <div className="rounded-xl bg-blue-gray/60 p-4 space-y-1.5 text-sm">
+            <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Total Gross</span><span className="font-bold">{money(p.selectedRun.totalGross)}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Total Deductions</span><span className="font-bold text-red-600 dark:text-red-400">{money(p.selectedRun.totalDeductions)}</span></div>
+            <div className="flex justify-between border-t border-medium-gray pt-1.5"><span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">Total Net Payable</span><span className="font-bold text-primary dark:text-blue-gray-light">{money(p.selectedRun.totalNet)}</span></div>
           </div>
         )}
       </ConfirmDialog>
@@ -189,7 +191,7 @@ export default function PayrollView() {
         icon={<LockOpen size={20} className="text-amber-600" />}
         headline={
           <>
-            Unlock <span className="font-semibold text-[#17324D]">{p.selectedRun?.month} {p.selectedRun?.year}</span> and
+            Unlock <span className="font-semibold text-primary dark:text-blue-gray-light">{p.selectedRun?.month} {p.selectedRun?.year}</span> and
             return it to <span className="font-semibold">Reviewed</span>?
           </>
         }
@@ -213,7 +215,7 @@ export default function PayrollView() {
         variant="delete"
         headline={
           <>
-            Delete <span className="font-semibold text-[#17324D]">{p.confirmDeleteRun?.month} {p.confirmDeleteRun?.year}</span> draft run?
+            Delete <span className="font-semibold text-primary dark:text-blue-gray-light">{p.confirmDeleteRun?.month} {p.confirmDeleteRun?.year}</span> draft run?
           </>
         }
         subline={p.confirmDeleteRun ? `${p.confirmDeleteRun.items.length} employees · Gross ${money(p.confirmDeleteRun.totalGross)} · Net ${money(p.confirmDeleteRun.totalNet)}` : undefined}
@@ -237,3 +239,6 @@ export default function PayrollView() {
     </div>
   );
 }
+
+
+

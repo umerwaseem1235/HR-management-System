@@ -50,17 +50,17 @@ export function EditLeaveModal({
           <Input label="End Date" type="date" value={editEnd} onChange={(e) => setEditEnd(e.target.value)} error={editErrors.editEnd} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-[#263238] mb-1.5">Reason</label>
+          <label className="block text-sm font-medium text-dark-text dark:text-gray-100 mb-1.5">Reason</label>
           <textarea
             rows={4}
             value={editReason}
             onChange={(e) => setEditReason(e.target.value)}
             placeholder="Enter reason for leave..."
-            className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-[#263238] placeholder-gray-400 focus:ring-2 focus:outline-none ${editErrors.editReason ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-medium-gray focus:border-teal focus:ring-teal/20'}`}
+            className={`w-full rounded-lg border bg-white dark:bg-[#1b263b] px-4 py-2.5 text-sm text-dark-text dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:outline-none ${editErrors.editReason ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-medium-gray focus:border-teal focus:ring-teal/20'}`}
           />
           {editErrors.editReason && <p className="mt-1 text-sm text-red-500">{editErrors.editReason}</p>}
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
           Your request will remain <span className="font-medium">Pending</span> until it is approved or rejected.
         </p>
         <div className="flex justify-end gap-3 pt-4 border-t border-medium-gray">
@@ -107,7 +107,7 @@ export function EditBalanceModal({
           onChange={(e) => setBalanceTotal(e.target.value)}
           error={balanceErrors.balanceTotal}
         />
-        <p className="text-xs text-gray-500">Remaining days are recalculated automatically (total − used).</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Remaining days are recalculated automatically (total − used).</p>
         <div className="flex justify-end gap-3 pt-4 border-t border-medium-gray">
           <Button variant="outline" type="button" onClick={onClose} disabled={saving}>
             Cancel
@@ -138,15 +138,15 @@ export function BalanceViewModal({
     >
       {balanceRequest && (
         <div className="space-y-3">
-          <p className="text-xs text-gray-500">
-            Remaining balances for <span className="font-medium text-[#263238]">{balanceRequest.employeeName}</span> ({balanceRequest.leaveType}{' '}
+          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
+            Remaining balances for <span className="font-medium text-dark-text dark:text-gray-100">{balanceRequest.employeeName}</span> ({balanceRequest.leaveType}{' '}
             · {balanceRequest.startDate} to {balanceRequest.endDate})
           </p>
           {balances.map((bal) => (
             <div key={bal.leaveType} className="p-4 rounded-lg bg-blue-gray/50 border border-medium-gray">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-[#263238]">{bal.leaveType}</span>
-                <span className="text-sm font-bold text-primary">
+                <span className="text-sm font-medium text-dark-text dark:text-gray-100">{bal.leaveType}</span>
+                <span className="text-sm font-bold text-primary dark:text-blue-gray-light">
                   {bal.remaining}/{bal.total} remaining
                 </span>
               </div>
@@ -158,7 +158,7 @@ export function BalanceViewModal({
                   }}
                 />
               </div>
-              <div className="flex justify-between text-xs text-gray-500 mt-1.5">
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1.5">
                 <span>Used: {bal.used}</span>
                 <span>Total: {bal.total}</span>
               </div>

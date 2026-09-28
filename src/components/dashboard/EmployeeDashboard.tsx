@@ -12,6 +12,8 @@ import EmployeeNotifications from './employee/EmployeeNotifications';
 import EmployeePayslips from './employee/EmployeePayslips';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+
 import { useEmployeeDirectory } from '../../hooks/useEmployeeDirectory';
 import { getLeaveBalances, getLeaveRequests } from '../../lib/actions/leave';
 import { getPayslips } from '../../lib/actions/payroll';
@@ -118,6 +120,7 @@ async function loadDashboardBundle(employee: Employee): Promise<DashboardBundle>
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { findByUser } = useEmployeeDirectory();
   const employee = useMemo(() => findByUser(user), [findByUser, user]);
   // Stale-while-revalidate paint: last visit's bundle (if any) renders on the
@@ -210,7 +213,7 @@ export default function EmployeeDashboard() {
   if (!mounted && !cachedBundle) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Welcome!" />
+        <PageHeader title={`${t('dashboard.welcome')}!`} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <EmployeeStats
             leavesTakenMonth={0}
@@ -372,11 +375,11 @@ export default function EmployeeDashboard() {
     <div className="space-y-6">
       {/* Welcome + Check In/Out */}
       <PageHeader
-        title={`Welcome, ${user?.name?.split(' ')[0]}! 👋`}
+        title={`${t('dashboard.welcome')}, ${user?.name?.split(' ')[0]}! 👋`}
         actions={
           <>
             {checkInTime && (
-              <span className="text-sm text-gray-500 mr-4">Checked in at {checkInTime}</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mr-4">Checked in at {checkInTime}</span>
             )}
             {!checkedIn ? (
               <Button
@@ -418,15 +421,15 @@ export default function EmployeeDashboard() {
       />
 
       {actionError && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/30">
           <div className="flex items-start gap-3 p-4">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-              <AlertCircle size={18} className="text-red-600" />
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 dark:bg-red-950/40 flex items-center justify-center">
+              <AlertCircle size={18} className="text-red-600 dark:text-red-400" />
             </div>
             <div className="flex-1">
               <p className="font-medium text-red-800">Check-in Failed</p>
-              <p className="text-sm text-red-700 mt-1">{actionError}</p>
-              <p className="text-xs text-red-600 mt-2">
+              <p className="text-sm text-red-700 dark:text-red-400 mt-1">{actionError}</p>
+              <p className="text-xs text-red-600 dark:text-red-400 mt-2">
                 You must be within {OFFICE_LOCATION.radiusMeters}m of the office to check in.
               </p>
             </div>
@@ -461,21 +464,21 @@ export default function EmployeeDashboard() {
       </div>
 
       {/* Office Location Info */}
-      <Card className="border-[#D6E4E8]">
+      <Card className="border-medium-gray">
         <div className="flex items-center gap-3 p-4">
           <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#E3EFFE] flex items-center justify-center">
-            <MapPin size={20} className="text-[#024fa7]" />
+            <MapPin size={20} className="text-teal" />
           </div>
           <div className="flex-1">
-            <p className="font-medium text-[#17324D]">Office Location Check</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="font-medium text-primary dark:text-blue-gray-light">Office Location Check</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
               Check-ins require you to be within <strong>{OFFICE_LOCATION.radiusMeters}m</strong> of the office.
               Your location is verified on both your device and our servers for security.
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-gray-500">Lat: {OFFICE_LOCATION.latitude.toFixed(6)}</p>
-            <p className="text-xs text-gray-500">Lng: {OFFICE_LOCATION.longitude.toFixed(6)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Lat: {OFFICE_LOCATION.latitude.toFixed(6)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Lng: {OFFICE_LOCATION.longitude.toFixed(6)}</p>
           </div>
         </div>
       </Card>

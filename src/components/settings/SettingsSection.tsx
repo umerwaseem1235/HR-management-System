@@ -15,7 +15,7 @@ export default function SettingsSection({ title, addLabel, onAdd, children }: Se
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-[#17324D]">{title}</h3>
+        <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light">{title}</h3>
         <Button variant="primary" size="sm" onClick={onAdd}><Plus size={16} /> {addLabel}</Button>
       </div>
       <div className="space-y-2">

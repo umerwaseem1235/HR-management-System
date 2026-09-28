@@ -9,7 +9,7 @@ export interface TodayAttendanceStats {
   onLeaveToday: number;
 }
 
-const ICON_CLASS = 'text-[#024fa7]';
+const ICON_CLASS = 'text-teal';
 const ICON_BG = 'bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]';
 
 export function TodaySnapshot({ stats, halfDayToday = 0 }: { stats: TodayAttendanceStats; halfDayToday?: number }) {

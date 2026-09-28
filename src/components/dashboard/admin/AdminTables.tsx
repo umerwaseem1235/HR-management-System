@@ -15,34 +15,34 @@ export function PendingLeavesCard({
   return (
     <Card>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-[#17324D]">Pending Leave Approvals</h3>
+        <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light">Pending Leave Approvals</h3>
         <button
           onClick={onViewAll}
-          className="text-sm text-[#024fa7] hover:underline font-medium flex items-center gap-1"
+          className="text-sm text-teal hover:underline font-medium flex items-center gap-1"
         >
           View All <ArrowUpRight size={14} />
         </button>
       </div>
       <div className="space-y-3">
         {leaves.length === 0 ? (
-          <p className="text-gray-500 text-sm text-center py-8">No pending approvals</p>
+          <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm text-center py-8">No pending approvals</p>
         ) : (
           leaves.map(leave => (
-            <div key={leave.id} className="flex items-center justify-between p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
+            <div key={leave.id} className="flex items-center justify-between p-4 rounded-lg bg-blue-gray/50 border border-medium-gray">
               <div className="flex items-center gap-3">
                 <Avatar name={leave.employeeName} size="sm" />
                 <div>
-                  <p className="text-sm font-medium text-[#263238]">{leave.employeeName}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm font-medium text-dark-text dark:text-gray-100">{leave.employeeName}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     {leave.leaveType} · {leave.startDate} to {leave.endDate} · {leave.days} day{leave.days > 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition-colors">
+                <button className="p-1.5 rounded-lg bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-200 transition-colors">
                   <CheckCircle2 size={18} />
                 </button>
-                <button className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors">
+                <button className="p-1.5 rounded-lg bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-200 transition-colors">
                   <XCircle size={18} />
                 </button>
               </div>
@@ -88,7 +88,7 @@ export function DepartmentHeadcountCard({
                 }}
               />
             </div>
-            <span className="w-6 text-right text-[13px] font-bold tabular-nums text-[#17324D]">{dept.count}</span>
+            <span className="w-6 text-right text-[13px] font-bold tabular-nums text-primary dark:text-blue-gray-light">{dept.count}</span>
           </div>
         ))}
       </div>
@@ -99,20 +99,20 @@ export function DepartmentHeadcountCard({
 export function UpcomingEventsCard({ events }: { events: UpcomingEvent[] }) {
   return (
     <Card>
-      <h3 className="text-base font-semibold text-[#17324D] mb-4">Upcoming Events</h3>
+      <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light mb-4">Upcoming Events</h3>
       <div className="space-y-3">
         {events.map((event, i) => (
-          <div key={i} className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#EAF2F4]/50 transition-colors">
+          <div key={i} className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-gray dark:hover:bg-white/10/50 transition-colors">
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-              event.type === 'birthday' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 text-blue-600'
+              event.type === 'birthday' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400'
             }`}>
               <event.icon size={18} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[#263238] truncate">{event.name}</p>
-              <p className="text-xs text-gray-500 capitalize">{event.type === 'birthday' ? '🎂 Birthday' : event.type === 'anniversary' ? '🎉 Anniversary' : '📋 Probation End'}</p>
+              <p className="text-sm font-medium text-dark-text dark:text-gray-100 truncate">{event.name}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 capitalize">{event.type === 'birthday' ? '🎂 Birthday' : event.type === 'anniversary' ? '🎉 Anniversary' : '📋 Probation End'}</p>
             </div>
-            <span className="text-xs text-gray-500 whitespace-nowrap">{event.date}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 whitespace-nowrap">{event.date}</span>
           </div>
         ))}
       </div>

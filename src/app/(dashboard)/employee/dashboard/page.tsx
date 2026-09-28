@@ -30,7 +30,7 @@ export default function EmployeeDashboardPage() {
     return (
       <>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#024fa7] border-t-transparent"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal border-t-transparent"></div>
         </div>
       </>
     );

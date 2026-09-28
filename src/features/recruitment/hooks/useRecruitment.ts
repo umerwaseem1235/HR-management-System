@@ -20,6 +20,7 @@ const mockCandidates: Candidate[] = [
   { id: '6', name: 'Rachel Green', email: 'rachel.g@email.com', phone: '+1-555-9006', jobId: '1', jobTitle: 'Senior Frontend Developer', stage: 'Rejected', appliedDate: '2024-01-03', rating: 2 },
 ];
 import { useNotifications } from '@/contexts/NotificationContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { Candidate, Employee, Job } from '@/types';
 import {
   addCandidateHistory,
@@ -109,6 +110,7 @@ export interface EditCandState {
 
 export function useRecruitment() {
   const { addNotification } = useNotifications();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('jobs');
   // Mock fallback keeps the page working when the DB is unreachable (theirs);
   // real rows replace it once loaded (both sides).
@@ -875,12 +877,12 @@ export function useRecruitment() {
   }, [candidates]);
 
   const tabs = [
-    { id: 'jobs', label: 'Free Positions', count: jobs.filter((j) => j.status === 'Open').length },
-    { id: 'candidates', label: 'Candidates Diary', count: candidates.length },
-    { id: 'pipeline', label: 'Status' },
-    { id: 'interviews', label: 'Reminders', count: interviews.filter((i) => i.status === 'Scheduled').length },
-    { id: 'offers', label: 'Offers Noted', count: offers.length },
-    { id: 'analytics', label: 'Summary' },
+    { id: 'jobs', label: t('recruitment.tab.jobs') || 'Free Positions', count: jobs.filter((j) => j.status === 'Open').length },
+    { id: 'candidates', label: t('recruitment.tab.candidates') || 'Candidates Diary', count: candidates.length },
+    { id: 'pipeline', label: t('recruitment.tab.status') || 'Status' },
+    { id: 'interviews', label: t('recruitment.tab.reminders') || 'Reminders', count: interviews.filter((i) => i.status === 'Scheduled').length },
+    { id: 'offers', label: t('recruitment.tab.offers') || 'Offers Noted', count: offers.length },
+    { id: 'analytics', label: t('recruitment.tab.summary') || 'Summary' },
   ];
 
   return {

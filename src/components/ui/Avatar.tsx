@@ -21,7 +21,7 @@ function getInitials(name: string): string {
 
 function getColorFromName(name: string): string {
   const colors = [
-    'bg-[#17324D]', 'bg-[#024fa7]', 'bg-blue-600', 'bg-indigo-600',
+    'bg-primary', 'bg-teal', 'bg-blue-600', 'bg-indigo-600',
     'bg-purple-600', 'bg-pink-600', 'bg-orange-500', 'bg-emerald-600',
   ];
   const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
@@ -60,6 +60,23 @@ export default React.memo(function Avatar({ name, src, size = 'md', className = 
   }, [src]);
 
   if (src && !imgFailed && isImageSrc(src)) {
+    // Employee photos are base64 data URLs (or blob: URLs). These must NEVER
+    // go through next/image — even `unoptimized` + custom loader proved
+    // unreliable in production and fell back to initials. A plain <img>
+    // always renders them. Only http(s)/file-path URLs use next/image.
+    if (src.startsWith('data:') || src.startsWith('blob:')) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt={name}
+          width={pxSizes[size]}
+          height={pxSizes[size]}
+          onError={() => setImgFailed(true)}
+          className={`${sizes[size]} aspect-square shrink-0 rounded-full object-cover object-center block ${className}`}
+        />
+      );
+    }
     return (
       <Image
         src={src}

@@ -37,15 +37,15 @@ export default function JobModal({
               <Select label="Branch" value={jobModal.branch} onChange={e => onJobModalChange({ branch: e.target.value })} options={[{ value: '', label: 'Select' }, ...BRANCHES.map(b => ({ value: b.name, label: `${b.name} - ${b.city}` }))]} required />
               <Input label="Vacancy Count" type="number" min={1} value={jobModal.vacancies} onChange={e => onJobModalChange({ vacancies: e.target.value })} required />
             </div>
-            <div><label className="block text-sm font-medium text-[#263238] mb-1.5">Requirements</label>
-              <textarea rows={3} value={jobModal.requirements} onChange={e => onJobModalChange({ requirements: e.target.value })} placeholder="Skills, experience, education…" className="w-full rounded-lg border border-[#D6E4E8] px-4 py-2.5 text-sm focus:border-[#024fa7] focus:outline-none" /></div>
-            <div><label className="block text-sm font-medium text-[#263238] mb-1.5">Job Description</label>
-              <textarea rows={3} value={jobModal.description} onChange={e => onJobModalChange({ description: e.target.value })} placeholder="Role summary…" className="w-full rounded-lg border border-[#D6E4E8] px-4 py-2.5 text-sm focus:border-[#024fa7] focus:outline-none" /></div>
+            <div><label className="block text-sm font-medium text-dark-text dark:text-gray-100 mb-1.5">Requirements</label>
+              <textarea rows={3} value={jobModal.requirements} onChange={e => onJobModalChange({ requirements: e.target.value })} placeholder="Skills, experience, education…" className="w-full rounded-lg border border-medium-gray px-4 py-2.5 text-sm focus:border-teal focus:outline-none" /></div>
+            <div><label className="block text-sm font-medium text-dark-text dark:text-gray-100 mb-1.5">Job Description</label>
+              <textarea rows={3} value={jobModal.description} onChange={e => onJobModalChange({ description: e.target.value })} placeholder="Role summary…" className="w-full rounded-lg border border-medium-gray px-4 py-2.5 text-sm focus:border-teal focus:outline-none" /></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input label="Closing Date" type="date" value={jobModal.closingDate} onChange={e => onJobModalChange({ closingDate: e.target.value })} />
               <Select label="Status" value={jobModal.status} onChange={e => onJobModalChange({ status: e.target.value as Job['status'] })} options={['Open', 'On Hold', 'Closed'].map(s => ({ value: s, label: s }))} />
             </div>
-            <div className="flex justify-end gap-3 pt-2 border-t border-[#D6E4E8]"><Button variant="outline" type="button" onClick={onClose} disabled={isSaving}>Cancel</Button><Button type="submit" loading={isSaving}><Briefcase size={16} /> {isSaving ? 'Saving…' : 'Save Note'}</Button></div>
+            <div className="flex justify-end gap-3 pt-2 border-t border-medium-gray"><Button variant="outline" type="button" onClick={onClose} disabled={isSaving}>Cancel</Button><Button type="submit" loading={isSaving}><Briefcase size={16} /> {isSaving ? 'Saving…' : 'Save Note'}</Button></div>
           </form>
         )}
       </Modal>
@@ -57,7 +57,7 @@ export default function JobModal({
         variant="delete"
         headline={
           <>
-            Delete <span className="font-semibold text-[#17324D]">{confirmDeleteJob?.title}</span>?
+            Delete <span className="font-semibold text-primary dark:text-blue-gray-light">{confirmDeleteJob?.title}</span>?
           </>
         }
         subline={confirmDeleteJob ? `${confirmDeleteJob.department} · ${confirmDeleteJob.branch} · ${confirmDeleteJob.vacancies} opening${confirmDeleteJob.vacancies > 1 ? 's' : ''} · ${confirmDeleteJob.applicants} applicants` : undefined}

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import Card from '@/components/ui/Card';
 import PageHeader from '@/components/ui/PageHeader';
 import Button from '@/components/ui/Button';
@@ -12,6 +13,7 @@ import ProgressModal from './ProgressModal';
 import { useProgressView } from '../hooks/useProgressView';
 
 export default function ProgressView() {
+  const { t } = useLanguage();
   const v = useProgressView();
 
   if (!v.user) return null;
@@ -19,7 +21,7 @@ export default function ProgressView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={v.isEmployee ? 'My Progress' : 'Employee Progress'}
+        title={v.isEmployee ? t('nav.myProgress') : t('nav.employeeProgress')}
         actions={
           v.isEmployee ? (
             <Button variant="primary" onClick={v.openAdd}>
@@ -96,3 +98,6 @@ export default function ProgressView() {
     </div>
   );
 }
+
+
+

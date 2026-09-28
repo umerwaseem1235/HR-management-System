@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import Card from '@/components/ui/Card';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -15,6 +16,7 @@ import RemoteRequestModal from './RemoteRequestModal';
 import { useRemoteView, STATUS_OPTIONS } from '../hooks/useRemoteView';
 
 export default function RemoteView() {
+  const { t } = useLanguage();
   const v = useRemoteView();
 
   if (!v.user) return null;
@@ -22,7 +24,7 @@ export default function RemoteView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Remote Work Requests"
+        title={t('nav.remote')}
         actions={
           v.isEmployee ? (
             <Button variant="primary" onClick={v.openRequestModal}>
@@ -69,33 +71,33 @@ export default function RemoteView() {
       {!v.isEmployee && (
       <Card padding="sm" className="flex flex-col">
         <div className="flex items-center gap-2.5 mb-3">
-          <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
-            <House size={18} className="text-[#024fa7]" />
+          <div className="shrink-0 bg-blue-50 dark:bg-blue-950/30 p-2 rounded-lg">
+            <House size={18} className="text-teal" />
           </div>
-          <h3 className="text-base font-semibold text-[#17324D]">Today&apos;s Remote</h3>
+          <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light">Today&apos;s Remote</h3>
           <Badge variant="info" className="ml-auto">{v.todaysRemote.length}</Badge>
         </div>
         <div className="flex-1 flex flex-col gap-2 max-h-56 overflow-y-auto">
           {v.todaysRemote.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-6">No one is working remote today.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center py-6">No one is working remote today.</p>
           ) : (
             <>
               {v.todaysRemote.slice(0, 4).map((req) => (
                 <button
                   key={req.id}
                   onClick={() => v.setDetail(req)}
-                  className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-[#EAF2F4]/60 border border-transparent hover:border-[#D6E4E8] transition-colors text-left cursor-pointer"
+                  className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-blue-gray dark:hover:bg-white/10/60 border border-transparent hover:border-medium-gray transition-colors text-left cursor-pointer"
                 >
                   <Avatar name={req.employeeName} size="sm" />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium text-[#263238] truncate">{req.employeeName}</span>
-                    <span className="block text-xs text-gray-500 truncate">{req.fromDate === req.toDate ? req.fromDate : `${req.fromDate} → ${req.toDate}`}</span>
+                    <span className="block text-sm font-medium text-dark-text dark:text-gray-100 truncate">{req.employeeName}</span>
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{req.fromDate === req.toDate ? req.fromDate : `${req.fromDate} → ${req.toDate}`}</span>
                   </span>
                   <Badge variant="success">Remote</Badge>
                 </button>
               ))}
               {v.todaysRemote.length > 4 && (
-                <p className="text-xs text-gray-500 text-center pt-1">+{v.todaysRemote.length - 4} more</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center pt-1">+{v.todaysRemote.length - 4} more</p>
               )}
             </>
           )}
@@ -155,3 +157,5 @@ export default function RemoteView() {
     </div>
   );
 }
+
+

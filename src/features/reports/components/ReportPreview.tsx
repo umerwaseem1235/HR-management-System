@@ -9,7 +9,7 @@ import type { AttendanceDayRow, TabId } from '../types';
 import { PRINT_STATUS_COLOR, PAGE_SIZES, slash, stripHtml } from '../hooks/useReports';
 
 const actionBtn =
-  'p-1.5 rounded-lg bg-[#EAF2F4] text-[#0F8B8D] hover:bg-[#D6E4E8] cursor-pointer';
+  'p-1.5 rounded-lg bg-blue-gray text-[#0F8B8D] hover:bg-medium-gray cursor-pointer';
 
 interface ReportPreviewProps {
   tab: TabId;
@@ -56,43 +56,43 @@ export default function ReportPreview({
           {tab === 'attendance' && (
             <table className="w-full">
               <thead>
-                <tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">#</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Date & Day</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Clock In</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Clock Out</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Working Hours</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Actions</th>
+                <tr className="bg-blue-gray border-b border-medium-gray">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">#</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Date & Day</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Clock In</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Clock Out</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Working Hours</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#D6E4E8]">
+              <tbody className="divide-y divide-medium-gray">
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={`skeleton-${i}`} className="animate-pulse">
-                      <td className="px-6 py-4"><div className="h-4 w-8 rounded bg-[#EAF2F4]" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-8 rounded bg-blue-gray" /></td>
                       <td className="px-6 py-4">
-                        <div className="h-4 w-24 rounded bg-[#EAF2F4]" />
-                        <div className="mt-1.5 h-3 w-16 rounded bg-[#EAF2F4]" />
+                        <div className="h-4 w-24 rounded bg-blue-gray" />
+                        <div className="mt-1.5 h-3 w-16 rounded bg-blue-gray" />
                       </td>
-                      <td className="px-6 py-4"><div className="h-4 w-14 rounded bg-[#EAF2F4]" /></td>
-                      <td className="px-6 py-4"><div className="h-4 w-14 rounded bg-[#EAF2F4]" /></td>
-                      <td className="px-6 py-4"><div className="h-4 w-16 rounded bg-[#EAF2F4]" /></td>
-                      <td className="px-6 py-4"><div className="h-6 w-20 rounded-full bg-[#EAF2F4]" /></td>
-                      <td className="px-6 py-4"><div className="h-8 w-8 rounded-lg bg-[#EAF2F4]" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-14 rounded bg-blue-gray" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-14 rounded bg-blue-gray" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-16 rounded bg-blue-gray" /></td>
+                      <td className="px-6 py-4"><div className="h-6 w-20 rounded-full bg-blue-gray" /></td>
+                      <td className="px-6 py-4"><div className="h-8 w-8 rounded-lg bg-blue-gray" /></td>
                     </tr>
                   ))
                 ) : (
                   attPage.map((r, i) => (
-                  <tr key={r.date} className="hover:bg-[#EAF2F4]/50">
-                    <td className="px-6 py-4 text-sm text-gray-500">{(safePage - 1) * pageSize + i + 1}</td>
+                  <tr key={r.date} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
+                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{(safePage - 1) * pageSize + i + 1}</td>
                     <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-[#263238]">{r.date}</p>
-                      <p className="text-xs text-gray-500">{r.weekday}</p>
+                      <p className="text-sm font-medium text-dark-text dark:text-gray-100">{r.date}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{r.weekday}</p>
                     </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-green-600">{r.clockIn}</td>
+                    <td className="px-6 py-4 text-sm font-semibold text-green-600 dark:text-green-400">{r.clockIn}</td>
                     <td className="px-6 py-4 text-sm font-semibold text-orange-600">{r.clockOut}</td>
-                    <td className="px-6 py-4 text-sm text-[#263238]">{r.hours}</td>
+                    <td className="px-6 py-4 text-sm text-dark-text dark:text-gray-100">{r.hours}</td>
                     <td className="px-6 py-4"><StatusBadge status={r.status} /></td>
                     <td className="px-6 py-4">
                       <button type="button" title="View day" onClick={() => onViewDay(r)} className={actionBtn}>
@@ -109,23 +109,23 @@ export default function ReportPreview({
           {tab === 'progress' && (
             <table className="w-full">
               <thead>
-                <tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">#</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Employee Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Project</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Progress Note</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Actions</th>
+                <tr className="bg-blue-gray border-b border-medium-gray">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">#</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Employee Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Project</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Progress Note</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#D6E4E8]">
+              <tbody className="divide-y divide-medium-gray">
                 {progPage.map((e, i) => (
-                  <tr key={e.id} className="hover:bg-[#EAF2F4]/50">
-                    <td className="px-6 py-4 text-sm text-gray-500">{(safePage - 1) * pageSize + i + 1}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-[#263238] whitespace-nowrap">{e.employeeName || '—'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{slash(e.submissionDate)}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-[#263238] whitespace-nowrap">{e.projectName}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600 max-w-md">
+                  <tr key={e.id} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
+                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{(safePage - 1) * pageSize + i + 1}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-dark-text dark:text-gray-100 whitespace-nowrap">{e.employeeName || '—'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 whitespace-nowrap">{slash(e.submissionDate)}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-dark-text dark:text-gray-100 whitespace-nowrap">{e.projectName}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300 max-w-md">
                       <p className="line-clamp-3">{stripHtml(e.description)}</p>
                     </td>
                     <td className="px-6 py-4">
@@ -147,22 +147,22 @@ export default function ReportPreview({
           {tab === 'task' && (
             <table className="w-full">
               <thead>
-                <tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">#</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Title</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Actions</th>
+                <tr className="bg-blue-gray border-b border-medium-gray">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">#</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Title</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#D6E4E8]">
+              <tbody className="divide-y divide-medium-gray">
                 {taskPage.map((w, i) => (
-                  <tr key={w.id} className="hover:bg-[#EAF2F4]/50">
-                    <td className="px-6 py-4 text-sm text-gray-500">{(safePage - 1) * pageSize + i + 1}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{slash(w.date)}</td>
+                  <tr key={w.id} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
+                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{(safePage - 1) * pageSize + i + 1}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 whitespace-nowrap">{slash(w.date)}</td>
                     <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-[#263238]">{w.title}</p>
-                      <p className="text-xs text-gray-500 line-clamp-1">{w.description}</p>
+                      <p className="text-sm font-medium text-dark-text dark:text-gray-100">{w.title}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 line-clamp-1">{w.description}</p>
                     </td>
                     <td className="px-6 py-4">
                       <StatusBadge status={w.status} />
@@ -192,25 +192,25 @@ export default function ReportPreview({
           )}
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-[#D6E4E8] bg-white px-6 py-3 sm:flex-row sm:items-center sm:justify-end">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="flex flex-col gap-3 border-t border-medium-gray bg-white dark:bg-[#1b263b] px-6 py-3 sm:flex-row sm:items-center sm:justify-end">
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
             <span>Records per page:</span>
             <select
               value={pageSize}
               onChange={(e) => { onPageSizeChange(Number(e.target.value)); }}
-              className="rounded-lg border border-[#D6E4E8] bg-white px-2 py-1.5 text-sm text-[#263238] outline-none focus:border-[#024fa7] focus:ring-2 focus:ring-[#024fa7]/20"
+              className="rounded-lg border border-medium-gray bg-white dark:bg-[#1b263b] px-2 py-1.5 text-sm text-dark-text dark:text-gray-100 outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
             >
               {PAGE_SIZES.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </div>
-          <p className="text-sm text-gray-500">{start} - {end} of {rowCount}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{start} - {end} of {rowCount}</p>
           <div className="flex items-center gap-1">
-            <button type="button" disabled={safePage <= 1} onClick={onFirst} title="First page" className="p-2 rounded-lg text-gray-500 hover:bg-[#EAF2F4] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
+            <button type="button" disabled={safePage <= 1} onClick={onFirst} title="First page" className="p-2 rounded-lg text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-blue-gray dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
               <ChevronsLeft size={16} />
             </button>
-            <button type="button" disabled={safePage <= 1} onClick={onPrev} title="Previous page" className="p-2 rounded-lg text-gray-500 hover:bg-[#EAF2F4] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
+            <button type="button" disabled={safePage <= 1} onClick={onPrev} title="Previous page" className="p-2 rounded-lg text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-blue-gray dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
               <ChevronLeft size={16} />
             </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
@@ -218,15 +218,15 @@ export default function ReportPreview({
                 key={p}
                 type="button"
                 onClick={() => onSelectPage(p)}
-                className={`w-8 h-8 rounded-lg text-sm font-medium cursor-pointer ${p === safePage ? 'bg-[#024fa7] text-white' : 'text-gray-500 hover:bg-[#EAF2F4]'}`}
+                className={`w-8 h-8 rounded-lg text-sm font-medium cursor-pointer ${p === safePage ? 'bg-teal text-white' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-blue-gray dark:hover:bg-white/10'}`}
               >
                 {p}
               </button>
             ))}
-            <button type="button" disabled={safePage >= totalPages} onClick={onNext} title="Next page" className="p-2 rounded-lg text-gray-500 hover:bg-[#EAF2F4] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
+            <button type="button" disabled={safePage >= totalPages} onClick={onNext} title="Next page" className="p-2 rounded-lg text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-blue-gray dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
               <ChevronRight size={16} />
             </button>
-            <button type="button" disabled={safePage >= totalPages} onClick={onLast} title="Last page" className="p-2 rounded-lg text-gray-500 hover:bg-[#EAF2F4] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
+            <button type="button" disabled={safePage >= totalPages} onClick={onLast} title="Last page" className="p-2 rounded-lg text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-blue-gray dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
               <ChevronsRight size={16} />
             </button>
           </div>

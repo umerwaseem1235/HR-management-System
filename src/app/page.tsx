@@ -21,8 +21,8 @@ export default function Home() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-blue-gray">
       <div className="animate-pulse">
-        <div className="text-2xl font-bold text-primary">CodQor HRMS</div>
-        <div className="text-sm text-dark-text mt-2">Loading...</div>
+        <div className="text-2xl font-bold text-primary dark:text-blue-gray-light">CodQor HRMS</div>
+        <div className="text-sm text-dark-text dark:text-gray-100 mt-2">Loading...</div>
       </div>
     </div>
   );

@@ -36,32 +36,32 @@ export default function ProgressList({
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
-              <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">#</th>
+            <tr className="bg-blue-gray border-b border-medium-gray">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">#</th>
               {!isEmployee && (
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Employee Name</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Employee Name</th>
               )}
-              <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Project Name</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Submission Date</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Project Name</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Submission Date</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#D6E4E8]">
+          <tbody className="divide-y divide-medium-gray">
             {pageRows.map((entry, idx) => (
-              <tr key={entry.id} className="hover:bg-[#EAF2F4]/50">
-                <td className="px-6 py-4 text-sm text-gray-500">{(safePage - 1) * pageSize + idx + 1}</td>
+              <tr key={entry.id} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
+                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{(safePage - 1) * pageSize + idx + 1}</td>
                 {!isEmployee && (
-                  <td className="px-6 py-4 text-sm font-medium text-[#263238]">{entry.employeeName || '—'}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-dark-text dark:text-gray-100">{entry.employeeName || '—'}</td>
                 )}
-                <td className="px-6 py-4 text-sm font-medium text-[#263238]">{entry.projectName}</td>
-                <td className="px-6 py-4 text-sm text-gray-500">{formatSubmission(entry.submissionDate)}</td>
+                <td className="px-6 py-4 text-sm font-medium text-dark-text dark:text-gray-100">{entry.projectName}</td>
+                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{formatSubmission(entry.submissionDate)}</td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       title="View"
                       onClick={() => onView(entry)}
-                      className="p-1.5 rounded-lg bg-[#EAF2F4] text-[#0F8B8D] hover:bg-[#D6E4E8] cursor-pointer"
+                      className="p-1.5 rounded-lg bg-blue-gray text-[#0F8B8D] hover:bg-medium-gray cursor-pointer"
                     >
                       <Eye size={16} />
                     </button>
@@ -71,7 +71,7 @@ export default function ProgressList({
                           type="button"
                           title="Edit"
                           onClick={() => onEdit(entry)}
-                          className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer"
+                          className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:bg-blue-950/40 cursor-pointer"
                         >
                           <Pencil size={16} />
                         </button>
@@ -79,7 +79,7 @@ export default function ProgressList({
                           type="button"
                           title="Delete"
                           onClick={() => onDelete(entry)}
-                          className="p-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 cursor-pointer"
+                          className="p-1.5 rounded-lg bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-red-50 dark:hover:bg-red-950/30 dark:bg-red-950/30 hover:text-red-600 dark:text-red-400 cursor-pointer"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -101,27 +101,27 @@ export default function ProgressList({
         )}
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-[#D6E4E8] bg-white px-6 py-3 sm:flex-row sm:items-center sm:justify-end">
-        <div className="flex items-center gap-2 text-sm text-gray-500">
+      <div className="flex flex-col gap-3 border-t border-medium-gray bg-white dark:bg-[#1b263b] px-6 py-3 sm:flex-row sm:items-center sm:justify-end">
+        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
           <span>Records per page:</span>
           <select
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="rounded-lg border border-[#D6E4E8] bg-white px-2 py-1.5 text-sm text-[#263238] outline-none focus:border-[#024fa7] focus:ring-2 focus:ring-[#024fa7]/20"
+            className="rounded-lg border border-medium-gray bg-white dark:bg-[#1b263b] px-2 py-1.5 text-sm text-dark-text dark:text-gray-100 outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
           >
             {PAGE_SIZES.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
         </div>
-        <p className="text-sm text-gray-500">{start} - {end} of {filteredCount}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{start} - {end} of {filteredCount}</p>
         <div className="flex items-center gap-1">
           <button
             type="button"
             disabled={safePage <= 1}
             onClick={() => onPageChange(1)}
             title="First page"
-            className="p-2 rounded-lg text-gray-500 hover:bg-[#EAF2F4] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="p-2 rounded-lg text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-blue-gray dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
             <ChevronsLeft size={16} />
           </button>
@@ -130,11 +130,11 @@ export default function ProgressList({
             disabled={safePage <= 1}
             onClick={() => onPageChange(Math.max(1, safePage - 1))}
             title="Previous page"
-            className="p-2 rounded-lg text-gray-500 hover:bg-[#EAF2F4] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="p-2 rounded-lg text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-blue-gray dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
             <ChevronLeft size={16} />
           </button>
-          <span className="w-8 h-8 rounded-lg text-sm font-medium bg-[#024fa7] text-white flex items-center justify-center">
+          <span className="w-8 h-8 rounded-lg text-sm font-medium bg-teal text-white flex items-center justify-center">
             {safePage}
           </span>
           <button
@@ -142,7 +142,7 @@ export default function ProgressList({
             disabled={safePage >= totalPages}
             onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
             title="Next page"
-            className="p-2 rounded-lg text-gray-500 hover:bg-[#EAF2F4] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="p-2 rounded-lg text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-blue-gray dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
             <ChevronRight size={16} />
           </button>
@@ -151,7 +151,7 @@ export default function ProgressList({
             disabled={safePage >= totalPages}
             onClick={() => onPageChange(totalPages)}
             title="Last page"
-            className="p-2 rounded-lg text-gray-500 hover:bg-[#EAF2F4] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="p-2 rounded-lg text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-blue-gray dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
             <ChevronsRight size={16} />
           </button>

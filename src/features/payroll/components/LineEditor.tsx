@@ -35,27 +35,27 @@ export default function LineEditor({ line, onSave, onCancel }: {
     setList: (v: { name: string; amount: number }[]) => void,
   ) => (
     <div>
-      <p className="text-sm font-semibold text-[#17324D] mb-2">{title}</p>
+      <p className="text-sm font-semibold text-primary dark:text-blue-gray-light mb-2">{title}</p>
       <div className="space-y-2">
         {list.map((row, i) => (
           <div key={i} className="flex gap-2">
             <input
               value={row.name}
               onChange={e => editRow(list, setList, i, 'name', e.target.value)}
-              className="flex-1 rounded-lg border border-[#D6E4E8] px-3 py-2 text-sm focus:border-[#0F8B8D] focus:outline-none"
+              className="flex-1 rounded-lg border border-medium-gray px-3 py-2 text-sm focus:border-[#0F8B8D] focus:outline-none"
               placeholder="Name"
             />
             <NumberField
               value={row.amount}
               step="10"
               onCommit={v => editRow(list, setList, i, 'amount', String(v))}
-              className="w-28 rounded-lg border border-[#D6E4E8] px-3 py-2 text-sm focus:border-[#0F8B8D] focus:outline-none"
+              className="w-28 rounded-lg border border-medium-gray px-3 py-2 text-sm focus:border-[#0F8B8D] focus:outline-none"
               placeholder="0"
             />
             <button
               onClick={() => setList(list.filter((_, j) => j !== i))}
               title="Remove"
-              className="p-2 rounded-lg text-red-500 hover:bg-red-50"
+              className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 dark:bg-red-950/30"
             >
               <Trash2 size={15} />
             </button>
@@ -73,13 +73,13 @@ export default function LineEditor({ line, onSave, onCancel }: {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-xl bg-[#EAF2F4]/60 p-3 text-xs text-gray-600">
+      <div className="rounded-xl bg-blue-gray/60 p-3 text-xs text-gray-600 dark:text-gray-300">
         Basic {money(line.basicSalary)} · Paid leave {line.paidLeaveDays}d ·
         Unpaid {(line.unpaidLeaveDays + line.absentDays)}d (−{money(line.leaveDeduction)}, auto from attendance & leave — not editable here)
       </div>
       {renderRows('Allowances', allowances, setAllowances)}
       {renderRows('Deductions', deductions, setDeductions)}
-      <div className="flex items-center justify-between rounded-xl bg-[#17324D] px-4 py-3 text-sm font-bold text-white">
+      <div className="flex items-center justify-between rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white">
         <span>Gross {money(preview.grossSalary)}</span>
         <span>Net {money(preview.netSalary)}</span>
       </div>

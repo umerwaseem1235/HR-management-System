@@ -44,41 +44,41 @@ export default function CorrectionQueue({
       <Card>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <FileWarning size={18} className="text-yellow-600" />
-            <h3 className="text-base font-semibold text-[#17324D]">Correction Requests</h3>
+            <FileWarning size={18} className="text-yellow-600 dark:text-yellow-400" />
+            <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light">Correction Requests</h3>
           </div>
           <Badge variant="warning">{pendingCorrections.length} Pending</Badge>
         </div>
         <div className="space-y-3">
           {pendingCorrections.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center py-10">No pending correction requests</p>
+            <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm text-center py-10">No pending correction requests</p>
           ) : (
             pendingCorrections.map((req) => (
-              <div key={req.id} className="rounded-lg border border-[#D6E4E8] bg-[#F8FBFC] p-4">
+              <div key={req.id} className="rounded-lg border border-medium-gray bg-blue-gray-light p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <Avatar name={req.employeeName} size="sm" />
                     <div>
-                      <p className="text-sm font-medium text-[#263238]">{req.employeeName}</p>
-                      <p className="text-xs text-gray-500">{req.date}</p>
+                      <p className="text-sm font-medium text-dark-text dark:text-gray-100">{req.employeeName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{req.date}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 text-sm">
                     <StatusBadge status={req.currentStatus} />
-                    <span className="text-gray-400">→</span>
+                    <span className="text-gray-400 dark:text-gray-500">→</span>
                     <StatusBadge status={req.requestedStatus} />
                   </div>
                 </div>
                 {(req.requestedCheckIn || req.requestedCheckOut) && (
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
                     Requested: {req.requestedCheckIn ? `In ${req.requestedCheckIn}` : ''}{req.requestedCheckOut ? ` · Out ${req.requestedCheckOut}` : ''}
                   </p>
                 )}
-                <p className="text-xs text-gray-500 mt-1">{req.reason}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{req.reason}</p>
                 <div className="flex items-center justify-end gap-2 mt-3">
                   <button
                     onClick={() => onReject(req)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#D6E4E8] px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-medium-gray px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 dark:bg-red-950/30 transition-colors"
                   >
                     <X size={14} /> Reject
                   </button>
@@ -98,15 +98,15 @@ export default function CorrectionQueue({
       <Card>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <History size={18} className="text-[#17324D]" />
-            <h3 className="text-base font-semibold text-[#17324D]">Correction History</h3>
+            <History size={18} className="text-primary dark:text-blue-gray-light" />
+            <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light">Correction History</h3>
           </div>
-          <div className="flex items-center gap-1 rounded-lg bg-[#EAF2F4] p-1">
+          <div className="flex items-center gap-1 rounded-lg bg-blue-gray p-1">
             <button
               type="button"
               onClick={() => setHistoryTab('manual')}
               className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                historyTab === 'manual' ? 'bg-white text-[#17324D] shadow-sm' : 'text-gray-500 hover:text-[#17324D]'
+                historyTab === 'manual' ? 'bg-white dark:bg-[#1b263b] text-primary dark:text-blue-gray-light shadow-sm' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-primary dark:text-blue-gray-light'
               }`}
             >
               Manual ({correctionHistory.length})
@@ -115,7 +115,7 @@ export default function CorrectionQueue({
               type="button"
               onClick={() => setHistoryTab('requests')}
               className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                historyTab === 'requests' ? 'bg-white text-[#17324D] shadow-sm' : 'text-gray-500 hover:text-[#17324D]'
+                historyTab === 'requests' ? 'bg-white dark:bg-[#1b263b] text-primary dark:text-blue-gray-light shadow-sm' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-primary dark:text-blue-gray-light'
               }`}
             >
               Requests ({decidedRequests.length})
@@ -135,36 +135,36 @@ export default function CorrectionQueue({
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Corrected By</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Employee</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Change</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">When</th>
+                  <tr className="bg-blue-gray border-b border-medium-gray">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Corrected By</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Employee</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Change</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">When</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#D6E4E8]">
+                <tbody className="divide-y divide-medium-gray">
                   {correctionHistory.map((entry) => (
-                    <tr key={entry.id} className="hover:bg-[#EAF2F4]/50">
+                    <tr key={entry.id} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <Avatar name={entry.correctedBy} size="sm" />
-                          <span className="text-sm font-medium text-[#263238]">{entry.correctedBy}</span>
+                          <span className="text-sm font-medium text-dark-text dark:text-gray-100">{entry.correctedBy}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-sm font-medium text-[#263238]">{entry.employeeName}</p>
-                        <p className="text-xs text-gray-500">{entry.date}</p>
+                        <p className="text-sm font-medium text-dark-text dark:text-gray-100">{entry.employeeName}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{entry.date}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-xs text-gray-500 line-through">{entry.previousValue}</p>
-                        <p className="text-xs font-medium text-[#263238]">{entry.newValue}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 line-through">{entry.previousValue}</p>
+                        <p className="text-xs font-medium text-dark-text dark:text-gray-100">{entry.newValue}</p>
                         <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                          entry.action === 'Manual Correction' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                          entry.action === 'Manual Correction' ? 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400' : 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400'
                         }`}>
                           {entry.action}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{formatTimestamp(entry.timestamp)}</td>
+                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 whitespace-nowrap">{formatTimestamp(entry.timestamp)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -182,19 +182,19 @@ export default function CorrectionQueue({
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Employee</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Change</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Status</th>
+                <tr className="bg-blue-gray border-b border-medium-gray">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Employee</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Change</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#D6E4E8]">
+              <tbody className="divide-y divide-medium-gray">
                 {decidedRequests.map((req) => (
-                  <tr key={req.id} className="hover:bg-[#EAF2F4]/50">
-                    <td className="px-4 py-3 text-sm font-medium text-[#263238]">{req.employeeName}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{req.date}</td>
-                    <td className="px-4 py-3 text-sm text-[#263238]">{req.currentStatus} → {req.requestedStatus}</td>
+                  <tr key={req.id} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
+                    <td className="px-4 py-3 text-sm font-medium text-dark-text dark:text-gray-100">{req.employeeName}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{req.date}</td>
+                    <td className="px-4 py-3 text-sm text-dark-text dark:text-gray-100">{req.currentStatus} → {req.requestedStatus}</td>
                     <td className="px-4 py-3">
                       <StatusBadge status={req.status} />
                     </td>

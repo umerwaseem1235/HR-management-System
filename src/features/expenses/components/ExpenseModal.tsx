@@ -48,43 +48,43 @@ export default function ExpenseModal({
           <Input label="Date" type="date" value={date} onChange={(e) => onDateChange(e.target.value)} error={errors.date} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-[#263238] mb-1.5">Description</label>
+          <label className="block text-sm font-medium text-dark-text dark:text-gray-100 mb-1.5">Description</label>
           <textarea
             rows={3}
             value={description}
             onChange={(e) => onDescriptionChange(e.target.value)}
             placeholder="What was this expense for?"
-            className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-[#263238] placeholder-gray-400 focus:ring-2 focus:outline-none ${errors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-[#D6E4E8] focus:border-[#024fa7] focus:ring-[#024fa7]/20'}`}
+            className={`w-full rounded-lg border bg-white dark:bg-[#1b263b] px-4 py-2.5 text-sm text-dark-text dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:outline-none ${errors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-medium-gray focus:border-teal focus:ring-teal/20'}`}
           />
           {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-[#263238] mb-1.5">Payslip / Receipt (optional)</label>
+          <label className="block text-sm font-medium text-dark-text dark:text-gray-100 mb-1.5">Payslip / Receipt (optional)</label>
           <input
             key={fileKey}
             type="file"
             accept="image/*,.pdf"
             onChange={onFileChange}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#EAF2F4] file:text-[#17324D] hover:file:bg-[#D6E4E8]"
+            className="block w-full text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-gray file:text-primary dark:text-blue-gray-light hover:file:bg-medium-gray"
           />
           {errors.receipt && <p className="mt-1 text-sm text-red-500">{errors.receipt}</p>}
           {receiptName && (
-            <div className="mt-2 flex items-center gap-2 text-sm text-[#263238] bg-[#EAF2F4]/60 border border-[#D6E4E8] rounded-lg px-3 py-2">
-              <Paperclip size={14} className="text-[#024fa7] flex-shrink-0" />
+            <div className="mt-2 flex items-center gap-2 text-sm text-dark-text dark:text-gray-100 bg-blue-gray/60 border border-medium-gray rounded-lg px-3 py-2">
+              <Paperclip size={14} className="text-teal flex-shrink-0" />
               <span className="truncate flex-1">{receiptName}</span>
               <button
                 type="button"
                 title="Remove file"
                 onClick={onRemoveFile}
-                className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50"
+                className="p-1 rounded text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 dark:bg-red-950/30"
               >
                 <X size={14} />
               </button>
             </div>
           )}
         </div>
-        <p className="text-xs text-gray-500">Your claim will be submitted with <span className="font-medium">Pending</span> status until it is approved or rejected.</p>
-        <div className="flex justify-end gap-3 pt-4 border-t border-[#D6E4E8]">
+        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Your claim will be submitted with <span className="font-medium">Pending</span> status until it is approved or rejected.</p>
+        <div className="flex justify-end gap-3 pt-4 border-t border-medium-gray">
           <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
           <Button variant="primary" type="submit" disabled={submitting}>
             <Send size={16} /> {submitting ? (editingId ? 'Saving...' : 'Submitting...') : (editingId ? 'Save Changes' : 'Submit Claim')}

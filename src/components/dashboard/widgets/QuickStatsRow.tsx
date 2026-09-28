@@ -9,12 +9,12 @@ export default function QuickStatsRow({ items }: { items: QuickStatItem[] }) {
       {items.map((item) => (
         <Card key={item.label} padding="none" hover className="min-w-0 overflow-hidden p-3 xl:p-4">
           <div className="flex items-center gap-2 xl:gap-3">
-            <div className="shrink-0 bg-blue-50 p-2 rounded-lg">
-              <item.icon size={18} className="text-[#024fa7]" />
+            <div className="shrink-0 bg-blue-50 dark:bg-blue-950/30 p-2 rounded-lg">
+              <item.icon size={18} className="text-teal" />
             </div>
             <div className="min-w-0">
-              <p className="text-base xl:text-lg font-bold leading-tight text-[#17324D]">{item.value}</p>
-              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500">{item.label}</p>
+              <p className="text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{item.value}</p>
+              <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{item.label}</p>
             </div>
           </div>
         </Card>

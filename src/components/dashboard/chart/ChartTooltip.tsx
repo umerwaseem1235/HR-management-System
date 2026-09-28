@@ -14,7 +14,7 @@ export default function ChartTooltip({ model, data }: ChartTooltipProps) {
 
   return (
     <div
-      className="pointer-events-none absolute z-10 rounded-lg bg-[#17324D] px-3 py-1.5 shadow-lg"
+      className="pointer-events-none absolute z-10 rounded-lg bg-primary px-3 py-1.5 shadow-lg"
       style={{
         left: `${(hp.x / W) * 100}%`,
         top: `${(hp.y / H) * 100}%`,

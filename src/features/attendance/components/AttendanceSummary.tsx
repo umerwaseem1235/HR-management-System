@@ -12,7 +12,7 @@ import { formatWorkHours } from '@/utils/date';
 import { aggregate, type AttendanceAggregate } from '../utils';
 import type { SummaryMode } from '../hooks/useAttendance';
 
-const ICON_CLASS = 'text-[#024fa7]';
+const ICON_CLASS = 'text-teal';
 const ICON_BG = 'bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]';
 
 export default function AttendanceSummary({
@@ -80,25 +80,25 @@ export default function AttendanceSummary({
 
       <Card>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-          <h3 className="text-base font-semibold text-[#17324D]">{summaryLabel}</h3>
+          <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light">{summaryLabel}</h3>
           <div className="flex gap-2">
             <Badge variant="default">{formatWorkHours(agg.totalHours)} Work Hours</Badge>
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
           {[
-            { label: 'Present', pct: agg.present ? Math.round((agg.present / Math.max(1, summaryCounts.length)) * 100) : 0, color: 'bg-green-500' },
-            { label: 'Absent', pct: agg.absent ? Math.round((agg.absent / Math.max(1, summaryCounts.length)) * 100) : 0, color: 'bg-red-500' },
+            { label: 'Present', pct: agg.present ? Math.round((agg.present / Math.max(1, summaryCounts.length)) * 100) : 0, color: 'bg-green-50 dark:bg-green-950/300' },
+            { label: 'Absent', pct: agg.absent ? Math.round((agg.absent / Math.max(1, summaryCounts.length)) * 100) : 0, color: 'bg-red-50 dark:bg-red-950/300' },
             { label: 'Late', pct: agg.late ? Math.round((agg.late / Math.max(1, summaryCounts.length)) * 100) : 0, color: 'bg-orange-500' },
             { label: 'Half Day', pct: agg.halfDay ? Math.round((agg.halfDay / Math.max(1, summaryCounts.length)) * 100) : 0, color: 'bg-yellow-500' },
-            { label: 'Leave', pct: agg.leave ? Math.round((agg.leave / Math.max(1, summaryCounts.length)) * 100) : 0, color: 'bg-blue-500' },
+            { label: 'Leave', pct: agg.leave ? Math.round((agg.leave / Math.max(1, summaryCounts.length)) * 100) : 0, color: 'bg-blue-50 dark:bg-blue-950/300' },
           ].map((item) => (
-            <div key={item.label} className="rounded-lg border border-[#D6E4E8] bg-[#F8FBFC] p-4">
+            <div key={item.label} className="rounded-lg border border-medium-gray bg-blue-gray-light p-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-[#263238]">{item.label}</p>
-                <p className="text-lg font-bold text-[#17324D]">{item.pct}%</p>
+                <p className="text-sm font-medium text-dark-text dark:text-gray-100">{item.label}</p>
+                <p className="text-lg font-bold text-primary dark:text-blue-gray-light">{item.pct}%</p>
               </div>
-              <div className="mt-3 h-2 w-full bg-[#EAF2F4] rounded-full overflow-hidden">
+              <div className="mt-3 h-2 w-full bg-blue-gray rounded-full overflow-hidden">
                 <div className={`h-full ${item.color} rounded-full`} style={{ width: `${item.pct}%` }} />
               </div>
             </div>
@@ -107,29 +107,29 @@ export default function AttendanceSummary({
         <div className="mt-6 overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-[#EAF2F4] border-b border-[#D6E4E8]">
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Employees Logged</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Present</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Absent</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Late</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Half Day</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#17324D] uppercase">Total Hours</th>
+              <tr className="bg-blue-gray border-b border-medium-gray">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Employees Logged</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Present</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Absent</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Late</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Half Day</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Total Hours</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#D6E4E8]">
+            <tbody className="divide-y divide-medium-gray">
               {Array.from(new Set(summaryCounts.map((r) => r.date))).sort().reverse().map((date) => {
                 const dayRecs = summaryCounts.filter((r) => r.date === date);
                 const dAgg = aggregate(dayRecs);
                 return (
-                  <tr key={date} className="hover:bg-[#EAF2F4]/50">
-                    <td className="px-6 py-3 text-sm text-gray-600">{date}</td>
-                    <td className="px-6 py-3 text-sm text-[#263238]">{dayRecs.length}</td>
-                    <td className="px-6 py-3 text-sm text-green-600">{dAgg.present}</td>
-                    <td className="px-6 py-3 text-sm text-red-600">{dAgg.absent}</td>
+                  <tr key={date} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
+                    <td className="px-6 py-3 text-sm text-gray-600 dark:text-gray-300">{date}</td>
+                    <td className="px-6 py-3 text-sm text-dark-text dark:text-gray-100">{dayRecs.length}</td>
+                    <td className="px-6 py-3 text-sm text-green-600 dark:text-green-400">{dAgg.present}</td>
+                    <td className="px-6 py-3 text-sm text-red-600 dark:text-red-400">{dAgg.absent}</td>
                     <td className="px-6 py-3 text-sm text-orange-600">{dAgg.late}</td>
-                    <td className="px-6 py-3 text-sm text-yellow-600">{dAgg.halfDay}</td>
-                    <td className="px-6 py-3 text-sm text-[#263238]">{formatWorkHours(dAgg.totalHours)}</td>
+                    <td className="px-6 py-3 text-sm text-yellow-600 dark:text-yellow-400">{dAgg.halfDay}</td>
+                    <td className="px-6 py-3 text-sm text-dark-text dark:text-gray-100">{formatWorkHours(dAgg.totalHours)}</td>
                   </tr>
                 );
               })}

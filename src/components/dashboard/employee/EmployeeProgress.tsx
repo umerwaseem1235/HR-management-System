@@ -23,28 +23,28 @@ export default function EmployeeProgress({ entries, monthLabel }: EmployeeProgre
   return (
     <Card className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-[#17324D]">My Progress</h3>
+        <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light">My Progress</h3>
         <Badge variant="info" size="sm">{monthLabel}</Badge>
       </div>
       <div className="space-y-3 flex-1 content-start">
         {visible.map((entry) => (
-          <div key={entry.id} className="flex items-start gap-3 p-3 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8]">
+          <div key={entry.id} className="flex items-start gap-3 p-3 rounded-lg bg-blue-gray/50 border border-medium-gray">
             <div className="w-9 h-9 rounded-lg bg-[#E3EFFE] flex items-center justify-center shrink-0">
-              <ClipboardList size={16} className="text-[#024fa7]" />
+              <ClipboardList size={16} className="text-teal" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium text-[#263238] truncate">{entry.projectName}</p>
-                <span className="shrink-0 inline-flex items-center gap-1 text-xs text-gray-500">
+                <p className="text-sm font-medium text-dark-text dark:text-gray-100 truncate">{entry.projectName}</p>
+                <span className="shrink-0 inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   <CalendarDays size={12} /> {fmtDay(entry.submissionDate)}
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{entry.description}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5 line-clamp-2">{entry.description}</p>
             </div>
           </div>
         ))}
         {visible.length === 0 && (
-          <p className="text-sm text-gray-500 py-6 text-center">No progress posted in {monthLabel}.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 py-6 text-center">No progress posted in {monthLabel}.</p>
         )}
       </div>
       <div className="mt-auto pt-4 flex justify-end">

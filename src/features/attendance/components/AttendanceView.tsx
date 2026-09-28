@@ -1,4 +1,5 @@
 'use client';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { CalendarDays, CheckCircle2, Trash2, UserPlus, XCircle, LogIn, LogOut } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
@@ -23,6 +24,7 @@ import LateArrivalRules from './LateArrivalRules';
 import ManualEntryModal from './ManualEntryModal';
 
 export default function AttendanceView() {
+  const { t } = useLanguage();
   const att = useAttendance();
 
   if (!att.user) return null;
@@ -52,27 +54,27 @@ export default function AttendanceView() {
         />
 
         {att.error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div className="rounded-xl border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/30 p-4 text-sm text-red-700 dark:text-red-400">
             {att.error}
           </div>
         )}
 
         {/* Inline Check In / Check Out — compact, professional */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-xl border border-[#D6E4E8] bg-white">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-xl border border-medium-gray bg-white dark:bg-[#1b263b]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#EAF2F4] flex items-center justify-center">
-              <span className="text-xl font-medium text-[#024fa7]">{todayRecord?.employeeName?.charAt(0) || att.user?.name?.charAt(0) || 'E'}</span>
+            <div className="w-10 h-10 rounded-full bg-blue-gray flex items-center justify-center">
+              <span className="text-xl font-medium text-teal">{todayRecord?.employeeName?.charAt(0) || att.user?.name?.charAt(0) || 'E'}</span>
             </div>
             <div>
-              <p className="text-sm font-semibold text-[#17324D]">Today&apos;s Attendance</p>
-              <p className="text-xs text-gray-500">{todayStr()}</p>
+              <p className="text-sm font-semibold text-primary dark:text-blue-gray-light">Today&apos;s Attendance</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{todayStr()}</p>
             </div>
           </div>
 
           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-            hasCheckedOut ? 'bg-green-100 text-green-700' :
+            hasCheckedOut ? 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' :
             hasCheckedIn ? 'bg-amber-100 text-amber-700' :
-            'bg-gray-100 text-gray-600'
+            'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300'
           }`}>
             {hasCheckedOut ? 'Checked Out' : hasCheckedIn ? 'Checked In' : 'Not Checked In'}
           </span>
@@ -99,12 +101,12 @@ export default function AttendanceView() {
           </div>
 
           {hasCheckedIn && todayRecord && (
-            <div className="sm:hidden w-full pt-2 border-t border-[#D6E4E8] flex flex-wrap items-center gap-2 text-xs text-gray-600">
-              <span>In: <span className="font-medium text-[#17324D]">{todayRecord.checkIn}</span></span>
+            <div className="sm:hidden w-full pt-2 border-t border-medium-gray flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+              <span>In: <span className="font-medium text-primary dark:text-blue-gray-light">{todayRecord.checkIn}</span></span>
               {hasCheckedOut && (
                 <>
-                  <span>Out: <span className="font-medium text-[#17324D]">{todayRecord.checkOut}</span></span>
-                  <span>Hours: <span className="font-medium text-[#17324D]">{formatWorkHours(todayRecord.workHours)}</span></span>
+                  <span>Out: <span className="font-medium text-primary dark:text-blue-gray-light">{todayRecord.checkOut}</span></span>
+                  <span>Hours: <span className="font-medium text-primary dark:text-blue-gray-light">{formatWorkHours(todayRecord.workHours)}</span></span>
                 </>
               )}
             </div>
@@ -112,14 +114,14 @@ export default function AttendanceView() {
         </div>
 
         {hasCheckedIn && todayRecord && (
-          <div className="hidden sm:flex sm:items-center sm:justify-between px-4 py-2 text-xs text-gray-600 bg-[#F8FBFC] rounded-xl border border-[#D6E4E8]">
-            <span>Checked in at <span className="font-medium text-[#17324D]">{todayRecord.checkIn}</span></span>
+          <div className="hidden sm:flex sm:items-center sm:justify-between px-4 py-2 text-xs text-gray-600 dark:text-gray-300 bg-blue-gray-light rounded-xl border border-medium-gray">
+            <span>Checked in at <span className="font-medium text-primary dark:text-blue-gray-light">{todayRecord.checkIn}</span></span>
             {hasCheckedOut && (
               <>
                 <span className="mx-2">·</span>
-                <span>Checked out at <span className="font-medium text-[#17324D]">{todayRecord.checkOut}</span></span>
+                <span>Checked out at <span className="font-medium text-primary dark:text-blue-gray-light">{todayRecord.checkOut}</span></span>
                 <span className="mx-2">·</span>
-                <span>Work hours: <span className="font-medium text-[#17324D]">{formatWorkHours(todayRecord.workHours)}</span></span>
+                <span>Work hours: <span className="font-medium text-primary dark:text-blue-gray-light">{formatWorkHours(todayRecord.workHours)}</span></span>
               </>
             )}
           </div>
@@ -161,7 +163,7 @@ export default function AttendanceView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Attendance"
+        title={t('nav.attendance')}
         actions={
           <>
             <Badge variant="success">{att.stats.presentToday} Present</Badge>
@@ -174,7 +176,7 @@ export default function AttendanceView() {
       />
 
       {att.error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="rounded-xl border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/30 p-4 text-sm text-red-700 dark:text-red-400">
           {att.error}
         </div>
       )}
@@ -294,14 +296,14 @@ export default function AttendanceView() {
         variant="approve"
         headline={
           <>
-            Approve correction for <span className="font-semibold text-[#17324D]">{att.confirmApproveCorrection?.employeeName}</span> on{' '}
-            <span className="font-semibold text-[#17324D]">{att.confirmApproveCorrection?.date}</span>?
+            Approve correction for <span className="font-semibold text-primary dark:text-blue-gray-light">{att.confirmApproveCorrection?.employeeName}</span> on{' '}
+            <span className="font-semibold text-primary dark:text-blue-gray-light">{att.confirmApproveCorrection?.date}</span>?
           </>
         }
         subline={att.confirmApproveCorrection ? `${att.confirmApproveCorrection.currentStatus} → ${att.confirmApproveCorrection.requestedStatus} · ${att.confirmApproveCorrection.reason}` : undefined}
         note={
           <>
-            This will mark the request as <span className="font-semibold text-green-700">Approved</span> and update the attendance record.
+            This will mark the request as <span className="font-semibold text-green-700 dark:text-green-400">Approved</span> and update the attendance record.
           </>
         }
         confirmLabel="Confirm Approve"
@@ -316,14 +318,14 @@ export default function AttendanceView() {
         variant="reject"
         headline={
           <>
-            Reject correction for <span className="font-semibold text-[#17324D]">{att.confirmRejectCorrection?.employeeName}</span> on{' '}
-            <span className="font-semibold text-[#17324D]">{att.confirmRejectCorrection?.date}</span>?
+            Reject correction for <span className="font-semibold text-primary dark:text-blue-gray-light">{att.confirmRejectCorrection?.employeeName}</span> on{' '}
+            <span className="font-semibold text-primary dark:text-blue-gray-light">{att.confirmRejectCorrection?.date}</span>?
           </>
         }
         subline={att.confirmRejectCorrection ? `${att.confirmRejectCorrection.currentStatus} → ${att.confirmRejectCorrection.requestedStatus} · ${att.confirmRejectCorrection.reason}` : undefined}
         note={
           <>
-            This will mark the request as <span className="font-semibold text-red-600">Rejected</span>. The employee will be able to see this status.
+            This will mark the request as <span className="font-semibold text-red-600 dark:text-red-400">Rejected</span>. The employee will be able to see this status.
           </>
         }
         confirmLabel="Confirm Reject"
@@ -338,7 +340,7 @@ export default function AttendanceView() {
         variant="delete"
         headline={
           <>
-            Delete <span className="font-semibold text-[#17324D]">{att.confirmDeleteHoliday?.name}</span>?
+            Delete <span className="font-semibold text-primary dark:text-blue-gray-light">{att.confirmDeleteHoliday?.name}</span>?
           </>
         }
         subline={att.confirmDeleteHoliday ? `${att.confirmDeleteHoliday.date} · ${att.confirmDeleteHoliday.type} holiday` : undefined}
@@ -354,3 +356,6 @@ export default function AttendanceView() {
     </div>
   );
 }
+
+
+

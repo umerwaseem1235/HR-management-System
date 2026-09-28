@@ -62,11 +62,11 @@ export default function EditAttendanceModal({
   return (
     <Modal isOpen onClose={onClose} title="Edit Attendance Record" size="lg">
       <form onSubmit={submit} className="space-y-5">
-        <div className="flex items-center gap-3 rounded-xl border border-[#D6E4E8] bg-[#F8FBFC] px-4 py-3">
+        <div className="flex items-center gap-3 rounded-xl border border-medium-gray bg-blue-gray-light px-4 py-3">
           <Avatar name={record.employeeName} size="sm" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-[#17324D]">{record.employeeName}</p>
-            <p className="text-xs text-gray-500">{record.date} · currently {record.status} · {formatWorkHours(record.workHours)}</p>
+            <p className="text-sm font-semibold text-primary dark:text-blue-gray-light">{record.employeeName}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{record.date} · currently {record.status} · {formatWorkHours(record.workHours)}</p>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -77,9 +77,9 @@ export default function EditAttendanceModal({
             options={ADMIN_STATUS_OPTIONS}
             required
           />
-          <div className="rounded-lg border border-[#D6E4E8] bg-[#EAF2F4]/60 px-4 py-2.5 self-end">
-            <p className="text-[11px] uppercase tracking-wide text-gray-500">Work Hours</p>
-            <p className="text-sm font-bold text-[#17324D]">{previewHours}h <span className="font-normal text-gray-400">(auto)</span></p>
+          <div className="rounded-lg border border-medium-gray bg-blue-gray/60 px-4 py-2.5 self-end">
+            <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 dark:text-gray-500">Work Hours</p>
+            <p className="text-sm font-bold text-primary dark:text-blue-gray-light">{previewHours}h <span className="font-normal text-gray-400 dark:text-gray-500">(auto)</span></p>
           </div>
           <Input label="Check In" type="time" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
           <Input label="Check Out" type="time" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
@@ -93,7 +93,7 @@ export default function EditAttendanceModal({
             <Input label="Notes" placeholder="Reason for correction (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
         </div>
-        <div className="flex justify-between items-center pt-2 border-t border-[#D6E4E8]">
+        <div className="flex justify-between items-center pt-2 border-t border-medium-gray">
           {onDelete ? (
             <Button
               type="button"

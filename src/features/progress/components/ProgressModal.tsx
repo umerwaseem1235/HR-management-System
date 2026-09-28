@@ -72,13 +72,13 @@ function RichNoteEditor({
   };
 
   const toolBtn =
-    'flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-[#EAF2F4] hover:text-[#024fa7] cursor-pointer';
-  const divider = <span className="mx-0.5 h-5 w-px bg-[#D6E4E8]" />;
+    'flex h-8 w-8 items-center justify-center rounded-md text-gray-500 dark:text-gray-400 dark:text-gray-500 transition-colors hover:bg-blue-gray dark:hover:bg-white/10 hover:text-teal cursor-pointer';
+  const divider = <span className="mx-0.5 h-5 w-px bg-medium-gray" />;
 
   return (
     <div>
-      <div className={`overflow-hidden rounded-lg border bg-white transition-colors ${error ? 'border-red-500' : 'border-[#D6E4E8] focus-within:border-[#024fa7] focus-within:ring-2 focus-within:ring-[#024fa7]/20'}`}>
-        <div className="flex flex-wrap items-center gap-0.5 border-b border-[#D6E4E8] bg-[#F8FBFC] px-2 py-1.5">
+      <div className={`overflow-hidden rounded-lg border bg-white dark:bg-[#1b263b] transition-colors ${error ? 'border-red-500' : 'border-medium-gray focus-within:border-teal focus-within:ring-2 focus-within:ring-teal/20'}`}>
+        <div className="flex flex-wrap items-center gap-0.5 border-b border-medium-gray bg-blue-gray-light px-2 py-1.5">
           <button type="button" title="Bold" className={toolBtn} onMouseDown={(e) => e.preventDefault()} onClick={() => run('bold')}><Bold size={15} /></button>
           <button type="button" title="Italic" className={toolBtn} onMouseDown={(e) => e.preventDefault()} onClick={() => run('italic')}><Italic size={15} /></button>
           <button type="button" title="Underline" className={toolBtn} onMouseDown={(e) => e.preventDefault()} onClick={() => run('underline')}><Underline size={15} /></button>
@@ -94,7 +94,7 @@ function RichNoteEditor({
           <button type="button" title="Link" className={toolBtn} onMouseDown={(e) => e.preventDefault()} onClick={addLink}><Link2 size={15} /></button>
           <button type="button" title="Divider" className={toolBtn} onMouseDown={(e) => e.preventDefault()} onClick={() => run('insertHorizontalRule')}><Minus size={15} /></button>
         </div>
-        <div className="flex flex-wrap items-center gap-1 border-b border-[#D6E4E8] bg-white px-3 py-1.5">
+        <div className="flex flex-wrap items-center gap-1 border-b border-medium-gray bg-white dark:bg-[#1b263b] px-3 py-1.5">
           {QUICK_EMOJI.map((e) => (
             <button
               key={e}
@@ -115,10 +115,10 @@ function RichNoteEditor({
             suppressContentEditableWarning
             onInput={emit}
             onBlur={emit}
-            className="min-h-[140px] px-4 py-3 text-sm leading-relaxed text-[#263238] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-[#17324D] [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-[#17324D] [&_blockquote]:border-l-2 [&_blockquote]:border-[#D6E4E8] [&_blockquote]:pl-3 [&_blockquote]:text-gray-600 [&_pre]:rounded-md [&_pre]:bg-[#EAF2F4] [&_pre]:px-2 [&_pre]:py-1 [&_pre]:text-xs [&_a]:text-[#024fa7] [&_a]:underline"
+            className="min-h-[140px] px-4 py-3 text-sm leading-relaxed text-dark-text dark:text-gray-100 outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-primary dark:text-blue-gray-light [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-primary dark:text-blue-gray-light [&_blockquote]:border-l-2 [&_blockquote]:border-medium-gray [&_blockquote]:pl-3 [&_blockquote]:text-gray-600 dark:text-gray-300 [&_pre]:rounded-md [&_pre]:bg-blue-gray [&_pre]:px-2 [&_pre]:py-1 [&_pre]:text-xs [&_a]:text-teal [&_a]:underline"
           />
           {!stripHtml(value) && placeholder && (
-            <div className="pointer-events-none absolute left-4 top-3 select-none text-sm text-gray-400">
+            <div className="pointer-events-none absolute left-4 top-3 select-none text-sm text-gray-400 dark:text-gray-500">
               {placeholder}
             </div>
           )}
@@ -132,8 +132,8 @@ function RichNoteEditor({
 /** View-modal section card with an overlapping legend label (matches reference design). */
 function ViewSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="relative mt-3 rounded-xl border border-[#D6E4E8] bg-white px-4 pb-4 pt-5">
-      <span className="absolute -top-2.5 left-4 bg-white px-2 text-[11px] font-bold uppercase tracking-wider text-[#024fa7]">
+    <div className="relative mt-3 rounded-xl border border-medium-gray bg-white dark:bg-[#1b263b] px-4 pb-4 pt-5">
+      <span className="absolute -top-2.5 left-4 bg-white dark:bg-[#1b263b] px-2 text-[11px] font-bold uppercase tracking-wider text-teal">
         {title}
       </span>
       {children}
@@ -154,10 +154,10 @@ function ViewField({
 }) {
   return (
     <div className={wide ? 'sm:col-span-2' : ''}>
-      <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-        <span className="text-gray-400">{icon}</span> {label}
+      <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 dark:text-gray-500">
+        <span className="text-gray-400 dark:text-gray-500">{icon}</span> {label}
       </p>
-      <p className="text-sm font-medium text-[#263238]">{value}</p>
+      <p className="text-sm font-medium text-dark-text dark:text-gray-100">{value}</p>
     </div>
   );
 }
@@ -207,16 +207,16 @@ export default function ProgressModal(props: ProgressModalProps) {
       >
         <form onSubmit={onSubmit} className="space-y-5">
           {formErrors.submit && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">{formErrors.submit}</p>
+            <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/60 rounded-lg px-4 py-2.5">{formErrors.submit}</p>
           )}
           <div>
-            <label className="block text-sm font-medium text-[#263238] mb-1.5">Project</label>
+            <label className="block text-sm font-medium text-dark-text dark:text-gray-100 mb-1.5">Project</label>
             <input
               list="progress-projects"
               value={projectName}
               onChange={(e) => onProjectNameChange(e.target.value)}
               placeholder="e.g. CodQor HRMS Portal"
-              className={`w-full rounded-lg border border-[#D6E4E8] bg-white px-4 py-2.5 text-sm text-[#263238] placeholder-gray-400 focus:border-[#024fa7] focus:ring-2 focus:ring-[#024fa7]/20 focus:outline-none transition-colors ${formErrors.projectName ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+              className={`w-full rounded-lg border border-medium-gray bg-white dark:bg-[#1b263b] px-4 py-2.5 text-sm text-dark-text dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-teal focus:ring-2 focus:ring-teal/20 focus:outline-none transition-colors ${formErrors.projectName ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
             />
             <datalist id="progress-projects">
               {projectNames.map((n) => (
@@ -234,10 +234,10 @@ export default function ProgressModal(props: ProgressModalProps) {
           />
           <div>
             <div className="mb-1.5 flex items-baseline justify-between gap-2">
-              <label className="block text-sm font-medium text-[#263238]">
-                Note <span className="font-normal text-gray-400">(Rich Text)</span>
+              <label className="block text-sm font-medium text-dark-text dark:text-gray-100">
+                Note <span className="font-normal text-gray-400 dark:text-gray-500">(Rich Text)</span>
               </label>
-              <span className="shrink-0 text-xs text-gray-400">
+              <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
                 {stats.words} words <span className="mx-1 text-gray-300">•</span> {stats.chars} chars
               </span>
             </div>
@@ -249,7 +249,7 @@ export default function ProgressModal(props: ProgressModalProps) {
               error={formErrors.description}
             />
           </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-[#D6E4E8]">
+          <div className="flex justify-end gap-3 pt-4 border-t border-medium-gray">
             <Button variant="outline" type="button" onClick={onCloseForm}>Cancel</Button>
             <Button variant="primary" type="submit">
               <Send size={16} /> {editingId ? 'Update Progress' : 'Add Progress'}
@@ -287,12 +287,12 @@ export default function ProgressModal(props: ProgressModalProps) {
                 </div>
               </ViewSection>
               <ViewSection title="Work Summary & Notes">
-                <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                  <span className="text-gray-400"><StickyNote size={13} /></span> Detailed Note
+                <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                  <span className="text-gray-400 dark:text-gray-500"><StickyNote size={13} /></span> Detailed Note
                 </p>
                 <div
                   dangerouslySetInnerHTML={{ __html: viewing.description || '<p>—</p>' }}
-                  className="max-h-[40vh] space-y-2 overflow-y-auto text-sm leading-relaxed text-[#263238] [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-[#17324D] [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-[#17324D] [&_blockquote]:border-l-2 [&_blockquote]:border-[#D6E4E8] [&_blockquote]:pl-3 [&_blockquote]:text-gray-600 [&_pre]:rounded-md [&_pre]:bg-[#EAF2F4] [&_pre]:px-2 [&_pre]:py-1 [&_pre]:text-xs [&_a]:text-[#024fa7] [&_a]:underline"
+                  className="max-h-[40vh] space-y-2 overflow-y-auto text-sm leading-relaxed text-dark-text dark:text-gray-100 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-primary dark:text-blue-gray-light [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-primary dark:text-blue-gray-light [&_blockquote]:border-l-2 [&_blockquote]:border-medium-gray [&_blockquote]:pl-3 [&_blockquote]:text-gray-600 dark:text-gray-300 [&_pre]:rounded-md [&_pre]:bg-blue-gray [&_pre]:px-2 [&_pre]:py-1 [&_pre]:text-xs [&_a]:text-teal [&_a]:underline"
                 />
               </ViewSection>
               <div className="flex justify-end pt-5">
@@ -310,7 +310,7 @@ export default function ProgressModal(props: ProgressModalProps) {
         variant="delete"
         headline={
           <>
-            Delete <span className="font-semibold text-[#17324D]">{confirmDeleteEntry?.projectName}</span>?
+            Delete <span className="font-semibold text-primary dark:text-blue-gray-light">{confirmDeleteEntry?.projectName}</span>?
           </>
         }
         subline={confirmDeleteEntry ? `${confirmDeleteEntry.employeeName} · ${formatSubmission(confirmDeleteEntry.submissionDate)}` : undefined}

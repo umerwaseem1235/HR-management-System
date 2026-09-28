@@ -33,21 +33,21 @@ export default function DocumentList({ docs, onView, onDownload, onDelete, canDe
       {docs.map(doc => (
         <Card key={doc.id} hover>
           <div className="flex items-start gap-3">
-            <div className="bg-[#EAF2F4] p-3 rounded-lg"><FileText size={24} className="text-[#024fa7]" /></div>
+            <div className="bg-blue-gray p-3 rounded-lg"><FileText size={24} className="text-teal" /></div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-semibold text-[#17324D] truncate">{doc.name}</h4>
-              <p className="text-xs text-gray-500 mt-0.5">{doc.employee}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{doc.type} · Uploaded {doc.uploadedDate}</p>
+              <h4 className="text-sm font-semibold text-primary dark:text-blue-gray-light truncate">{doc.name}</h4>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{doc.employee}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{doc.type} · Uploaded {doc.uploadedDate}</p>
               <div className="flex items-center justify-between mt-3">
                 <Badge variant={doc.status === 'Active' ? 'success' : 'warning'} size="sm">
                   {doc.status === 'Expiring Soon' && <Clock size={10} className="mr-1" />}
                   {doc.status}
                 </Badge>
                 <div className="flex gap-1">
-                  <button title="View document" onClick={() => onView(doc)} className="p-1.5 rounded text-gray-400 hover:text-[#024fa7] hover:bg-[#EAF2F4] cursor-pointer"><Eye size={14} /></button>
-                  <button title="Download document" onClick={() => onDownload(doc)} className="p-1.5 rounded text-gray-400 hover:text-[#024fa7] hover:bg-[#EAF2F4] cursor-pointer"><Download size={14} /></button>
+                  <button title="View document" onClick={() => onView(doc)} className="p-1.5 rounded text-gray-400 dark:text-gray-500 hover:text-teal hover:bg-blue-gray dark:hover:bg-white/10 cursor-pointer"><Eye size={14} /></button>
+                  <button title="Download document" onClick={() => onDownload(doc)} className="p-1.5 rounded text-gray-400 dark:text-gray-500 hover:text-teal hover:bg-blue-gray dark:hover:bg-white/10 cursor-pointer"><Download size={14} /></button>
                   {canDelete && onDelete && (
-                    <button title="Delete document" onClick={() => onDelete(doc.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"><Trash2 size={14} /></button>
+                    <button title="Delete document" onClick={() => onDelete(doc.id)} className="p-1.5 rounded text-gray-400 dark:text-gray-500 hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 dark:bg-red-950/30 cursor-pointer"><Trash2 size={14} /></button>
                   )}
                 </div>
               </div>

@@ -12,26 +12,28 @@ import CandidatePipeline from './CandidatePipeline';
 import JobModal from './JobModal';
 import CandidateModal from './CandidateModal';
 import { useRecruitment } from '../hooks/useRecruitment';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function RecruitmentView() {
   const r = useRecruitment();
+  const { t } = useLanguage();
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Recruitment"
+      <PageHeader title={t('nav.recruitment')}
         actions={<div className="flex gap-2">
-          <Button variant="outline" onClick={r.openNewJob}><Briefcase size={16} /> Note Free Position</Button>
-          <Button variant="primary" onClick={() => r.setCandModal(true)}><UserPlus size={16} /> Note Candidate</Button>
+          <Button variant="outline" onClick={r.openNewJob}><Briefcase size={16} /> {t('action.add')}</Button>
+          <Button variant="primary" onClick={() => r.setCandModal(true)}><UserPlus size={16} /> {t('employees.addNew')}</Button>
         </div>} />
 
-      {r.success && <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"><CheckCircle2 size={16} /><span className="flex-1">{r.success}</span><button onClick={() => r.setSuccess('')} className="font-semibold hover:underline cursor-pointer">Dismiss</button></div>}
-      {r.jobsError && <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><CheckCircle2 size={16} /><span className="flex-1">{r.jobsError}</span><button onClick={() => r.setJobsError('')} className="font-semibold hover:underline cursor-pointer">Dismiss</button></div>}
+      {r.success && <div className="flex items-center gap-2 rounded-xl border border-green-200 dark:border-green-800/60 bg-green-50 dark:bg-green-950/30 px-4 py-3 text-sm text-green-800"><CheckCircle2 size={16} /><span className="flex-1">{r.success}</span><button onClick={() => r.setSuccess('')} className="font-semibold hover:underline cursor-pointer">{t('action.close')}</button></div>}
+      {r.jobsError && <div className="flex items-center gap-2 rounded-xl border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-800"><CheckCircle2 size={16} /><span className="flex-1">{r.jobsError}</span><button onClick={() => r.setJobsError('')} className="font-semibold hover:underline cursor-pointer">{t('action.close')}</button></div>}
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard title="Free Positions" value={r.jobs.filter(j => j.status === 'Open').reduce((s, j) => s + j.vacancies, 0)} iconName="openVacancies" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
-        <StatCard title="Candidates Noted" value={r.candidates.length} iconName="totalEmployees" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
-        <StatCard title="Reminders Left" value={r.interviews.filter(i => i.status === 'Scheduled').length} iconName="onLeaveToday" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
-        <StatCard title="Hired" value={r.analytics.hired} change={`${r.analytics.conv}% hired`} iconName="presentToday" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+        <StatCard title={t('recruitment.freePositions') || 'Free Positions'} value={r.jobs.filter(j => j.status === 'Open').reduce((s, j) => s + j.vacancies, 0)} iconName="openVacancies" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+        <StatCard title={t('recruitment.candidatesNoted') || 'Candidates Noted'} value={r.candidates.length} iconName="totalEmployees" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+        <StatCard title={t('recruitment.remindersLeft') || 'Reminders Left'} value={r.interviews.filter(i => i.status === 'Scheduled').length} iconName="onLeaveToday" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
+        <StatCard title={t('recruitment.hired') || 'Hired'} value={r.analytics.hired} change={`${r.analytics.conv}% hired`} iconName="presentToday" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
       </div>
 
       <Card padding="none">
@@ -39,7 +41,7 @@ export default function RecruitmentView() {
         <div className="p-6">
           {r.activeTab === 'jobs' && (
             r.jobsLoading ? (
-              <p className="text-sm text-gray-500">Loading free positions…</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('misc.loading')}</p>
             ) : (
               <JobList
                 jobs={r.jobs}

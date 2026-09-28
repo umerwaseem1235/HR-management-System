@@ -18,6 +18,8 @@ import { getPayslips } from '@/lib/actions/payroll';
 import { getDocuments } from '@/lib/actions/documents';
 import type { AttendanceRecord, Employee, LeaveBalance, Payslip } from '@/lib/types';
 import type { DocumentRecord } from '@/lib/actions/documents';
+import EmployeeFormModal from './EmployeeFormModal';
+import { useEmployeesSupabase } from '../hooks/useEmployeesSupabase';
 import { formatWorkHours } from '@/utils/date';
 
 const InfoRow = ({ label, value }: { label: string; value: string }) => (
@@ -31,6 +33,7 @@ export default function EmployeeDetail() {
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : (params.id as string);
   const [activeTab, setActiveTab] = useState('personal');
+  const { editingEmployee, openEditor, closeEditor, handleEditEmployee, lookupData, isLookupLoading, error: submitError } = useEmployeesSupabase();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [employee, setEmployee] = useState<Employee | null>(null);
@@ -123,11 +126,9 @@ export default function EmployeeDetail() {
               <span className="flex items-center gap-1"><Calendar size={14} /> Joined {employee.joiningDate}</span>
             </div>
           </div>
-          <Link href="/employees">
-            <Button variant="outline" size="sm">
-              <Edit size={14} /> Edit
-            </Button>
-          </Link>
+          <Button variant="outline" size="sm" onClick={() => openEditor(employee)}>
+                <Edit size={14} /> Edit
+              </Button>
         </div>
       </Card>
 
@@ -266,6 +267,23 @@ export default function EmployeeDetail() {
           )}
         </div>
       </Card>
+
+      {editingEmployee && (
+        <EmployeeFormModal
+          isOpen
+          onClose={closeEditor}
+          employee={editingEmployee}
+          onSave={async (values, photo) => {
+            await handleEditEmployee(values, photo);
+            // Optimistically update local view
+            setEmployee({ ...employee, ...values } as any);
+            closeEditor();
+          }}
+          lookupData={lookupData}
+          isLookupLoading={isLookupLoading}
+          submitError={submitError}
+        />
+      )}
     </div>
   );
 }

@@ -69,10 +69,10 @@ export default function SettingsForm() {
   if (isLoading) {
     return (
       <div className="max-w-2xl space-y-5 animate-pulse">
-        <div className="h-5 w-48 rounded bg-[#EAF2F4]" />
+        <div className="h-5 w-48 rounded bg-blue-gray" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-10 rounded-lg bg-[#EAF2F4]" />
+            <div key={i} className="h-10 rounded-lg bg-blue-gray" />
           ))}
         </div>
       </div>
@@ -81,12 +81,12 @@ export default function SettingsForm() {
 
   return (
     <form onSubmit={handleSave} className="max-w-2xl space-y-5">
-      <h3 className="text-base font-semibold text-[#17324D]">Company Information</h3>
+      <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light">Company Information</h3>
       {message && (
         <div className={`rounded-lg border px-4 py-2.5 text-sm ${
           message.kind === 'success'
-            ? 'border-green-200 bg-green-50 text-green-700'
-            : 'border-red-200 bg-red-50 text-red-700'
+            ? 'border-green-200 dark:border-green-800/60 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400'
+            : 'border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400'
         }`}>
           {message.text}
         </div>

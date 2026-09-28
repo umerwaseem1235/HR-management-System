@@ -38,10 +38,12 @@ export default function Sidebar({ mobileOpen, onMobileClose, collapsed, onToggle
 
   const renderSidebarContent = (compact: boolean, isMobile = false) => (
     <div
-      className={`relative flex h-full flex-col overflow-hidden bg-[#024fa7] text-white shadow-2xl shadow-[#013a7c]/40 sidebar-panel ${compact ? "w-18" : "w-60"}`}
+      className={`relative flex h-full flex-col overflow-hidden sidebar-panel border-r border-[#013a7c]/20 bg-[#024fa7] text-white shadow-2xl shadow-[#013a7c]/40 dark:border-white/10 dark:bg-[#0f1b2e] dark:shadow-black/50 ${compact ? "w-18" : "w-60"}`}
     >
-      {/* Decorative glow (kept in the dark nav area only, header stays pure white) */}
-      <div className="pointer-events-none absolute bottom-10 -left-20 h-40 w-40 rounded-full bg-[#7db9ff]/20 blur-3xl" />
+      {/* Decorative glow — subtle in light, faint blue glow in dark */}
+      <div className="pointer-events-none absolute bottom-10 -left-20 h-40 w-40 rounded-full bg-[#7db9ff]/20 blur-3xl dark:bg-[#2563eb]/10" />
+      {/* Top hairline highlight for premium feel in dark mode */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 hidden h-px bg-gradient-to-r from-transparent via-white/20 to-transparent dark:block" />
       {/* Logo + toggle — collapsed shows logo2 icon, expanded shows full logo */}
       <SidebarLogo
         compact={compact}
