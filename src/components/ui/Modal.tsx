@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -12,6 +13,12 @@ interface ModalProps {
 }
 
 export default function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+  // Portal target must wait for client mount (SSR has no document).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -21,7 +28,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
     return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const sizes = {
     sm: 'max-w-md',
@@ -29,7 +36,12 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
     lg: 'max-w-2xl',
   };
 
-  return (
+  // Portal to document.body: a `position: fixed` modal rendered inside a
+  // transformed ancestor (e.g. a Card mid `translateY` hover lift) gets
+  // re-contained by that ancestor per CSS spec, so the popup jumps/shifts
+  // whenever hover state toggles under the cursor. Portaling detaches it
+  // from every ancestor — it always centers on the true viewport.
+  return createPortal(
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-full items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose} />
@@ -43,6 +55,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
           <div className="px-6 py-4 overflow-y-auto">{children}</div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

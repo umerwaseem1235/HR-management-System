@@ -38,7 +38,7 @@ const PayslipRow = memo(function PayslipRow({
   onOpen: (slip: Payslip) => void;
   onDownload: (slip: Payslip) => void;
 }) {
-  const totalDeductions = slip.deductions.reduce((s, d) => s + d.amount, 0);
+  const totalDeductions = (slip.deductions ?? []).reduce((s, d) => s + (d?.amount ?? 0), 0);
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg bg-[#EAF2F4]/50 border border-[#D6E4E8] gap-3">
       <div className="min-w-0">
@@ -183,8 +183,8 @@ export default function PayslipList({ slips, month, onMonthChange, search, onSea
                 <span>Earnings</span><span>Amount</span>
               </div>
               <div className="flex justify-between px-4 py-2 border-t border-[#D6E4E8]"><span>Basic Salary</span><span className="font-medium">{money(activeSlip.basicSalary)}</span></div>
-              {activeSlip.allowances.map(a => (
-                <div key={a.name} className="flex justify-between px-4 py-2 border-t border-[#D6E4E8] text-gray-600"><span>{a.name}</span><span>+{money(a.amount)}</span></div>
+              {(activeSlip.allowances ?? []).map((a, i) => (
+                <div key={a?.name ?? `allowance-${i}`} className="flex justify-between px-4 py-2 border-t border-[#D6E4E8] text-gray-600"><span>{a?.name ?? 'Allowance'}</span><span>+{money(a?.amount)}</span></div>
               ))}
               <div className="flex justify-between bg-[#EAF2F4]/40 px-4 py-2.5 border-t border-[#D6E4E8] font-bold text-[#17324D]"><span>Gross Salary</span><span>{money(activeSlip.grossSalary)}</span></div>
             </div>
@@ -192,13 +192,21 @@ export default function PayslipList({ slips, month, onMonthChange, search, onSea
               <div className="flex justify-between bg-red-50 px-4 py-2.5 font-semibold text-red-800">
                 <span>Deductions</span><span>Amount</span>
               </div>
-              {activeSlip.deductions.map(d => (
-                <div key={d.name} className="flex justify-between px-4 py-2 border-t border-[#D6E4E8] text-gray-600"><span>{d.name}</span><span>-{money(d.amount)}</span></div>
+              {(activeSlip.deductions ?? []).map((d, i) => (
+                <div key={d?.name ?? `deduction-${i}`} className="flex justify-between px-4 py-2 border-t border-[#D6E4E8] text-gray-600"><span>{d?.name ?? 'Deduction'}</span><span>-{money(d?.amount)}</span></div>
               ))}
               <div className="flex justify-between bg-[#17324D] px-4 py-3 font-bold text-white"><span>Net Salary</span><span>{money(activeSlip.netSalary)}</span></div>
             </div>
             <div className="flex justify-end">
-              <Button variant="outline" size="sm" onClick={() => downloadSlip(activeSlip)}><Download size={14} /> Download</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => downloadSlip(activeSlip)}
+                disabled={downloadingId === activeSlip.id}
+                loading={downloadingId === activeSlip.id}
+              >
+                <Download size={14} /> {downloadingId === activeSlip.id ? 'Preparing…' : 'Download'}
+              </Button>
             </div>
           </div>
         )}

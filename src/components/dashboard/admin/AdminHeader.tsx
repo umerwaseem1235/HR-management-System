@@ -9,7 +9,7 @@ interface AdminHeaderProps {
 
 export default function AdminHeader({ welcomeName, todayLabel }: AdminHeaderProps) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 page-heading">
       <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">
         <CalendarDays size={14} className="text-[#024fa7]" aria-hidden="true" />
         {todayLabel}

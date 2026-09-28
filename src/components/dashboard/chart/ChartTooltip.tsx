@@ -19,6 +19,8 @@ export default function ChartTooltip({ model, data }: ChartTooltipProps) {
         left: `${(hp.x / W) * 100}%`,
         top: `${(hp.y / H) * 100}%`,
         transform: `translate(${tooltipTx}, calc(-100% - 12px))`,
+        fontVariantNumeric: 'tabular-nums',
+        textRendering: 'optimizeLegibility',
       }}
     >
       <p className="text-[11px] font-medium text-white/80 whitespace-nowrap">{data[hover].fullLabel}</p>

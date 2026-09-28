@@ -44,7 +44,7 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[#D6E4E8]/70 bg-white shadow-[0_4px_24px_-12px_rgba(23,50,77,0.25)]">
+    <header className="sticky top-0 z-30 border-b border-[#D6E4E8]/70 bg-white shadow-[0_4px_24px_-12px_rgba(23,50,77,0.25)] topbar-shell">
       <div className="flex h-16 items-center justify-between gap-3 px-4 lg:px-6">
         {/* Left: Title (mobile menu + title) */}
         <div className="flex min-w-0 items-center gap-3">
@@ -56,8 +56,8 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
             <Menu size={20} />
           </button>
           {title && (
-            <div className="hidden min-w-0 sm:block">
-              <h2 className="truncate text-lg font-bold tracking-tight text-[#17324D]">{title}</h2>
+            <div className="hidden min-w-0 max-w-[40vw] sm:block">
+              <h2 className="truncate text-lg font-bold leading-tight tracking-tight text-[#17324D]">{title}</h2>
             </div>
           )}
         </div>

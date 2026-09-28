@@ -29,7 +29,19 @@ export default function ChartCanvas({ model, data }: ChartCanvasProps) {
         {ticks.map((t) => (
           <g key={t}>
             <line x1={padL} y1={y(t)} x2={W - padR} y2={y(t)} stroke="#D6E4E8" strokeOpacity="0.55" strokeWidth="1" />
-            <text x={padL - 8} y={y(t) + 4} textAnchor="end" fontSize="11" fill="#9AA5B1">
+            <text
+              x={padL - 8}
+              y={y(t) + 4}
+              textAnchor="end"
+              fontSize="11"
+              fill="#9AA5B1"
+              style={{
+                fontFamily: 'inherit',
+                fontVariantNumeric: 'tabular-nums',
+                textRendering: 'geometricPrecision',
+                dominantBaseline: 'middle',
+              }}
+            >
               {Number.isInteger(t) ? t : t.toFixed(1)}
             </text>
           </g>
@@ -75,7 +87,20 @@ export default function ChartCanvas({ model, data }: ChartCanvasProps) {
       >
         {data.map((d, i) =>
           i % step === 0 || i === data.length - 1 ? (
-            <text key={i} x={x(i)} y={H - 8} textAnchor="middle" fontSize="11" fill="#6B7280">
+            <text
+              key={i}
+              x={x(i)}
+              y={H - 8}
+              textAnchor="middle"
+              fontSize="11"
+              fill="#6B7280"
+              style={{
+                fontFamily: 'inherit',
+                fontVariantNumeric: 'tabular-nums',
+                textRendering: 'geometricPrecision',
+                dominantBaseline: 'middle',
+              }}
+            >
               {d.label}
             </text>
           ) : null

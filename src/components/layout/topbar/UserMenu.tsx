@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ChevronDown, User, Settings, KeyRound, LogOut } from 'lucide-react';
+import Avatar from '../../ui/Avatar';
 import { ROLE_LABELS } from '../../../lib/constants';
 import type { User as AuthUser } from '../../../lib/types';
 
@@ -20,21 +21,21 @@ export function UserMenu({ user, open, onToggle, onNavigate, onLogout }: UserMen
         onClick={onToggle}
         className={`flex items-center gap-2.5 rounded-xl p-1.5 pr-2.5 transition-all active:scale-[0.98] sm:pr-3 ${open ? 'bg-[#EAF2F4]' : 'hover:bg-[#EAF2F4]'}`}
       >
-        <span className="relative">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#024fa7] to-[#17324D] text-xs font-bold text-white shadow-md shadow-[#024fa7]/30 ring-2 ring-white">
-            {user.avatar || user.name.split(' ').map(n => n[0]).join('')}
-          </span>
-          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
+        {/* Shared Avatar shows the photo for image URLs and initials
+            otherwise — the raw storage path is never printed as text. */}
+        <span className="relative block shrink-0">
+          <Avatar name={user.name} src={user.avatar} size="md" className="h-9 w-9 text-xs shadow-md shadow-[#024fa7]/30 ring-2 ring-white" />
+          <span aria-hidden className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
         </span>
-        <span className="hidden text-left sm:block">
-          <p className="text-sm font-semibold leading-tight text-[#263238]">{user.name}</p>
-          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{ROLE_LABELS[user.role]}</p>
+        <span className="hidden min-w-0 max-w-[140px] text-left sm:block">
+          <p className="truncate text-sm font-semibold leading-tight text-[#263238]">{user.name}</p>
+          <p className="truncate text-[10px] font-medium uppercase tracking-wide text-gray-400">{ROLE_LABELS[user.role]}</p>
         </span>
         <ChevronDown size={15} className={`hidden text-gray-400 transition-transform duration-200 sm:block ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
-        <div className="animate-dropdown-in absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-[#D6E4E8] bg-white p-1.5 shadow-2xl shadow-[#17324D]/15">
+        <div className="animate-dropdown-in absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-[#D6E4E8] bg-white p-1.5 shadow-2xl shadow-[#17324D]/15 profile-shell">
           <div className="rounded-xl bg-[#F8FBFC] px-3.5 py-3">
             <p className="truncate text-sm font-semibold text-[#263238]">{user.name}</p>
             <p className="text-xs text-gray-500">{ROLE_LABELS[user.role]}</p>

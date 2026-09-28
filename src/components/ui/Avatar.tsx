@@ -73,7 +73,13 @@ export default React.memo(function Avatar({ name, src, size = 'md', className = 
   }
 
   return (
-    <div className={`${sizes[size]} aspect-square shrink-0 ${getColorFromName(name)} rounded-full flex items-center justify-center text-white font-semibold leading-none ${className}`}>
+    <div className={`${sizes[size]} aspect-square shrink-0 ${getColorFromName(name)} rounded-full flex items-center justify-center text-white font-semibold leading-none ${className}`}
+          style={{
+            fontVariantNumeric: 'tabular-nums',
+            textRendering: 'optimizeLegibility',
+            WebkitFontSmoothing: 'antialiased',
+            MozOsxFontSmoothing: 'grayscale',
+          }}>
       {getInitials(name)}
     </div>
   );

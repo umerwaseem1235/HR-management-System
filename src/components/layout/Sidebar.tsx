@@ -38,7 +38,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, collapsed, onToggle
 
   const renderSidebarContent = (compact: boolean, isMobile = false) => (
     <div
-      className={`relative flex h-full flex-col overflow-hidden bg-[#024fa7] text-white shadow-2xl shadow-[#013a7c]/40 sidebar-panel ${compact ? "w-18" : "w-60"}`}
+      className={`relative flex h-full flex-col overflow-hidden bg-[#024fa7] text-white shadow-2xl shadow-[#013a7c]/40 sidebar-panel sidebar-shell ${compact ? "w-18" : "w-60"}`}
     >
       {/* Decorative glow (kept in the dark nav area only, header stays pure white) */}
       <div className="pointer-events-none absolute bottom-10 -left-20 h-40 w-40 rounded-full bg-[#7db9ff]/20 blur-3xl" />
@@ -75,14 +75,17 @@ export default function Sidebar({ mobileOpen, onMobileClose, collapsed, onToggle
         />
       )}
 
-      {/* Mobile sidebar (always fully expanded) */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:hidden ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {renderSidebarContent(false, true)}
-      </div>
+      {/* Mobile sidebar — ONLY rendered when open. When closed it is
+          completely absent from the DOM (no off-screen layer that can
+          ghost text over the desktop sidebar). */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:hidden translate-x-0"
+          onClick={onMobileClose}
+        >
+          {renderSidebarContent(false, true)}
+        </div>
+      )}
 
       {/* Desktop sidebar — in flex flow so the page content automatically
           resizes as the sidebar collapses/expands via the header toggle.
