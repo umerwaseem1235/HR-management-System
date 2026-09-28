@@ -2,7 +2,7 @@
 
 import { ArrowUpRight, CheckCircle2, XCircle } from 'lucide-react';
 import Card from '../../ui/Card';
-import Avatar from '../../ui/Avatar';
+import { EmployeeCell } from '../../shared';
 import type { DepartmentCount, LeaveRequest, UpcomingEvent } from '../dashboard-types';
 
 export function PendingLeavesCard({
@@ -29,15 +29,12 @@ export function PendingLeavesCard({
         ) : (
           leaves.map(leave => (
             <div key={leave.id} className="flex items-center justify-between p-4 rounded-lg bg-blue-gray/50 border border-medium-gray">
-              <div className="flex items-center gap-3">
-                <Avatar name={leave.employeeName} size="sm" />
-                <div>
-                  <p className="text-sm font-medium text-dark-text dark:text-gray-100">{leave.employeeName}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
-                    {leave.leaveType} · {leave.startDate} to {leave.endDate} · {leave.days} day{leave.days > 1 ? 's' : ''}
-                  </p>
-                </div>
-              </div>
+              <EmployeeCell
+                name={leave.employeeName}
+                employeeId={leave.employeeId}
+                avatar={leave.employeeAvatar}
+                sub={`${leave.leaveType} · ${leave.startDate} to ${leave.endDate} · ${leave.days} day${leave.days > 1 ? 's' : ''}`}
+              />
               <div className="flex items-center gap-2">
                 <button className="p-1.5 rounded-lg bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-200 transition-colors">
                   <CheckCircle2 size={18} />

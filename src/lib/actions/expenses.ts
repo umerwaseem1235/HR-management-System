@@ -9,7 +9,7 @@ type ExpenseClaimRow = Database['public']['Tables']['expense_claims']['Row'];
 type AdminIdRow = Pick<Database['public']['Tables']['users']['Row'], 'id'>;
 
 type ExpenseClaimRowWithEmployee = ExpenseClaimRow & {
-  employees?: { first_name: string | null; last_name: string | null } | null;
+  employees?: { first_name: string | null; last_name: string | null; avatar?: string | null } | null;
 };
 
 function mapExpenseClaim(row: ExpenseClaimRowWithEmployee): ExpenseClaim {
@@ -17,6 +17,7 @@ function mapExpenseClaim(row: ExpenseClaimRowWithEmployee): ExpenseClaim {
     id: row.id,
     employeeId: row.employee_id,
     employeeName: row.employees ? `${row.employees.first_name} ${row.employees.last_name}` : 'Unknown',
+    employeeAvatar: row.employees?.avatar ?? undefined,
     category: row.category,
     amount: row.amount,
     date: row.date,
@@ -35,7 +36,8 @@ export async function getExpenseClaims(employeeId?: string): Promise<ExpenseClai
       *,
       employees:employee_id (
         first_name,
-        last_name
+        last_name,
+        avatar
       )
     `)
     .order('created_at', { ascending: false });
@@ -77,7 +79,8 @@ export async function createExpenseClaim(data: {
       *,
       employees:employee_id (
         first_name,
-        last_name
+        last_name,
+        avatar
       )
     `)
     .single();

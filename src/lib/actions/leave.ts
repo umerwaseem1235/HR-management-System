@@ -34,7 +34,7 @@ interface LeaveRequestRowWithJoins {
   approved_by: string | null;
   comments: string | null;
   leave_types?: { name: string } | Array<{ name: string }> | null;
-  employees?: { first_name: string; last_name: string; employee_code?: string } | Array<{ first_name: string; last_name: string; employee_code?: string }> | null;
+  employees?: { first_name: string; last_name: string; employee_code?: string; avatar?: string | null } | Array<{ first_name: string; last_name: string; employee_code?: string; avatar?: string | null }> | null;
 }
 
 interface LeaveBalanceRowWithJoin {
@@ -59,6 +59,11 @@ function joinPerson(join: LeaveRequestRowWithJoins['employees']): string {
 function joinEmployeeCode(join: LeaveRequestRowWithJoins['employees']): string {
   const first = Array.isArray(join) ? join[0] : join;
   return first?.employee_code || '';
+}
+
+function joinEmployeeAvatar(join: LeaveRequestRowWithJoins['employees']): string | undefined {
+  const first = Array.isArray(join) ? join[0] : join;
+  return first?.avatar ?? undefined;
 }
 
 interface LeaveRequestPatchInput {
@@ -159,7 +164,7 @@ export async function getLeaveRequests(employeeId?: string): Promise<LeaveReques
   const supabase = await createClient();
   let query = supabase
     .from('leave_requests')
-    .select('*, leave_types(name), employees:employees!leave_requests_employee_id_fkey(first_name, last_name, employee_code)')
+    .select('*, leave_types(name), employees:employees!leave_requests_employee_id_fkey(first_name, last_name, employee_code, avatar)')
     .order('created_at', { ascending: false });
 
   if (employeeId) {
@@ -173,6 +178,7 @@ export async function getLeaveRequests(employeeId?: string): Promise<LeaveReques
     employeeId: db.employee_id,
     employeeCode: joinEmployeeCode(db.employees),
     employeeName: joinPerson(db.employees),
+    employeeAvatar: joinEmployeeAvatar(db.employees),
     leaveType: joinName(db.leave_types),
     startDate: db.start_date,
     endDate: db.end_date,
@@ -350,7 +356,7 @@ export async function createLeaveRequest(data: {
     reason: data.reason,
     status: 'Pending',
     applied_on: appliedOn,
-  }]).select('*, employees:employees!leave_requests_employee_id_fkey(first_name, last_name, employee_code)').single();
+  }]).select('*, employees:employees!leave_requests_employee_id_fkey(first_name, last_name, employee_code, avatar)').single();
 
   if (reqErr) throw new Error(reqErr.message);
 
@@ -378,6 +384,7 @@ export async function createLeaveRequest(data: {
     employeeId: r.employee_id,
     employeeCode: joinEmployeeCode(r.employees),
     employeeName: joinPerson(r.employees),
+    employeeAvatar: joinEmployeeAvatar(r.employees),
     leaveType: typeName,
     startDate: r.start_date,
     endDate: r.end_date,

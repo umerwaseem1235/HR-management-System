@@ -3,14 +3,13 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 import { CalendarDays, CheckCircle2, Download, Paperclip, Plus, RotateCcw, Trash2, XCircle, ZoomIn, ZoomOut } from 'lucide-react';
 import Image from 'next/image';
-import Avatar from '@/components/ui/Avatar';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import PageHeader from '@/components/ui/PageHeader';
-import { StatusBadge } from '@/components/shared';
+import { EmployeeAvatar, StatusBadge } from '@/components/shared';
 import { useExpensesView } from '../hooks/useExpensesView';
 import ExpenseModal from './ExpenseModal';
 import ExpenseStats from './ExpenseStats';
@@ -118,7 +117,7 @@ export default function ExpensesView() {
         {e.viewingExp && (
           <div className="space-y-5">
             <div className="flex items-start gap-3">
-              <Avatar name={e.viewingExp.employeeName} size="sm" />
+              <EmployeeAvatar name={e.viewingExp.employeeName} employeeId={e.viewingExp.employeeId} avatar={e.viewingExp.employeeAvatar} size="sm" />
               <div className="flex-1">
                 <p className="text-base font-semibold text-primary dark:text-blue-gray-light">{e.viewingExp.employeeName}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{e.viewingExp.description}</p>

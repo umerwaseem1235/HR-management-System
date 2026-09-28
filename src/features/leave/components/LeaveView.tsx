@@ -50,30 +50,14 @@ export default function LeaveView() {
       />
 
       {lv.isEmployee ? (
-        <Card padding="none">
-          <div className="px-6 pt-4">
-            <Tabs tabs={lv.tabs} activeTab={lv.activeTab} onChange={lv.setActiveTab} />
-          </div>
-          <div className="p-6">
-            {lv.activeTab === 'requests' && (
-              <LeaveRequestTable
-                requests={lv.visibleRequests}
-                isEmployee={lv.isEmployee}
-                onApprove={lv.setConfirmApproveLeave}
-                onReject={lv.setConfirmRejectLeave}
-                onEdit={lv.openEdit}
-                onDelete={lv.setConfirmDeleteLeave}
-                onViewBalances={lv.setBalanceRequest}
-              />
-            )}
-            {lv.activeTab === 'balances' && (
-              <LeaveBalances balances={lv.visibleBalances} isSuperAdmin={lv.isSuperAdmin} onEditBalance={handleEditBalance} />
-            )}
-          </div>
-        </Card>
-      ) : (
-        <Card padding="none">
-          <div className="p-6">
+        lv.activeTab === 'requests' ? (
+          <>
+            <Card padding="none">
+              <div className="px-6 pt-4">
+                <Tabs tabs={lv.tabs} activeTab={lv.activeTab} onChange={lv.setActiveTab} />
+              </div>
+              <div className="h-4" />
+            </Card>
             <LeaveRequestTable
               requests={lv.visibleRequests}
               isEmployee={lv.isEmployee}
@@ -83,8 +67,27 @@ export default function LeaveView() {
               onDelete={lv.setConfirmDeleteLeave}
               onViewBalances={lv.setBalanceRequest}
             />
-          </div>
-        </Card>
+          </>
+        ) : (
+          <Card padding="none">
+            <div className="px-6 pt-4">
+              <Tabs tabs={lv.tabs} activeTab={lv.activeTab} onChange={lv.setActiveTab} />
+            </div>
+            <div className="p-6">
+              <LeaveBalances balances={lv.visibleBalances} isSuperAdmin={lv.isSuperAdmin} onEditBalance={handleEditBalance} />
+            </div>
+          </Card>
+        )
+      ) : (
+        <LeaveRequestTable
+          requests={lv.visibleRequests}
+          isEmployee={lv.isEmployee}
+          onApprove={lv.setConfirmApproveLeave}
+          onReject={lv.setConfirmRejectLeave}
+          onEdit={lv.openEdit}
+          onDelete={lv.setConfirmDeleteLeave}
+          onViewBalances={lv.setBalanceRequest}
+        />
       )}
 
       <Modal isOpen={showBalances} onClose={() => setShowBalances(false)} title="Leave Balances" size="lg">

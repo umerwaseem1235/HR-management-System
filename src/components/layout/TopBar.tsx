@@ -44,7 +44,7 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/90 bg-white/95 shadow-[0_4px_24px_-12px_rgba(23,50,77,0.18)] backdrop-blur dark:border-white/10 dark:bg-[#0f1b2e]/95 dark:shadow-black/30">
+    <header className="sticky top-0 z-30 bg-white/95 shadow-[0_4px_24px_-12px_rgba(23,50,77,0.18)] backdrop-blur dark:bg-[#0f1b2e]/95 dark:shadow-black/30">
       <div className="flex flex-row rtl:flex-row-reverse h-16 items-center justify-between gap-3 px-4 lg:px-6">
         {/* Left: Title (mobile menu + title) */}
         <div className="flex flex-row rtl:flex-row-reverse min-w-0 items-center gap-3">
@@ -82,8 +82,6 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
               />
             )}
           </div>
-
-          <div className="mx-1 hidden h-8 w-px bg-medium-gray sm:block dark:bg-white/10" />
 
           {/* User Menu */}
           <div ref={userRef} className="relative">

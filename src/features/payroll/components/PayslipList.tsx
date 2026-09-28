@@ -1,11 +1,13 @@
 'use client';
 
+import React, { useEffect, useState } from 'react';
 import { CalendarDays, Download, Eye } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import SearchBar from '@/components/ui/SearchBar';
-import { StatusBadge } from '@/components/shared';
+import { StatusBadge, EmployeeCell, TablePagination } from '@/components/shared';
+import { paginate } from '@/utils/pagination';
 import { formatCurrency as money } from '@/utils';
 import type { Payslip } from '@/types';
 
@@ -21,6 +23,13 @@ interface PayslipListProps {
 }
 
 export default function PayslipList({ slips, month, onMonthChange, search, onSearchChange, viewSlip, onView, onDownload }: PayslipListProps) {
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  useEffect(() => {
+    setPage(1);
+  }, [slips.length, month, search]);
+  const { totalPages, safePage, start, end, rows } = paginate(slips, page, perPage);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -66,12 +75,13 @@ export default function PayslipList({ slips, month, onMonthChange, search, onSea
         </div>
       ) : (
         <div className="space-y-3">
-          {slips.map(slip => (
+          {rows.map(slip => (
             <div key={slip.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg bg-blue-gray/50 border border-medium-gray gap-3">
-              <div>
-                <p className="text-sm font-medium text-dark-text dark:text-gray-100">{slip.employeeName} — {slip.month} {slip.year}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Gross: {money(slip.grossSalary)} | Deductions: {money(slip.deductions.reduce((s, d) => s + d.amount, 0))} | Net: {money(slip.netSalary)}</p>
-              </div>
+              <EmployeeCell
+                name={`${slip.employeeName} — ${slip.month} ${slip.year}`}
+                employeeId={slip.employeeId}
+                sub={`Gross: ${money(slip.grossSalary)} | Deductions: ${money(slip.deductions.reduce((s, d) => s + d.amount, 0))} | Net: ${money(slip.netSalary)}`}
+              />
               <div className="flex items-center gap-3">
                 <StatusBadge status={slip.status} />
                 <button onClick={() => onView(slip)} title="View payslip" className="p-2 rounded-lg text-[#0F8B8D] hover:bg-blue-gray dark:hover:bg-white/10"><Eye size={16} /></button>
@@ -81,16 +91,26 @@ export default function PayslipList({ slips, month, onMonthChange, search, onSea
           ))}
         </div>
       )}
+      <TablePagination
+        page={safePage}
+        totalPages={totalPages}
+        totalCount={slips.length}
+        start={start}
+        end={end}
+        perPage={perPage}
+        onPageChange={setPage}
+        onPerPageChange={(n) => {
+          setPerPage(n);
+          setPage(1);
+        }}
+      />
 
       {/* ============ Payslip view modal ============ */}
       <Modal isOpen={!!viewSlip} onClose={() => onView(null)} title={viewSlip ? `Payslip — ${viewSlip.month} ${viewSlip.year}` : 'Payslip'} size="lg">
         {viewSlip && (
           <div className="space-y-4 text-sm">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-base font-bold text-primary dark:text-blue-gray-light">{viewSlip.employeeName}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Generated {viewSlip.generatedOn}</p>
-              </div>
+              <EmployeeCell name={viewSlip.employeeName} employeeId={viewSlip.employeeId} sub={`Generated ${viewSlip.generatedOn}`} size="md" />
               <StatusBadge status={viewSlip.status} />
             </div>
             <div className="rounded-xl border border-medium-gray overflow-hidden">

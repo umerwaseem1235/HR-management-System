@@ -1,16 +1,24 @@
 'use client';
 
+import React, { useEffect, useState } from 'react';
 import { Pencil } from 'lucide-react';
-import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
 import EmptyState from '@/components/ui/EmptyState';
-import { StatusBadge } from '@/components/shared';
+import { EmployeeCell, StatusBadge, TablePagination } from '@/components/shared';
+import { paginate } from '@/utils/pagination';
 import type { AttendanceRecord } from '@/types';
 import { minutesToHrs, formatWorkHours } from '@/utils/date';
 import { earlyLeave, lateBy } from '../utils';
 
 export function MyAttendanceTable({ records, monthLabel }: { records: AttendanceRecord[]; monthLabel: string }) {
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  useEffect(() => {
+    setPage(1);
+  }, [records.length, monthLabel]);
+  const { totalPages, safePage, start, end, rows } = paginate(records, page, perPage);
+
   return (
     <Card padding="none">
       <div className="px-6 py-4 border-b border-medium-gray">
@@ -26,7 +34,7 @@ export function MyAttendanceTable({ records, monthLabel }: { records: Attendance
             <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Work Hours</th>
           </tr></thead>
           <tbody className="divide-y divide-medium-gray">
-            {records.map((att) => (
+            {rows.map((att) => (
               <tr key={att.id} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
                 <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{att.date}</td>
                 <td className="px-6 py-4 text-sm text-dark-text dark:text-gray-100">{att.checkIn || '—'}</td>
@@ -43,6 +51,19 @@ export function MyAttendanceTable({ records, monthLabel }: { records: Attendance
           </div>
         )}
       </div>
+      <TablePagination
+        page={safePage}
+        totalPages={totalPages}
+        totalCount={records.length}
+        start={start}
+        end={end}
+        perPage={perPage}
+        onPageChange={setPage}
+        onPerPageChange={(n) => {
+          setPerPage(n);
+          setPage(1);
+        }}
+      />
     </Card>
   );
 }
@@ -61,6 +82,13 @@ export function DailyLogTable({
   /** Rule grace so "Late By" matches the configured late-arrival rule. */
   graceMinutes?: number;
 }) {
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  useEffect(() => {
+    setPage(1);
+  }, [records.length, viewDate, logSearch]);
+  const { totalPages, safePage, start, end, rows } = paginate(records, page, perPage);
+
   return (
     <Card padding="none">
       <div className="px-6 py-4 border-b border-medium-gray flex items-center justify-between">
@@ -82,16 +110,13 @@ export function DailyLogTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-medium-gray">
-            {records.map((att) => {
+            {rows.map((att) => {
               const lb = lateBy(att, graceMinutes);
               const el = earlyLeave(att);
               return (
                 <tr key={att.id} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar name={att.employeeName} size="sm" />
-                      <p className="text-sm font-medium text-dark-text dark:text-gray-100">{att.employeeName}</p>
-                    </div>
+                    <EmployeeCell name={att.employeeName} employeeId={att.employeeId} avatar={att.employeeAvatar} />
                   </td>
                   <td className="px-6 py-4 text-sm text-dark-text dark:text-gray-100">{att.checkIn || '—'}</td>
                   <td className="px-6 py-4 text-sm text-dark-text dark:text-gray-100">{att.checkOut || '—'}</td>
@@ -123,6 +148,19 @@ export function DailyLogTable({
           <EmptyState title="No records for this date" description={logSearch.trim() ? `No records match "${logSearch.trim()}" on ${viewDate}.` : `No attendance records found for ${viewDate}. Use Manual Entry to add one.`} />
         </div>
       )}
+      <TablePagination
+        page={safePage}
+        totalPages={totalPages}
+        totalCount={records.length}
+        start={start}
+        end={end}
+        perPage={perPage}
+        onPageChange={setPage}
+        onPerPageChange={(n) => {
+          setPerPage(n);
+          setPage(1);
+        }}
+      />
     </Card>
   );
 }

@@ -2,6 +2,7 @@ export interface CorrectionRequest {
   id: string;
   employeeId: string;
   employeeName: string;
+  employeeAvatar?: string;
   date: string;
   currentStatus: string;
   requestedStatus: string;

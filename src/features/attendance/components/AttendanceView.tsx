@@ -2,7 +2,6 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { CalendarDays, CheckCircle2, Trash2, UserPlus, XCircle, LogIn, LogOut } from 'lucide-react';
-import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -10,7 +9,7 @@ import Input from '@/components/ui/Input';
 import PageHeader from '@/components/ui/PageHeader';
 import SearchBar from '@/components/ui/SearchBar';
 import Tabs from '@/components/ui/Tabs';
-import { FilterBar } from '@/components/shared';
+import { FilterBar, EmployeeAvatar } from '@/components/shared';
 import { todayStr, formatWorkHours } from '@/utils/date';
 import { useAttendance } from '../hooks/useAttendance';
 import { STATUS_OPTIONS } from '../utils';
@@ -62,9 +61,12 @@ export default function AttendanceView() {
         {/* Inline Check In / Check Out — compact, professional */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-xl border border-medium-gray bg-white dark:bg-[#1b263b]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-gray flex items-center justify-center">
-              <span className="text-xl font-medium text-teal">{todayRecord?.employeeName?.charAt(0) || att.user?.name?.charAt(0) || 'E'}</span>
-            </div>
+            <EmployeeAvatar
+              name={todayRecord?.employeeName || att.user?.name || 'Employee'}
+              employeeId={att.employeeId || att.employee?.id}
+              avatar={att.user?.avatar || att.employee?.avatar}
+              size="md"
+            />
             <div>
               <p className="text-sm font-semibold text-primary dark:text-blue-gray-light">Today&apos;s Attendance</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{todayStr()}</p>
@@ -164,15 +166,6 @@ export default function AttendanceView() {
     <div className="space-y-6">
       <PageHeader
         title={t('nav.attendance')}
-        actions={
-          <>
-            <Badge variant="success">{att.stats.presentToday} Present</Badge>
-            <Badge variant="danger">{att.stats.absentToday} Absent</Badge>
-            <Badge variant="warning">{att.stats.lateToday} Late</Badge>
-            <Badge variant="warning">{halfDayToday} Half Day</Badge>
-            <Badge variant="info">{att.stats.onLeaveToday} On Leave</Badge>
-          </>
-        }
       />
 
       {att.error && (

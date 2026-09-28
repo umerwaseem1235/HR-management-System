@@ -3,10 +3,9 @@
 import React from 'react';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
-import Avatar from '@/components/ui/Avatar';
 import Input from '@/components/ui/Input';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
-import { StatusBadge } from '@/components/shared';
+import { EmployeeAvatar, StatusBadge } from '@/components/shared';
 import { Plus, X, Check, Wifi } from 'lucide-react';
 import type { RemoteRequest } from '@/types';
 import { formatRange } from '../hooks/useRemoteView';
@@ -107,7 +106,7 @@ export default function RemoteRequestModal(props: RemoteRequestModalProps) {
         {detail && (
           <div className="space-y-4 text-sm">
             <div className="flex items-center gap-3">
-              <Avatar name={detail.employeeName} size="sm" />
+              <EmployeeAvatar name={detail.employeeName} employeeId={detail.employeeId} avatar={detail.employeeAvatar} size="sm" />
               <div className="flex-1">
                 <p className="font-semibold text-primary dark:text-blue-gray-light">{detail.employeeName}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Requested on {detail.requestedOn}</p>

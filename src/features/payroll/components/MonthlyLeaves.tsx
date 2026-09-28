@@ -2,6 +2,7 @@
 
 import Badge from '@/components/ui/Badge';
 import Select from '@/components/ui/Select';
+import { EmployeeAvatar } from '@/components/shared';
 import type { Employee } from '@/types';
 import type { EmployeeMonthlyFines, EmployeeMonthlyLeaves } from '@/lib/payroll';
 import NumberField from './NumberField';
@@ -111,6 +112,7 @@ export default function MonthlyLeaves({
           return (
               <div className="space-y-3 rounded-lg bg-white dark:bg-[#1b263b] border border-medium-gray p-4">
               <div className="flex items-center gap-2">
+                <EmployeeAvatar name={`${emp.firstName} ${emp.lastName}`} employeeId={emp.id} avatar={emp.avatar} size="sm" />
                 <p className="text-sm font-semibold text-primary dark:text-blue-gray-light">{emp.firstName} {emp.lastName}</p>
                 {isCustom
                   ? <Badge variant="info">Custom: {effective} days/mo</Badge>

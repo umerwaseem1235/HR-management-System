@@ -3,6 +3,7 @@
 import React from 'react';
 import Card from '@/components/ui/Card';
 import EmptyState from '@/components/ui/EmptyState';
+import { EmployeeCell } from '@/components/shared';
 import { Eye, Pencil, Trash2, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
 import type { ProgressEntry } from '@/types';
 import { formatSubmission, PAGE_SIZES } from '../hooks/useProgressView';
@@ -51,7 +52,7 @@ export default function ProgressList({
               <tr key={entry.id} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
                 <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{(safePage - 1) * pageSize + idx + 1}</td>
                 {!isEmployee && (
-                  <td className="px-6 py-4 text-sm font-medium text-dark-text dark:text-gray-100">{entry.employeeName || '—'}</td>
+                  <td className="px-6 py-4"><EmployeeCell name={entry.employeeName || '—'} employeeId={entry.employeeId} avatar={entry.employeeAvatar} /></td>
                 )}
                 <td className="px-6 py-4 text-sm font-medium text-dark-text dark:text-gray-100">{entry.projectName}</td>
                 <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{formatSubmission(entry.submissionDate)}</td>
