@@ -35,6 +35,32 @@ export function daysBetweenInclusive(start: string, end: string): number {
   return Math.round(ms / 86400000) + 1;
 }
 
+/**
+ * Null-safe inclusive day count. Returns null when either date is missing,
+ * invalid, or the range is reversed. Canonical home of the duplicated
+ * `diffInDaysInclusive` helpers in leave/utils + remote/useRemoteView.
+ */
+export function diffInDaysInclusive(start: string, end: string): number | null {
+  if (!start || !end) return null;
+  const s = new Date(start);
+  const e = new Date(end);
+  if (isNaN(s.getTime()) || isNaN(e.getTime()) || e < s) return null;
+  return Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
+}
+
+/** Short month labels shared by progress/reports date formatters. */
+export const MONTHS_SHORT = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec',
+] as const;
+
+/** "2026-09-28" -> "28-Sept-2026". Canonical home of formatSubmission/dash. */
+export function formatDayMonYear(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  if (!y || !m || !d || m < 1 || m > 12) return dateStr;
+  return `${String(d).padStart(2, '0')}-${MONTHS_SHORT[m - 1]}-${y}`;
+}
+
 /** Office off (day-end) time used by the early-checkout rule. */
 export const OFFICE_END_TIME = '18:00';
 

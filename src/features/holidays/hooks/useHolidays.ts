@@ -4,7 +4,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { createHoliday, deleteHoliday, getHolidays } from '@/lib/actions/attendance';
-import type { Holiday } from '@/features/attendance/types';
+import type { Holiday } from '../types';
+
+export interface NewHolidayInput {
+  name: string;
+  date: string;
+  type: string;
+  isRecurring: boolean;
+}
 
 export function useHolidays() {
   const { user } = useAuth();
@@ -34,6 +41,35 @@ export function useHolidays() {
     };
   }, []);
 
+  const addHoliday = useCallback(
+    async (input: NewHolidayInput) => {
+      const name = input.name.trim();
+      const date = input.date;
+      if (!name || !date) return;
+      try {
+        const newHoliday = await createHoliday({
+          name,
+          date,
+          type: input.type || 'Public',
+          isRecurring: input.isRecurring,
+        });
+        setHolidays((current) => [...current, newHoliday].sort((a, b) => a.date.localeCompare(b.date)));
+        addNotification({
+          title: 'New Holiday Announced',
+          message: `${name} on ${date} (${input.type || 'Public'}) — notified to all employees.`,
+          type: 'info',
+          link: '/holidays',
+        });
+        setHolidayMsg(`${name} on ${date} added — notification sent to all employees.`);
+      } catch (err: unknown) {
+        setError(err instanceof Error && err.message ? err.message : 'Failed to add holiday');
+      }
+    },
+    [addNotification],
+  );
+
+  // Thin DOM adapter — parses the HolidayManager form and delegates to addHoliday.
+  // Kept so the presentational component stays unchanged.
   const handleAddHoliday = useCallback(
     async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -44,23 +80,10 @@ export function useHolidays() {
       const type = String(fd.get('holidayType') || 'Public');
       const isRecurring = fd.get('holidayRecurring') === 'on';
       if (!name || !date) return;
-
-      try {
-        const newHoliday = await createHoliday({ name, date, type, isRecurring });
-        setHolidays((current) => [...current, newHoliday].sort((a, b) => a.date.localeCompare(b.date)));
-        addNotification({
-          title: 'New Holiday Announced',
-          message: `${name} on ${date} (${type}) — notified to all employees.`,
-          type: 'info',
-          link: '/holidays',
-        });
-        setHolidayMsg(`${name} on ${date} added — notification sent to all employees.`);
-        form.reset();
-      } catch (err: unknown) {
-        setError(err instanceof Error && err.message ? err.message : 'Failed to add holiday');
-      }
+      await addHoliday({ name, date, type, isRecurring });
+      form.reset();
     },
-    [addNotification],
+    [addHoliday],
   );
 
   const handleDeleteHoliday = useCallback(async (id: string) => {
@@ -81,6 +104,7 @@ export function useHolidays() {
     loading,
     confirmDeleteHoliday,
     setConfirmDeleteHoliday,
+    addHoliday,
     handleAddHoliday,
     handleDeleteHoliday,
   };

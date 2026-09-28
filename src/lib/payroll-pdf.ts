@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import type { Payslip } from './types';
 import { todayISO } from './payroll';
 import type { PayrollRun } from './payroll';
+import { downloadBlob as downloadBlobCanonical } from '@/utils/download';
 
 /* ================= PDF generation (jsPDF, brand theme) ================= */
 
@@ -204,16 +205,11 @@ export function runSummaryToPDF(run: PayrollRun): Blob {
   return doc.output('blob');
 }
 
+/**
+ * Download a Blob as a file. Arg order is (filename, blob) for backwards
+ * compatibility with existing payroll/expense call sites — implementation
+ * delegates to the canonical `@/utils/download` helper.
+ */
 export function downloadBlob(filename: string, blob: Blob): void {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  // Revoking synchronously aborts the download in Firefox/Safari, leaving
-  // the user with nothing happening (looks like endless "buffering").
-  // Defer until the browser has picked up the blob.
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  downloadBlobCanonical(blob, filename);
 }

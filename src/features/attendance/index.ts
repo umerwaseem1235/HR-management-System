@@ -1,4 +1,13 @@
 export { default as AttendanceView } from './components/AttendanceView';
+export { MyAttendanceStats, TodaySnapshot } from './components/AttendanceStats';
+export type { TodayAttendanceStats } from './components/AttendanceStats';
+export { default as AttendanceSummary } from './components/AttendanceSummary';
+export { DailyLogTable, MyAttendanceTable } from './components/AttendanceTable';
+export { default as CorrectionQueue } from './components/CorrectionQueue';
+export { default as EditAttendanceModal } from './components/EditAttendanceModal';
+export { default as HolidayManager } from './components/HolidayManager';
+export { default as LateArrivalRules } from './components/LateArrivalRules';
+export { default as ManualEntryModal } from './components/ManualEntryModal';
 export { useAttendance } from './hooks/useAttendance';
 export type { UseAttendanceReturn, SummaryMode } from './hooks/useAttendance';
-export type { CorrectionRequest, Holiday } from './types';
+export type { CorrectionRequest, CorrectionHistoryEntry, Holiday } from './types';

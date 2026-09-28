@@ -259,6 +259,9 @@ function todayLabel(): string {
 }
 
 function downloadBlob(filename: string, blob: Blob): void {
+  // Canonical implementation lives in @/utils/download (deferred revoke for
+  // Firefox/Safari). Kept as a thin local adapter to preserve the
+  // (filename, blob) call signature used below.
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -266,7 +269,7 @@ function downloadBlob(filename: string, blob: Blob): void {
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
 /** Download a PDF of the currently visible report tab (respects filters). */

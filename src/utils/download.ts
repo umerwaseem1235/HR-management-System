@@ -7,7 +7,9 @@ export function downloadBlob(blob: Blob, filename: string): void {
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  // Revoking synchronously aborts the download in Firefox/Safari — defer
+  // until the browser has picked up the blob (same policy as lib/payroll-pdf).
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
 /** Builds a CSV string from headers + rows (values are quoted/escaped). */

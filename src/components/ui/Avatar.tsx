@@ -2,21 +2,13 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { getInitials } from '@/utils';
 
 interface AvatarProps {
   name: string;
   src?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
 }
 
 function getColorFromName(name: string): string {

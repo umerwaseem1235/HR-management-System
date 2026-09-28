@@ -1,5 +1,3 @@
-'use client';
-
 export interface CorrectionRequest {
   id: string;
   employeeId: string;

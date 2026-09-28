@@ -4,3 +4,5 @@ export { default as EmployeeFilters } from './components/EmployeeFilters';
 export { default as EmployeeFormModal } from './components/EmployeeFormModal';
 export { default as EmployeeDetail } from './components/EmployeeDetail';
 export { useEmployeesSupabase } from './hooks/useEmployeesSupabase';
+export { useEmployeeCreate } from './hooks/useEmployeeCreate';
+export type { LookupData, LookupItem, UseEmployeeCreateReturn } from './hooks/useEmployeeCreate';

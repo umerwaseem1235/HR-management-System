@@ -5,5 +5,6 @@ export { default as JobModal } from './components/JobModal';
 export { default as CandidateModal } from './components/CandidateModal';
 export { useRecruitment } from './hooks/useRecruitment';
 export type { JobModalState, UseRecruitmentReturn } from './hooks/useRecruitment';
-export { SOURCES, STAGES, INTERVIEW_MODES, today } from './types';
+export { SOURCES, STAGES, INTERVIEW_MODES } from './constants';
+export { today, cvDisplayName } from './utils';
 export type { CandidateExt, HistoryItem, Interview, Offer } from './types';

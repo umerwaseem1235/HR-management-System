@@ -13,43 +13,18 @@ import type { AttendanceRecord } from '@/lib/types';
 import type { DailyWork } from '@/types';
 import type { AttendanceDayRow, TabId } from '../types';
 
-/* ================= Helpers ================= */
+/* ================= Helpers (canonical homes in ../utils, re-exported for compat) ================= */
+import {
+  dash,
+  defaultRange,
+  PAGE_SIZES,
+  PRINT_STATUS_COLOR,
+  slash,
+  stripHtml,
+  toISO,
+} from '../utils';
 
-export function toISO(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-export function defaultRange(): { from: string; to: string } {
-  const to = new Date();
-  const from = new Date();
-  from.setDate(from.getDate() - 13);
-  return { from: toISO(from), to: toISO(to) };
-}
-
-/** 01/09/2026 — screen tables */
-export function slash(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-');
-  if (!y || !m || !d) return dateStr;
-  return `${d}/${m}/${y}`;
-}
-
-/** 01-Sept-2026 — progress dates */
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
-export function dash(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  if (!y || !m || !d) return dateStr;
-  return `${String(d).padStart(2, '0')}-${MONTHS[m - 1]}-${y}`;
-}
-
-export function stripHtml(html: string): string {
-  return html
-    .replace(/<(br|p|div|li|h1|h2|h3)[^>]*>/gi, ' ')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+export { dash, defaultRange, PAGE_SIZES, PRINT_STATUS_COLOR, slash, stripHtml, toISO };
 
 function toMinutes(t: string | null | undefined): number | null {
   if (!t) return null;
@@ -87,17 +62,7 @@ function toDayRow(r: AttendanceRecord): AttendanceDayRow {
   };
 }
 
-export const PRINT_STATUS_COLOR: Record<string, string> = {
-  Present: '#15803d',
-  Late: '#dc2626',
-  'Half Day': '#d97706',
-  Leave: '#024fa7',
-  Absent: '#dc2626',
-  Holiday: '#7c3aed',
-  Weekend: '#64748b',
-};
-
-export const PAGE_SIZES = [5, 10, 20];
+// PRINT_STATUS_COLOR + PAGE_SIZES now live in ../utils (imported above).
 
 // Module scope survives navigation, so returning to /reports reuses the
 // employee options and any already-fetched month slices / report rows.

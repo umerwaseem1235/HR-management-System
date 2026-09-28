@@ -1,7 +1,3 @@
-export function diffInDaysInclusive(start: string, end: string): number | null {
-  if (!start || !end) return null;
-  const s = new Date(start);
-  const e = new Date(end);
-  if (isNaN(s.getTime()) || isNaN(e.getTime()) || e < s) return null;
-  return Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
-}
+// Canonical null-safe day-count lives in @/utils — re-exported here so
+// existing `from '@/features/leave/utils'` imports keep working.
+export { diffInDaysInclusive } from '@/utils/date';
