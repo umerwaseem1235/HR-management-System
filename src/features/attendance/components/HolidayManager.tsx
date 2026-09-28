@@ -13,11 +13,14 @@ export default function HolidayManager({
   holidayMsg,
   onAddHoliday,
   onDelete,
+  readOnly = false,
 }: {
   holidays: Holiday[];
   holidayMsg: string;
   onAddHoliday: (e: React.FormEvent<HTMLFormElement>) => void;
   onDelete: (holiday: Holiday) => void;
+  /** When true, hides the add form and delete buttons (non-admin view). */
+  readOnly?: boolean;
 }) {
   return (
     <div className="w-full min-w-0">
@@ -31,7 +34,7 @@ export default function HolidayManager({
           <Badge variant="default">{holidays.length} Holidays</Badge>
         </div>
 
-        <form onSubmit={onAddHoliday} className="mb-4 rounded-lg border border-dashed border-medium-gray bg-blue-gray-light p-4">
+        <form onSubmit={onAddHoliday} className={`mb-4 rounded-lg border border-dashed border-medium-gray bg-blue-gray-light p-4 ${readOnly ? 'hidden' : ''}`}>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Input name="holidayName" label="Holiday Name" placeholder="e.g. Independence Day" required />
             <Input name="holidayDate" label="Date" type="date" required />
@@ -73,7 +76,7 @@ export default function HolidayManager({
                 <th className="px-4 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Holiday</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Date</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Type</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase"></th>
+                {!readOnly && <th className="px-4 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase"></th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-medium-gray">
@@ -84,15 +87,17 @@ export default function HolidayManager({
                   <td className="px-4 py-3">
                     <Badge variant={h.type === 'Public' ? 'info' : h.type === 'Company' ? 'success' : 'neutral'}>{h.type}</Badge>
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => onDelete(h)}
-                      title="Delete holiday"
-                      className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 dark:bg-red-950/30 transition-colors"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </td>
+                  {!readOnly && (
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => onDelete(h)}
+                        title="Delete holiday"
+                        className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 dark:bg-red-950/30 transition-colors"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

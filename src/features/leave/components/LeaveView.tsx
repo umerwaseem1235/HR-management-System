@@ -1,10 +1,12 @@
 'use client';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-import { CheckCircle2, Plus, Trash2, XCircle } from 'lucide-react';
+import { useState } from 'react';
+import { CheckCircle2, Plus, Trash2, Wallet, XCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import Modal from '@/components/ui/Modal';
 import PageHeader from '@/components/ui/PageHeader';
 import Tabs from '@/components/ui/Tabs';
 import type { LeaveBalance } from '@/types';
@@ -16,6 +18,7 @@ import LeaveRequestTable from './LeaveRequestTable';
 export default function LeaveView() {
   const { t } = useLanguage();
   const lv = useLeaveView();
+  const [showBalances, setShowBalances] = useState(false);
 
   if (!lv.user) return null;
 
@@ -31,20 +34,46 @@ export default function LeaveView() {
       <PageHeader
         title={lv.isEmployee ? t('nav.myLeave') : t('nav.leaveManagement')}
         actions={
-          lv.user.role !== 'super_admin' ? (
-            <Button variant="primary" onClick={lv.goToRequestLeave}>
-              <Plus size={16} /> Request Leave
-            </Button>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2">
+            {!lv.isEmployee && (
+              <Button variant="outline" onClick={() => setShowBalances(true)}>
+                <Wallet size={16} /> Leave Balances
+              </Button>
+            )}
+            {lv.user.role !== 'super_admin' && (
+              <Button variant="primary" onClick={lv.goToRequestLeave}>
+                <Plus size={16} /> Request Leave
+              </Button>
+            )}
+          </div>
         }
       />
 
-      <Card padding="none">
-        <div className="px-6 pt-4">
-          <Tabs tabs={lv.tabs} activeTab={lv.activeTab} onChange={lv.setActiveTab} />
-        </div>
-        <div className="p-6">
-          {lv.activeTab === 'requests' && (
+      {lv.isEmployee ? (
+        <Card padding="none">
+          <div className="px-6 pt-4">
+            <Tabs tabs={lv.tabs} activeTab={lv.activeTab} onChange={lv.setActiveTab} />
+          </div>
+          <div className="p-6">
+            {lv.activeTab === 'requests' && (
+              <LeaveRequestTable
+                requests={lv.visibleRequests}
+                isEmployee={lv.isEmployee}
+                onApprove={lv.setConfirmApproveLeave}
+                onReject={lv.setConfirmRejectLeave}
+                onEdit={lv.openEdit}
+                onDelete={lv.setConfirmDeleteLeave}
+                onViewBalances={lv.setBalanceRequest}
+              />
+            )}
+            {lv.activeTab === 'balances' && (
+              <LeaveBalances balances={lv.visibleBalances} isSuperAdmin={lv.isSuperAdmin} onEditBalance={handleEditBalance} />
+            )}
+          </div>
+        </Card>
+      ) : (
+        <Card padding="none">
+          <div className="p-6">
             <LeaveRequestTable
               requests={lv.visibleRequests}
               isEmployee={lv.isEmployee}
@@ -54,12 +83,16 @@ export default function LeaveView() {
               onDelete={lv.setConfirmDeleteLeave}
               onViewBalances={lv.setBalanceRequest}
             />
-          )}
-          {lv.activeTab === 'balances' && (
-            <LeaveBalances balances={lv.visibleBalances} isSuperAdmin={lv.isSuperAdmin} onEditBalance={handleEditBalance} />
-          )}
-        </div>
-      </Card>
+          </div>
+        </Card>
+      )}
+
+      <Modal isOpen={showBalances} onClose={() => setShowBalances(false)} title="Leave Balances" size="lg">
+        <p className="mb-4 text-xs leading-relaxed text-gray-500">
+          Company-wide yearly quotas. Click the <span className="font-medium text-[#263238]">pencil icon</span> on a card to adjust a quota for all employees.
+        </p>
+        <LeaveBalances balances={lv.visibleBalances} isSuperAdmin={lv.isSuperAdmin} onEditBalance={handleEditBalance} />
+      </Modal>
 
       <EditLeaveModal
         isOpen={lv.showEditModal}

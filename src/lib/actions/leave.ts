@@ -34,7 +34,7 @@ interface LeaveRequestRowWithJoins {
   approved_by: string | null;
   comments: string | null;
   leave_types?: { name: string } | Array<{ name: string }> | null;
-  employees?: { first_name: string; last_name: string } | Array<{ first_name: string; last_name: string }> | null;
+  employees?: { first_name: string; last_name: string; employee_code?: string } | Array<{ first_name: string; last_name: string; employee_code?: string }> | null;
 }
 
 interface LeaveBalanceRowWithJoin {
@@ -54,6 +54,11 @@ function joinName<T extends { name: string }>(join: T | T[] | null | undefined):
 function joinPerson(join: LeaveRequestRowWithJoins['employees']): string {
   const first = Array.isArray(join) ? join[0] : join;
   return first ? `${first.first_name} ${first.last_name}` : '';
+}
+
+function joinEmployeeCode(join: LeaveRequestRowWithJoins['employees']): string {
+  const first = Array.isArray(join) ? join[0] : join;
+  return first?.employee_code || '';
 }
 
 interface LeaveRequestPatchInput {
@@ -154,7 +159,7 @@ export async function getLeaveRequests(employeeId?: string): Promise<LeaveReques
   const supabase = await createClient();
   let query = supabase
     .from('leave_requests')
-    .select('*, leave_types(name), employees:employees!leave_requests_employee_id_fkey(first_name, last_name)')
+    .select('*, leave_types(name), employees:employees!leave_requests_employee_id_fkey(first_name, last_name, employee_code)')
     .order('created_at', { ascending: false });
 
   if (employeeId) {
@@ -166,6 +171,7 @@ export async function getLeaveRequests(employeeId?: string): Promise<LeaveReques
   return ((data || []) as unknown as LeaveRequestRowWithJoins[]).map((db) => ({
     id: db.id,
     employeeId: db.employee_id,
+    employeeCode: joinEmployeeCode(db.employees),
     employeeName: joinPerson(db.employees),
     leaveType: joinName(db.leave_types),
     startDate: db.start_date,
@@ -297,12 +303,23 @@ export async function createLeaveRequest(data: {
   const supabase = await createClient();
 
   // The request form historically sent demo ids ("1", "5", …) which are not
-  // valid UUIDs, and the RLS policy only accepts the employee record linked
-  // to the login (employees.user_id = auth.uid()). Resolve to that record —
-  // auto-creating it on first request so the table never stays empty.
-  let employeeId = data.employeeId;
-  if (!UUID_RE.test(employeeId || '')) {
+  // valid UUIDs, and auth.uid() itself is NOT a valid employees.id
+  // (leave_requests.employee_id → employees.id). A UUID that is not a real
+  // employee row still violates the FK, so always verify against employees:
+  // id match wins, else user_id match, else resolve/create the linked record.
+  let employeeId = (data.employeeId || '').trim();
+  if (!employeeId) {
     employeeId = await ensureLinkedEmployee(supabase);
+  } else {
+    const { data: byId } = await supabase.from('employees').select('id').eq('id', employeeId).maybeSingle();
+    if (!byId) {
+      if (UUID_RE.test(employeeId)) {
+        const { data: byUser } = await supabase.from('employees').select('id').eq('user_id', employeeId).maybeSingle();
+        employeeId = byUser?.id ?? (await ensureLinkedEmployee(supabase));
+      } else {
+        employeeId = await ensureLinkedEmployee(supabase);
+      }
+    }
   }
 
   let typeId = data.leaveTypeId;
@@ -333,7 +350,7 @@ export async function createLeaveRequest(data: {
     reason: data.reason,
     status: 'Pending',
     applied_on: appliedOn,
-  }]).select('*, employees:employees!leave_requests_employee_id_fkey(first_name, last_name)').single();
+  }]).select('*, employees:employees!leave_requests_employee_id_fkey(first_name, last_name, employee_code)').single();
 
   if (reqErr) throw new Error(reqErr.message);
 
@@ -359,6 +376,7 @@ export async function createLeaveRequest(data: {
   return {
     id: r.id,
     employeeId: r.employee_id,
+    employeeCode: joinEmployeeCode(r.employees),
     employeeName: joinPerson(r.employees),
     leaveType: typeName,
     startDate: r.start_date,

@@ -77,14 +77,14 @@ export default function Sidebar({ mobileOpen, onMobileClose, collapsed, onToggle
         />
       )}
 
-      {/* Mobile sidebar (always fully expanded) */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:hidden ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {renderSidebarContent(false, true)}
-      </div>
+      {/* Mobile sidebar — only rendered when open, so no off-screen layer
+          can ghost text over the desktop sidebar when closed. Always fully
+          expanded. */}
+      {mobileOpen && (
+        <div className="fixed inset-y-0 left-0 z-50 translate-x-0 transform transition-transform duration-300 lg:hidden">
+          {renderSidebarContent(false, true)}
+        </div>
+      )}
 
       {/* Desktop sidebar — in flex flow so the page content automatically
           resizes as the sidebar collapses/expands via the header toggle.

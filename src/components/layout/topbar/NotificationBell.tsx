@@ -18,11 +18,14 @@ export function NotificationBell({ unreadCount, open, onToggle }: NotificationBe
     >
       <Bell size={20} />
       {unreadCount > 0 && (
-        <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center px-1">
-          <span className="animate-ping-soft absolute inline-flex h-full w-full rounded-full bg-red-400" />
-          <span className="relative inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-600 px-1 text-[10px] font-bold text-white shadow-sm">
-            {unreadCount}
-          </span>
+        <span className="pointer-events-none absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-600 px-1 text-[10px] font-bold tabular-nums leading-none text-white shadow-sm ring-1 ring-white"
+              style={{
+                fontVariantNumeric: 'tabular-nums',
+                textRendering: 'optimizeLegibility',
+                WebkitFontSmoothing: 'antialiased',
+                MozOsxFontSmoothing: 'grayscale',
+              }}>
+          {unreadCount > 99 ? '99+' : unreadCount}
         </span>
       )}
     </button>

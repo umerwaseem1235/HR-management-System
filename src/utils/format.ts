@@ -1,6 +1,7 @@
-/** Formats a number as PKR with no decimals: 5500 -> "PKR 5,500". */
-export function formatCurrency(n: number): string {
-  return `PKR ${Math.round(n).toLocaleString()}`;
+/** Formats a number as PKR with no decimals: 5500 -> "PKR 5,500". Null-safe: bad data renders PKR 0, never NaN/crash. */
+export function formatCurrency(n: number | null | undefined): string {
+  const safe = typeof n === 'number' && Number.isFinite(n) ? n : 0;
+  return `PKR ${Math.round(safe).toLocaleString()}`;
 }
 
 /** "Sarah Williams" -> "SW". */

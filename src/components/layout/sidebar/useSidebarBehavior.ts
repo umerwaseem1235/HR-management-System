@@ -16,30 +16,44 @@ export function useSidebarBehavior({ collapsed, role }: UseSidebarBehaviorArgs) 
   const [hoverExpanded, setHoverExpanded] = useState(false);
   const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Hover-to-expand: when the sidebar is collapsed (desktop), hovering
-  // temporarily expands it. The width animates via .sidebar-panel
-  // (300ms ease-in-out). A short close delay avoids flicker.
+  // Hover-to-expand: when the sidebar is collapsed (desktop), resting the
+  // cursor on it briefly expands it. The width animates via .sidebar-panel
+  // (300ms ease-in-out). Expansion waits 220ms for genuine hover intent, so
+  // merely sweeping the cursor across the screen edge no longer fires a full
+  // expand/collapse cycle (that flicker reads as glitching/"buffering",
+  // especially noticeable with a modal open). A short close delay avoids
+  // flicker when moving between sidebar and content.
   const handleMouseEnter = () => {
     if (hoverTimeout.current) {
       clearTimeout(hoverTimeout.current);
       hoverTimeout.current = null;
     }
-    if (collapsed) setHoverExpanded(true);
+    if (collapsed && !hoverExpanded) {
+      hoverTimeout.current = setTimeout(() => {
+        hoverTimeout.current = null;
+        setHoverExpanded(true);
+      }, 220);
+    }
   };
 
   const handleMouseLeave = () => {
-    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-    hoverTimeout.current = setTimeout(() => setHoverExpanded(false), 120);
+    if (hoverTimeout.current) {
+      clearTimeout(hoverTimeout.current);
+      hoverTimeout.current = null;
+    }
+    hoverTimeout.current = setTimeout(() => {
+      hoverTimeout.current = null;
+      setHoverExpanded(false);
+    }, 120);
   };
 
-  // Derive the pinned-open state during render instead of syncing it in an
-  // effect: when the sidebar is pinned open, hover-expansion is always off.
-  // (Same committed output as the previous effect, without a cascading render.)
-  if (!collapsed && hoverExpanded) {
-    setHoverExpanded(false);
-  }
-
   useEffect(() => {
+    // When pinned open, hover-expansion is always off. Synced in an effect
+    // (not during render) so toggling never causes a render-loop flicker
+    // that ghosts sidebar text.
+    if (!collapsed && hoverExpanded) {
+      setHoverExpanded(false);
+    }
     // If user pins it open via toggle, cancel any pending hover-close
     if (!collapsed) {
       if (hoverTimeout.current) {
@@ -47,10 +61,13 @@ export function useSidebarBehavior({ collapsed, role }: UseSidebarBehaviorArgs) 
         hoverTimeout.current = null;
       }
     }
+  }, [collapsed, hoverExpanded]);
+
+  useEffect(() => {
     return () => {
       if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
     };
-  }, [collapsed]);
+  }, []);
 
   // Persist sidebar scroll position across page navigations (the sidebar
   // remounts on route change, which would otherwise reset it to the top)

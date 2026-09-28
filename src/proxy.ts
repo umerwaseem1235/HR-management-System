@@ -2,6 +2,14 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function proxy(request: NextRequest) {
+  // Never touch WebSocket upgrade requests (dev HMR at /_next/hmr, etc.).
+  // Running getUser()/cookie logic on an upgrade returns a plain HTTP
+  // response instead of `101 Switching Protocols`, which kills hot-reload
+  // and leaves Turbopack serving a stale module graph.
+  if (request.headers.get('upgrade')?.toLowerCase().includes('websocket')) {
+    return NextResponse.next({ request });
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
@@ -44,5 +52,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  // api, static assets, images and the dev HMR websocket endpoints bypass
+  // the Supabase session refresh entirely.
+  matcher: ['/((?!api|_next/static|_next/image|_next/hmr|_next/webpack-hmr|favicon.ico).*)'],
 };

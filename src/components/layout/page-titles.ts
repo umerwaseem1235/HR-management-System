@@ -6,6 +6,7 @@ export const PAGE_TITLES: Record<string, string> = {
   '/recruitment': 'recruitment.title',
   '/attendance': 'attendance.title',
   '/leave': 'leave.title',
+  '/holidays': 'nav.holidays',
   '/remote': 'remote.title',
   '/payroll': 'payroll.title',
   '/progress': 'nav.progress',

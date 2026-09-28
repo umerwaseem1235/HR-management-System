@@ -212,5 +212,8 @@ export function downloadBlob(filename: string, blob: Blob): void {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  // Revoking synchronously aborts the download in Firefox/Safari, leaving
+  // the user with nothing happening (looks like endless "buffering").
+  // Defer until the browser has picked up the blob.
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
 }

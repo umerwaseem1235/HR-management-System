@@ -33,7 +33,7 @@ export function SidebarLogo({
       ) : (
         <>
           <div className="flex min-w-0 flex-1 items-center justify-start overflow-hidden">
-            <Image src="/logo.jpg" alt="CodQor Technologies" width={160} height={80} className="-ml-2 h-20 w-auto max-w-[160px] object-contain object-left" />
+            <Image src="/logo.jpg" alt="CodQor Technologies" width={160} height={48} priority sizes="150px" className="h-10 w-auto max-w-[150px] shrink-0 object-contain object-left" />
           </div>
           <button
             onClick={isMobile ? onMobileClose : onToggleCollapse}

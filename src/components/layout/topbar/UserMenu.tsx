@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ChevronDown, User, Settings, KeyRound, LogOut } from 'lucide-react';
+import Avatar from '../../ui/Avatar';
 import type { User as AuthUser } from '../../../lib/types';
 import { useLanguage } from '../../../contexts/LanguageContext';
 
@@ -22,15 +23,11 @@ export function UserMenu({ user, open, onToggle, onNavigate, onLogout }: UserMen
         onClick={onToggle}
         className={`flex items-center gap-2.5 rounded-xl p-1.5 pr-2.5 transition-all active:scale-[0.98] sm:pr-3 ${open ? 'bg-blue-gray dark:bg-white/10' : 'hover:bg-blue-gray dark:hover:bg-white/10'}`}
       >
-        <span className="relative">
-          <span className="flex h-9 w-9 overflow-hidden items-center justify-center rounded-full bg-gradient-to-br from-teal to-primary text-xs font-bold text-white shadow-md shadow-teal/30 ring-2 ring-white dark:ring-[#0f1b2e]">
-            {user.avatar ? (
-              <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
-            ) : (
-              user.name.split(' ').map(n => n[0]).join('')
-            )}
-          </span>
-          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white dark:border-[#0f1b2e] bg-green-500" />
+        <span className="relative block shrink-0">
+          {/* Shared Avatar shows the uploaded photo for image URLs
+              (including base64 data URLs) and initials otherwise. */}
+          <Avatar name={user.name} src={user.avatar} size="md" className="h-9 w-9 text-xs shadow-md ring-2 ring-white dark:ring-[#0f1b2e]" />
+          <span aria-hidden className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white dark:border-[#0f1b2e] bg-green-500" />
         </span>
         <span className="hidden text-left sm:block">
           <p className="text-sm font-semibold leading-tight text-dark-text dark:text-gray-100">{user.name}</p>

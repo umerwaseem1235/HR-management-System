@@ -711,6 +711,7 @@ export async function createHoliday(data: {
     .select('*')
     .single();
   if (error) throw new Error(error.message);
+  revalidatePath('/holidays');
   revalidatePath('/attendance');
   return {
     id: row.id,
@@ -725,6 +726,7 @@ export async function deleteHoliday(id: string) {
   const supabase = await createClient();
   const { error } = await supabase.from('holidays').delete().eq('id', id);
   if (error) throw new Error(error.message);
+  revalidatePath('/holidays');
   revalidatePath('/attendance');
 }
 

@@ -14,7 +14,7 @@ interface PageHeaderProps {
  */
 export default function PageHeader({ title, actions }: PageHeaderProps) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 page-heading">
       <div>
         <h1 className="text-2xl font-bold leading-tight tracking-tight text-primary dark:text-blue-gray-light">
           {title}

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { LogOut } from "lucide-react";
+import Avatar from "../../ui/Avatar";
 import { ROLE_LABELS } from "../../../lib/constants";
 import type { User } from "../../../lib/types";
 
@@ -16,18 +17,11 @@ export function SidebarUserCard({ user, compact, onLogout }: SidebarUserCardProp
     <div className="shrink-0 p-2.5">
       <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 shadow-inner backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.06]">
         <div className="flex items-center gap-2.5">
-          <span className="relative shrink-0">
-            <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-white text-xs font-bold text-[#024fa7] shadow-md ring-2 ring-white/30 dark:bg-[#2563eb] dark:text-white dark:ring-white/20">
-              {user.avatar ? (
-                <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
-              ) : (
-                user.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-              )}
-            </span>
-            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#024fa7] bg-green-400 dark:border-[#0f1b2e]" />
+          {/* Shared Avatar renders the uploaded photo for image URLs
+              (including base64 data URLs) and clean initials otherwise. */}
+          <span className="relative block shrink-0 overflow-visible">
+            <Avatar name={user.name} src={user.avatar} size="sm" className="shadow-md ring-2 ring-white/30 dark:ring-white/20" />
+            <span aria-hidden className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#024fa7] bg-green-400 dark:border-[#0f1b2e]" />
           </span>
           <div
             className={`flex min-w-0 flex-1 items-center gap-2 overflow-hidden whitespace-nowrap sidebar-fade ${compact ? "opacity-0" : "opacity-100"}`}
