@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ClipboardCheck, Gift, Clock, CheckCircle2, XCircle, ArrowUpRight, Briefcase, UserPlus, DollarSign } from 'lucide-react';
 import Card from '../ui/Card';
 import StatCard from '../ui/StatCard';
-import Avatar from '../ui/Avatar';
+import { EmployeeCell } from '../shared';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AttendanceChart, { TrendPoint } from './AttendanceChart';
 import AdminHeader from './admin/AdminHeader';
@@ -279,15 +279,12 @@ export default function AdminDashboard() {
             ) : (
               pendingLeaves.map(leave => (
                 <div key={leave.id} className="flex items-center justify-between p-4 rounded-lg bg-blue-gray/50 border border-medium-gray">
-                  <div className="flex items-center gap-3">
-                    <Avatar name={leave.employeeName} size="sm" />
-                    <div>
-                      <p className="text-sm font-medium text-dark-text dark:text-gray-100">{leave.employeeName}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
-                        {leave.leaveType} · {leave.startDate} to {leave.endDate} · {leave.days} day{leave.days > 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  </div>
+                  <EmployeeCell
+                    name={leave.employeeName}
+                    employeeId={leave.employeeId}
+                    avatar={leave.employeeAvatar}
+                    sub={`${leave.leaveType} · ${leave.startDate} to ${leave.endDate} · ${leave.days} day${leave.days > 1 ? 's' : ''}`}
+                  />
                   <div className="flex items-center gap-2">
                     <button
                       title="Approve"

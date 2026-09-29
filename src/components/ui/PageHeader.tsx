@@ -10,13 +10,13 @@ interface PageHeaderProps {
 /**
  * Shared premium page header: main title only, with an optional
  * right-aligned actions slot. Title typography matches
- * the superadmin dashboard "Welcome back" heading (text-2xl font-bold).
+ * the superadmin dashboard "Welcome back" heading (text-xl font-bold).
  */
 export default function PageHeader({ title, actions }: PageHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 page-heading">
       <div>
-        <h1 className="text-2xl font-bold leading-tight tracking-tight text-primary dark:text-blue-gray-light">
+        <h1 className="text-xl font-bold leading-tight tracking-tight text-primary dark:text-blue-gray-light">
           {title}
         </h1>
       </div>

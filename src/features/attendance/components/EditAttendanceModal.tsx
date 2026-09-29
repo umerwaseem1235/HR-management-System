@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
-import Avatar from '@/components/ui/Avatar';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import Select from '@/components/ui/Select';
+import { EmployeeAvatar } from '@/components/shared';
 import type { AttendanceRecord } from '@/types';
 import { timeToMinutes, formatWorkHours } from '@/utils/date';
 import { ADMIN_STATUS_OPTIONS, formatDuration, resolveLateStatus, type LateArrivalRule } from '../utils';
@@ -63,7 +63,7 @@ export default function EditAttendanceModal({
     <Modal isOpen onClose={onClose} title="Edit Attendance Record" size="lg">
       <form onSubmit={submit} className="space-y-5">
         <div className="flex items-center gap-3 rounded-xl border border-medium-gray bg-blue-gray-light px-4 py-3">
-          <Avatar name={record.employeeName} size="sm" />
+          <EmployeeAvatar name={record.employeeName} employeeId={record.employeeId} avatar={record.employeeAvatar} size="sm" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-primary dark:text-blue-gray-light">{record.employeeName}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{record.date} · currently {record.status} · {formatWorkHours(record.workHours)}</p>

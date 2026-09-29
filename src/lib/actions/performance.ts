@@ -11,7 +11,7 @@ type GoalRow = Database['public']['Tables']['goals']['Row'];
 type GoalStatus = GoalRow['status'];
 
 type PerformanceReviewRowWithEmployee = PerformanceReviewRow & {
-  employees?: { first_name: string | null; last_name: string | null } | null;
+  employees?: { first_name: string | null; last_name: string | null; avatar?: string | null } | null;
 };
 
 interface PerformanceReviewInput {
@@ -35,7 +35,7 @@ interface GoalInput {
 
 export async function getPerformanceReviews(employeeId?: string): Promise<PerformanceReview[]> {
   const supabase = await createClient();
-  let query = supabase.from('performance_reviews').select('*, employees(first_name, last_name)').order('created_at', { ascending: false });
+  let query = supabase.from('performance_reviews').select('*, employees(first_name, last_name, avatar)').order('created_at', { ascending: false });
   if (employeeId) query = query.eq('employee_id', employeeId);
 
   const { data, error } = await query;
@@ -45,6 +45,7 @@ export async function getPerformanceReviews(employeeId?: string): Promise<Perfor
     id: db.id,
     employeeId: db.employee_id,
     employeeName: db.employees ? `${db.employees.first_name} ${db.employees.last_name}` : '',
+    employeeAvatar: db.employees?.avatar ?? undefined,
     cycleId: db.cycle_id,
     cycleName: db.cycle_name || '',
     selfRating: db.self_rating ?? undefined,

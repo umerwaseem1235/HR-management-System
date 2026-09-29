@@ -1,10 +1,11 @@
 'use client';
 
+import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Eye, Pencil, Trash2, XCircle } from 'lucide-react';
-import Avatar from '@/components/ui/Avatar';
 import Card from '@/components/ui/Card';
 import EmptyState from '@/components/ui/EmptyState';
-import { StatusBadge } from '@/components/shared';
+import { EmployeeCell, StatusBadge, TablePagination } from '@/components/shared';
+import { paginate } from '@/utils/pagination';
 import type { ExpenseClaim } from '@/types';
 
 interface ExpenseTableProps {
@@ -18,6 +19,13 @@ interface ExpenseTableProps {
 }
 
 export default function ExpenseTable({ expenses, isEmployee, onApprove, onReject, onDelete, onEdit, onViewReceipt }: ExpenseTableProps) {
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  useEffect(() => {
+    setPage(1);
+  }, [expenses.length, isEmployee]);
+  const { totalPages, safePage, start, end, rows } = paginate(expenses, page, perPage);
+
   return (
     <Card padding="none">
       <div className="overflow-x-auto">
@@ -31,10 +39,10 @@ export default function ExpenseTable({ expenses, isEmployee, onApprove, onReject
             <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Actions</th>
           </tr></thead>
           <tbody className="divide-y divide-medium-gray">
-            {expenses.map(exp => (
+            {rows.map(exp => (
               <tr key={exp.id} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
                 {!isEmployee && (
-                  <td className="px-6 py-4"><div className="flex items-center gap-3"><Avatar name={exp.employeeName} size="sm" /><div><p className="text-sm font-medium">{exp.employeeName}</p><p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{exp.description}</p></div></div></td>
+                  <td className="px-6 py-4"><EmployeeCell name={exp.employeeName} employeeId={exp.employeeId} avatar={exp.employeeAvatar} sub={exp.description} /></td>
                 )}
                 {isEmployee && (
                   <td className="px-6 py-4"><div><p className="text-sm font-medium">{exp.category}</p><p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{exp.description}</p></div></td>
@@ -87,6 +95,19 @@ export default function ExpenseTable({ expenses, isEmployee, onApprove, onReject
           />
         )}
       </div>
+      <TablePagination
+        page={safePage}
+        totalPages={totalPages}
+        totalCount={expenses.length}
+        start={start}
+        end={end}
+        perPage={perPage}
+        onPageChange={setPage}
+        onPerPageChange={(n) => {
+          setPerPage(n);
+          setPage(1);
+        }}
+      />
     </Card>
   );
 }

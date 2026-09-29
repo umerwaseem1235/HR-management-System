@@ -16,7 +16,7 @@ export default function AdminHeader({ welcomeName, todayLabel }: AdminHeaderProp
         <CalendarDays size={14} className="text-teal" aria-hidden="true" />
         {todayLabel}
       </p>
-      <h1 className="text-xl font-bold leading-tight tracking-tight text-primary dark:text-blue-gray-light sm:text-2xl">
+      <h1 className="text-lg font-bold leading-tight tracking-tight text-primary dark:text-blue-gray-light sm:text-xl">
         {t('dashboard.welcome')}, {welcomeName}!
       </h1>
     </div>

@@ -11,6 +11,7 @@ import {
   User, Mail, Briefcase, CalendarDays, ClipboardList, StickyNote,
 } from 'lucide-react';
 import { useEmployeeDirectory } from '@/hooks/useEmployeeDirectory';
+import { EmployeeAvatar } from '@/components/shared';
 import type { ProgressEntry } from '@/types';
 import { formatSubmission, stripHtml } from '../hooks/useProgressView';
 
@@ -273,6 +274,13 @@ export default function ProgressModal(props: ProgressModalProps) {
           );
           return (
             <div>
+              <div className="flex items-center gap-3 rounded-xl border border-medium-gray bg-blue-gray-light px-4 py-3 mb-4">
+                <EmployeeAvatar name={viewing.employeeName} employeeId={viewing.employeeId} avatar={viewing.employeeAvatar ?? emp?.avatar} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-primary dark:text-blue-gray-light truncate">{viewing.employeeName}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{emp?.email ?? formatSubmission(viewing.submissionDate)}</p>
+                </div>
+              </div>
               <ViewSection title="Assignment Details">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <ViewField icon={<User size={13} />} label="Employee Name" value={viewing.employeeName} />

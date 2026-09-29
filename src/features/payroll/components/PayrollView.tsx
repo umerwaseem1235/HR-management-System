@@ -92,6 +92,8 @@ export default function PayrollView() {
               runErrorKey={p.runErrorKey}
               onDismissError={() => { p.setRunError(''); p.setRunErrorKey(0); }}
               onStart={p.startNewRun}
+              futureMonthWarning={p.futureMonthWarning}
+              onDismissFutureWarning={() => p.setFutureMonthWarning(false)}
               search={p.runSearch}
               onSearchChange={p.setRunSearch}
               monthOptions={p.PAYROLL_MONTHS.map((m, i) => ({ value: String(i), label: m }))}
@@ -112,6 +114,7 @@ export default function PayrollView() {
               empMonthly={p.empMonthly}
               dailyRateDivisor={p.DAILY_RATE_DIVISOR}
               isSuperAdmin={p.isSuperAdmin}
+              busy={p.busy}
               onBack={() => p.setSelectedRunId(null)}
               onExport={() => p.exportRun(p.selectedRun!)}
               onEditLine={p.setEditingLine}
@@ -119,6 +122,7 @@ export default function PayrollView() {
               onReopen={() => p.reopenToDraft(p.selectedRun!)}
               onFinalizeRequest={() => p.setShowFinalize(true)}
               onUnlockRequest={() => p.setShowUnlock(true)}
+              onRecalculate={() => p.recalculateRun(p.selectedRun!)}
             />
           )}
 

@@ -5,8 +5,13 @@ export const PAYROLL_MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-/** Years offered in the "Start a New Payroll Run" year dropdown — current year only. */
-export const PAYROLL_YEARS: number[] = [new Date().getFullYear()];
+/** Years offered in the "Start a New Payroll Run" year dropdown.
+ *  Includes the current year and the next year so HR can prepare
+ *  upcoming-year payroll runs in advance without hitting a hard block. */
+export const PAYROLL_YEARS: number[] = (() => {
+  const y = new Date().getFullYear();
+  return [y, y + 1];
+})();
 
 /** Daily rate divisor (30-day month convention, shown in the UI). */
 export const DAILY_RATE_DIVISOR = 30;

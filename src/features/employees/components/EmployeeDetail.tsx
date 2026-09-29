@@ -116,7 +116,7 @@ export default function EmployeeDetail() {
           <Avatar name={`${employee.firstName} ${employee.lastName}`} src={employee.avatar} size="xl" />
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold leading-tight tracking-tight text-[#17324D]">{employee.firstName} {employee.lastName}</h1>
+              <h1 className="text-xl font-bold leading-tight tracking-tight text-[#17324D]">{employee.firstName} {employee.lastName}</h1>
               <StatusBadge status={employee.status} />
             </div>
             <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-500">

@@ -2,11 +2,10 @@
 
 import { useState } from 'react';
 import { BadgeCheck, FileWarning, History, X } from 'lucide-react';
-import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
 import EmptyState from '@/components/ui/EmptyState';
-import { StatusBadge } from '@/components/shared';
+import { EmployeeAvatar, EmployeeCell, StatusBadge } from '@/components/shared';
 import type { CorrectionHistoryEntry, CorrectionRequest } from '../types';
 
 type HistoryTab = 'manual' | 'requests';
@@ -57,7 +56,7 @@ export default function CorrectionQueue({
               <div key={req.id} className="rounded-lg border border-medium-gray bg-blue-gray-light p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <Avatar name={req.employeeName} size="sm" />
+                    <EmployeeAvatar name={req.employeeName} employeeId={req.employeeId} avatar={req.employeeAvatar} size="sm" />
                     <div>
                       <p className="text-sm font-medium text-dark-text dark:text-gray-100">{req.employeeName}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{req.date}</p>
@@ -147,13 +146,12 @@ export default function CorrectionQueue({
                     <tr key={entry.id} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <Avatar name={entry.correctedBy} size="sm" />
+                          <EmployeeAvatar name={entry.correctedBy} size="sm" />
                           <span className="text-sm font-medium text-dark-text dark:text-gray-100">{entry.correctedBy}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-sm font-medium text-dark-text dark:text-gray-100">{entry.employeeName}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{entry.date}</p>
+                        <EmployeeCell name={entry.employeeName} sub={entry.date} />
                       </td>
                       <td className="px-4 py-3">
                         <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 line-through">{entry.previousValue}</p>
@@ -192,7 +190,7 @@ export default function CorrectionQueue({
               <tbody className="divide-y divide-medium-gray">
                 {decidedRequests.map((req) => (
                   <tr key={req.id} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
-                    <td className="px-4 py-3 text-sm font-medium text-dark-text dark:text-gray-100">{req.employeeName}</td>
+                    <td className="px-4 py-3"><EmployeeCell name={req.employeeName} employeeId={req.employeeId} avatar={req.employeeAvatar} /></td>
                     <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{req.date}</td>
                     <td className="px-4 py-3 text-sm text-dark-text dark:text-gray-100">{req.currentStatus} → {req.requestedStatus}</td>
                     <td className="px-4 py-3">

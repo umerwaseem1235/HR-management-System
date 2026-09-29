@@ -9,7 +9,7 @@ import type { Database } from '@/lib/supabase/database.types';
 type RemoteRequestRow = Database['public']['Tables']['remote_requests']['Row'];
 
 interface RemoteRequestRowWithJoins extends RemoteRequestRow {
-  employees?: { first_name: string | null; last_name: string | null } | null;
+  employees?: { first_name: string | null; last_name: string | null; avatar?: string | null } | null;
   reviewer?: { first_name: string | null; last_name: string | null } | null;
 }
 
@@ -23,7 +23,8 @@ export async function getRemoteRequests(employeeId?: string): Promise<RemoteRequ
       *,
       employees:employee_id (
         first_name,
-        last_name
+        last_name,
+        avatar
       ),
       reviewer:reviewed_by (
         first_name,
@@ -43,6 +44,7 @@ export async function getRemoteRequests(employeeId?: string): Promise<RemoteRequ
     id: row.id,
     employeeId: row.employee_id,
     employeeName: row.employees ? `${row.employees.first_name} ${row.employees.last_name}` : 'Unknown',
+    employeeAvatar: row.employees?.avatar ?? undefined,
     fromDate: row.from_date,
     toDate: row.to_date,
     days: row.days,
@@ -89,7 +91,8 @@ export async function createRemoteRequest(data: {
       *,
       employees:employee_id (
         first_name,
-        last_name
+        last_name,
+        avatar
       )
     `)
     .single();
@@ -102,6 +105,7 @@ export async function createRemoteRequest(data: {
     id: r.id,
     employeeId: r.employee_id,
     employeeName: r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : 'Unknown',
+    employeeAvatar: r.employees?.avatar ?? undefined,
     fromDate: r.from_date,
     toDate: r.to_date,
     days: r.days,

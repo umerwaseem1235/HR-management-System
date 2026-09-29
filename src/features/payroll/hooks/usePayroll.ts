@@ -105,6 +105,8 @@ export function usePayroll() {
   const [runErrorKey, setRunErrorKey] = useState(0);
   const [successMsg, setSuccessMsg] = useState('');
   const [successMsgKey, setSuccessMsgKey] = useState(0);
+  /** True when the selected month/year is strictly in the future (after today's month). */
+  const [futureMonthWarning, setFutureMonthWarning] = useState(false);
 
   // ---- Runs tab: detail / review / finalize ----
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
@@ -267,14 +269,40 @@ export function usePayroll() {
   const payrollStatus = getPayrollStatus(runs);
 
   // ================= Run actions =================
-  const startNewRun = async () => {
+
+  /**
+   * Returns true when the selected month/year combination has not yet
+   * started (i.e. it is strictly after the current calendar month).
+   * HR legitimately prepares payroll one month ahead; this is an
+   * advisory, not a hard block.
+   */
+  const isFutureMonth = (monthIndex: number, year: number): boolean => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-based
+    return year > currentYear || (year === currentYear && monthIndex > currentMonth);
+  };
+
+  const startNewRun = async (opts?: { confirmed?: boolean }) => {
     const monthIndex = Number(newMonth);
     const year = Number(newYear);
+
+    // Guard 1 — duplicate run
     if (runs.some((r) => r.monthIndex === monthIndex && r.year === year)) {
       setRunError(`A payroll run for ${PAYROLL_MONTHS[monthIndex]} ${year} already exists.`);
       setRunErrorKey(nextErrorKey());
+      setFutureMonthWarning(false);
       return;
     }
+
+    // Guard 2 — future month: raise an advisory on first attempt; proceed on second
+    if (isFutureMonth(monthIndex, year) && !opts?.confirmed) {
+      setFutureMonthWarning(true);
+      return;
+    }
+
+    // All guards passed — proceed
+    setFutureMonthWarning(false);
     setRunError('');
     setRunErrorKey(0);
     setBusy(true);
@@ -302,6 +330,85 @@ export function usePayroll() {
     setRuns((prev) => prev.map((r) => (r.id === runId ? { ...r, items, ...totals } : r)));
     setSelectedRun((prev) => (prev && prev.id === runId ? { ...prev, items, ...totals } : prev));
   };
+
+  /**
+   * Re-fetches live attendance & leave data for an existing Draft run and
+   * rebuilds every line item from scratch.
+   *
+   * Designed for future-month runs: HR creates the draft early (no data yet),
+   * then clicks "Recalculate" once the month has started / ended to pull in
+   * real absences and approved leaves before finalising.
+   */
+  const recalculateRun = async (run: PayrollRun) => {
+    setRunError('');
+    setRunErrorKey(0);
+    setBusy(true);
+    try {
+      const [leaves, attendance] = await Promise.all([
+        getLeaveRequests(),
+        getAllAttendance(run.year, run.monthIndex + 1),
+      ]);
+
+      const freshItems = buildRunItems(
+        employees,
+        components,
+        leaves,
+        attendance,
+        run.monthIndex,
+        run.year,
+        monthlyDefault,
+        empMonthly,
+        empFines,
+        fineDefault,
+      );
+
+      // Persist each line back to the DB (reuse the existing row ids so we
+      // update rather than insert).
+      const existingIds = new Map(run.items.map(i => [i.employeeId, i.id]));
+      await Promise.all(
+        freshItems.map(item => {
+          const rowId = existingIds.get(item.employeeId);
+          if (!rowId) return Promise.resolve();
+          return updatePayrollItem(rowId, {
+            basic_salary: item.basicSalary,
+            allowances: item.allowances,
+            deductions: item.deductions,
+            paid_leave_days: item.paidLeaveDays,
+            unpaid_leave_days: item.unpaidLeaveDays,
+            absent_days: item.absentDays,
+            leave_deduction: item.leaveDeduction,
+            gross_salary: item.grossSalary,
+            total_allowances: item.totalAllowances,
+            total_deductions: item.totalDeductions,
+            net_salary: item.netSalary,
+          });
+        }),
+      );
+
+      // Update the run totals in the DB.
+      const newTotals = calcRunTotals(freshItems);
+      await updatePayrollRunTotals(run.id, newTotals);
+
+      // Merge the fresh items (carrying DB ids) back into state.
+      const mergedItems = freshItems.map(item => ({
+        ...item,
+        id: existingIds.get(item.employeeId),
+      }));
+      updateRunItems(run.id, mergedItems);
+
+      setSuccessMsg(
+        `${run.month} ${run.year} recalculated — attendance & leave data refreshed for ${mergedItems.length} employees.`,
+      );
+      setSuccessMsgKey(nextSuccessKey());
+    } catch (err) {
+      setRunError(err instanceof Error ? err.message : 'Failed to recalculate payroll run');
+      setRunErrorKey(nextErrorKey());
+    } finally {
+      setBusy(false);
+    }
+  };
+
+
 
   const saveEditedLine = async (line: PayrollLineItem) => {
     if (!selectedRun) return;
@@ -496,6 +603,7 @@ export function usePayroll() {
     runSearch, setRunSearch, runDetailSearch, setRunDetailSearch,
     viewSlip, setViewSlip,
     newMonth, setNewMonth, newYear, setNewYear, runError, setRunError, runErrorKey, setRunErrorKey, successMsg, setSuccessMsg, successMsgKey, setSuccessMsgKey,
+    futureMonthWarning, setFutureMonthWarning,
     selectedRunId, setSelectedRunId, selectedRun,
     editingLine, setEditingLine, showFinalize, setShowFinalize,
     showUnlock, setShowUnlock,
@@ -504,7 +612,7 @@ export function usePayroll() {
     visiblePayslips, visibleRuns, visibleRunItems,
     totalPayroll, payrollStatus,
     isLoading, loadError,
-    startNewRun, saveEditedLine, markReviewed, reopenToDraft,
+    startNewRun, saveEditedLine, markReviewed, reopenToDraft, recalculateRun,
     finalizeRun, unlockRun, deleteRun, exportRun, downloadSlip, saveComponent,
     PAYROLL_MONTHS, PAYROLL_YEARS, DAILY_RATE_DIVISOR, resolveMonthlyLeaves,
   };

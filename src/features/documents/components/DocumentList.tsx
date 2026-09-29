@@ -1,9 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import EmptyState from '@/components/ui/EmptyState';
+import { TablePagination } from '@/components/shared';
+import { paginate } from '@/utils/pagination';
 import { FileText, Download, Eye, Clock, Trash2 } from 'lucide-react';
 import { DocumentItem } from '../types';
 
@@ -18,6 +20,13 @@ interface DocumentListProps {
 }
 
 export default function DocumentList({ docs, onView, onDownload, onDelete, canDelete, emptyTitle, emptyDescription }: DocumentListProps) {
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  useEffect(() => {
+    setPage(1);
+  }, [docs.length]);
+  const { totalPages, safePage, start, end, rows } = paginate(docs, page, perPage);
+
   if (docs.length === 0) {
     return (
       <Card>
@@ -29,8 +38,9 @@ export default function DocumentList({ docs, onView, onDownload, onDelete, canDe
     );
   }
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {docs.map(doc => (
+    <Card padding="none">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+      {rows.map(doc => (
         <Card key={doc.id} hover>
           <div className="flex items-start gap-3">
             <div className="bg-blue-gray p-3 rounded-lg"><FileText size={24} className="text-teal" /></div>
@@ -55,6 +65,20 @@ export default function DocumentList({ docs, onView, onDownload, onDelete, canDe
           </div>
         </Card>
       ))}
-    </div>
+      </div>
+      <TablePagination
+        page={safePage}
+        totalPages={totalPages}
+        totalCount={docs.length}
+        start={start}
+        end={end}
+        perPage={perPage}
+        onPageChange={setPage}
+        onPerPageChange={(n) => {
+          setPerPage(n);
+          setPage(1);
+        }}
+      />
+    </Card>
   );
 }

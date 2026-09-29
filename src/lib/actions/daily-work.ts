@@ -8,7 +8,7 @@ import type { Database } from '@/lib/supabase/database.types';
 type DailyWorkRow = Database['public']['Tables']['daily_work']['Row'];
 
 type DailyWorkRowWithEmployee = DailyWorkRow & {
-  employees?: { first_name: string | null; last_name: string | null } | null;
+  employees?: { first_name: string | null; last_name: string | null; avatar?: string | null } | null;
 };
 
 function mapDailyWork(row: DailyWorkRowWithEmployee): DailyWork {
@@ -16,6 +16,7 @@ function mapDailyWork(row: DailyWorkRowWithEmployee): DailyWork {
     id: row.id,
     employeeId: row.employee_id,
     employeeName: row.employees ? `${row.employees.first_name} ${row.employees.last_name}` : 'Unknown',
+    employeeAvatar: row.employees?.avatar ?? undefined,
     title: row.title,
     description: row.description || '',
     date: row.date,
@@ -35,7 +36,8 @@ export async function getDailyWork(employeeId?: string): Promise<DailyWork[]> {
       *,
       employees:employee_id (
         first_name,
-        last_name
+        last_name,
+        avatar
       )
     `)
     .order('created_at', { ascending: false });
@@ -79,7 +81,8 @@ export async function createDailyWork(data: {
       *,
       employees:employee_id (
         first_name,
-        last_name
+        last_name,
+        avatar
       )
     `)
     .single();

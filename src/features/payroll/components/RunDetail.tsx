@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
-import { ArrowLeft, CheckCircle2, Download, Lock, LockOpen, Pencil } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, CheckCircle2, Download, Lock, LockOpen, Pencil, RefreshCw } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import SearchBar from '@/components/ui/SearchBar';
 import StatCard from '@/components/ui/StatCard';
-import { StatusBadge } from '@/components/shared';
+import { StatusBadge, EmployeeCell, TablePagination } from '@/components/shared';
+import { paginate } from '@/utils/pagination';
 import { formatCurrency as money } from '@/utils';
 import type { PayrollLineItem, PayrollRun } from '@/lib/payroll';
 import type { EmployeeMonthlyLeaves } from '@/lib/payroll';
@@ -25,13 +26,34 @@ interface RunDetailProps {
   onReopen: () => void;
   onFinalizeRequest: () => void;
   onUnlockRequest: () => void;
+  /** Re-fetches live attendance & leave data and rebuilds all line items.
+   *  Only available for Draft runs. */
+  onRecalculate: () => void;
+  busy: boolean;
 }
 
 export default function RunDetail({
   run, items, search, onSearchChange, empMonthly, dailyRateDivisor,
-  isSuperAdmin,
-  onBack, onExport, onEditLine, onMarkReviewed, onReopen, onFinalizeRequest, onUnlockRequest,
+  isSuperAdmin, busy,
+  onBack, onExport, onEditLine, onMarkReviewed, onReopen,
+  onFinalizeRequest, onUnlockRequest, onRecalculate,
 }: RunDetailProps) {
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  useEffect(() => {
+    setPage(1);
+  }, [items.length, search]);
+  const { totalPages, safePage, start, end, rows } = paginate(items, page, perPage);
+
+  /** True when the run's month/year is still in the future relative to today. */
+  const isFutureRun = (() => {
+    const now = new Date();
+    return (
+      run.year > now.getFullYear() ||
+      (run.year === now.getFullYear() && run.monthIndex > now.getMonth())
+    );
+  })();
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -64,6 +86,23 @@ export default function RunDetail({
         })}
       </div>
 
+      {/* Future-month advisory banner (Draft only) */}
+      {run.status === 'Draft' && isFutureRun && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/30 p-4 text-sm">
+          <RefreshCw size={18} className="mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+          <div className="flex-1">
+            <p className="font-semibold text-amber-800 dark:text-amber-300">
+              This run was created in advance for a future month
+            </p>
+            <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-400/80">
+              Attendance and leave data for <strong>{run.month} {run.year}</strong> will be empty until the month begins.
+              Once <strong>{run.month}</strong> starts, click <strong>"Recalculate"</strong> to refresh all salaries with real attendance &amp; leave data before finalising.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Finalized lock banner */}
       {run.status === 'Finalized' && (
         <div className="flex items-start gap-3 rounded-xl border border-medium-gray bg-blue-gray/60 p-4 text-sm text-primary dark:text-blue-gray-light">
           <Lock size={18} className="mt-0.5 flex-shrink-0 text-[#0F8B8D]" />
@@ -102,11 +141,10 @@ export default function RunDetail({
             </tr>
           </thead>
           <tbody>
-            {items.map(item => (
+            {rows.map(item => (
               <tr key={item.employeeId} className="border-t border-medium-gray hover:bg-blue-gray dark:hover:bg-white/10/30">
                 <td className="px-4 py-3">
-                  <p className="font-medium text-dark-text dark:text-gray-100">{item.employeeName}</p>
-                  {item.department && <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{item.department}</p>}
+                  <EmployeeCell name={item.employeeName} employeeId={item.employeeId} sub={item.department} />
                 </td>
                 <td className="px-4 py-3 text-right">{money(item.basicSalary)}</td>
                 <td className="px-4 py-3 text-right text-green-700 dark:text-green-400">+{money(item.totalAllowances)}</td>
@@ -131,20 +169,46 @@ export default function RunDetail({
             ))}
           </tbody>
         </table>
+        <TablePagination
+          page={safePage}
+          totalPages={totalPages}
+          totalCount={items.length}
+          start={start}
+          end={end}
+          perPage={perPage}
+          onPageChange={setPage}
+          onPerPageChange={(n) => {
+            setPerPage(n);
+            setPage(1);
+          }}
+        />
       </div>
       <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Unpaid leave & absence deduction = (monthly basic ÷ {dailyRateDivisor}) × unpaid days. Each employee gets their monthly paid leaves (Monthly Leaves tab); extra approved days are automatically unpaid.</p>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
         {run.status === 'Draft' && (
-          <Button variant="primary" onClick={onMarkReviewed}>
-            <CheckCircle2 size={16} /> Mark as Reviewed
-          </Button>
+          <>
+            {/* Recalculate — always available on Draft runs so HR can refresh
+                future-month data once attendance is available */}
+            <Button
+              variant="outline"
+              onClick={onRecalculate}
+              disabled={busy}
+              title="Re-fetch live attendance & leave data and rebuild all line items"
+            >
+              <RefreshCw size={16} className={busy ? 'animate-spin' : ''} />
+              {busy ? 'Recalculating…' : 'Recalculate'}
+            </Button>
+            <Button variant="primary" onClick={onMarkReviewed} disabled={busy}>
+              <CheckCircle2 size={16} /> Mark as Reviewed
+            </Button>
+          </>
         )}
         {run.status === 'Reviewed' && (
           <>
             <Button variant="outline" onClick={onReopen}>Reopen to Draft</Button>
             <Button variant="primary" onClick={onFinalizeRequest}>
-              <Lock size={16} /> Finalize & Lock
+              <Lock size={16} /> Finalize &amp; Lock
             </Button>
           </>
         )}

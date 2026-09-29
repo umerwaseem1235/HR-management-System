@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/ui/Avatar';
-import { StatusBadge } from '@/components/shared';
-import { Trash2, Eye, Pencil, Mail, Phone } from 'lucide-react';
+import { StatusBadge, TablePagination } from '@/components/shared';
+import { paginate } from '@/utils/pagination';
+import { Trash2, Eye, Pencil } from 'lucide-react';
 import { Employee } from '@/types';
 
 interface EmployeeTableProps {
@@ -16,6 +17,14 @@ interface EmployeeTableProps {
 }
 
 export default function EmployeeTable({ employees, onEdit, onView, onDelete, isLoading }: EmployeeTableProps) {
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  // Clamp when filters shrink the list; jump back to page 1 for a new result set.
+  useEffect(() => {
+    setPage(1);
+  }, [employees.length]);
+  const { totalPages, safePage, start, end, rows } = paginate(employees, page, perPage);
+
   return (
     <Card padding="none">
       <div className="overflow-x-auto">
@@ -27,15 +36,13 @@ export default function EmployeeTable({ employees, onEdit, onView, onDelete, isL
               <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Designation</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Branch</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Joined</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Contact</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-medium-gray">
             {isLoading ? (
               <tr>
-                <td colSpan={8} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   <div className="flex items-center justify-center gap-2">
                     <svg className="animate-spin h-5 w-5 text-teal" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
                     Loading employees...
@@ -44,10 +51,10 @@ export default function EmployeeTable({ employees, onEdit, onView, onDelete, isL
               </tr>
             ) : employees.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">No employees found matching your criteria.</td>
+                <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">No employees found matching your criteria.</td>
               </tr>
             ) : (
-              employees.map(emp => (
+              rows.map(emp => (
                 <tr key={emp.id} className="hover:bg-blue-gray dark:hover:bg-white/10/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -62,13 +69,6 @@ export default function EmployeeTable({ employees, onEdit, onView, onDelete, isL
                   <td className="px-6 py-4 text-sm text-dark-text dark:text-gray-100">{emp.designation}</td>
                   <td className="px-6 py-4 text-sm text-dark-text dark:text-gray-100">{emp.branch}</td>
                   <td className="px-6 py-4"><StatusBadge status={emp.status} /></td>
-                  <td className="px-6 py-4 text-sm text-dark-text dark:text-gray-100 whitespace-nowrap">{emp.joiningDate}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3 text-gray-400 dark:text-gray-500">
-                      {emp.email && <span title={emp.email}><Mail size={16} aria-label={emp.email} className="hover:text-teal cursor-pointer transition-colors" /></span>}
-                      {emp.phone && <span title={emp.phone}><Phone size={16} aria-label={emp.phone} className="hover:text-teal cursor-pointer transition-colors" /></span>}
-                    </div>
-                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       {onView && (
@@ -112,6 +112,21 @@ export default function EmployeeTable({ employees, onEdit, onView, onDelete, isL
       </div>
       {!isLoading && employees.length === 0 && (
         <div className="p-12 text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">No employees found matching your criteria.</div>
+      )}
+      {!isLoading && (
+        <TablePagination
+          page={safePage}
+          totalPages={totalPages}
+          totalCount={employees.length}
+          start={start}
+          end={end}
+          perPage={perPage}
+          onPageChange={setPage}
+          onPerPageChange={(n) => {
+            setPerPage(n);
+            setPage(1);
+          }}
+        />
       )}
     </Card>
   );

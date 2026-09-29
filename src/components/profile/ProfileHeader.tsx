@@ -62,7 +62,7 @@ export default function ProfileHeader({ displayName, avatarUrl, badges, isActive
             />
           </div>
           <div className="min-w-0 sm:pb-0.5">
-            <h1 className="truncate text-xl sm:text-2xl font-bold leading-tight tracking-tight text-primary dark:text-blue-gray-light">
+            <h1 className="truncate text-lg sm:text-xl font-bold leading-tight tracking-tight text-primary dark:text-blue-gray-light">
               {displayName}
             </h1>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">{badges}</div>

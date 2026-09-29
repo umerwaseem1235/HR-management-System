@@ -8,7 +8,7 @@ type EmployeeRow = Database['public']['Tables']['employees']['Row'];
 type AttendanceRow = Database['public']['Tables']['attendance']['Row'];
 
 interface AttendanceRowWithEmployee extends AttendanceRow {
-  employees?: { first_name: string | null; last_name: string | null } | null;
+  employees?: { first_name: string | null; last_name: string | null; avatar?: string | null } | null;
 }
 
 export interface ReportEmployeeOption {
@@ -40,6 +40,7 @@ function mapAttendance(db: AttendanceRowWithEmployee): AttendanceRecord {
     id: db.id,
     employeeId: db.employee_id,
     employeeName: db.employees?.first_name ? `${db.employees.first_name} ${db.employees.last_name}` : '',
+    employeeAvatar: db.employees?.avatar ?? undefined,
     date: db.date,
     checkIn: db.check_in ?? '',
     checkOut: db.check_out ?? '',
@@ -60,7 +61,7 @@ export async function getAttendanceReport(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('attendance')
-    .select('*, employees(first_name, last_name)')
+    .select('*, employees(first_name, last_name, avatar)')
     .eq('employee_id', employeeId)
     .gte('date', from)
     .lte('date', to)

@@ -2,13 +2,10 @@
 
 import React from 'react';
 import Card from '@/components/ui/Card';
-import Avatar from '@/components/ui/Avatar';
-import Select from '@/components/ui/Select';
 import EmptyState from '@/components/ui/EmptyState';
-import { StatusBadge } from '@/components/shared';
-import { Eye, X, Check, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
+import { EmployeeCell, StatusBadge, TablePagination } from '@/components/shared';
+import { Eye, X, Check, Inbox } from 'lucide-react';
 import type { RemoteRequest } from '@/types';
-import { formatRange, PER_PAGE_OPTIONS } from '../hooks/useRemoteView';
 
 interface RemoteRequestTableProps {
   paged: RemoteRequest[];
@@ -39,13 +36,11 @@ export default function RemoteRequestTable({
   return (
     <Card padding="none">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px]">
+        <table className="w-full min-w-[720px]">
           <thead>
             <tr className="bg-blue-gray border-b border-medium-gray">
               <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase w-12">#</th>
               {!isEmployee && <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Employee</th>}
-              <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">From - To</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Reason</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Requested On</th>
               <th className="px-6 py-3 text-right text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Actions</th>
@@ -57,20 +52,9 @@ export default function RemoteRequestTable({
                 <td className="px-6 py-4 text-sm text-gray-400 dark:text-gray-500">{(safePage - 1) * perPage + idx + 1}</td>
                 {!isEmployee && (
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2.5">
-                      <Avatar name={req.employeeName} size="sm" />
-                      <span className="text-sm font-medium text-dark-text dark:text-gray-100 whitespace-nowrap">{req.employeeName}</span>
-                    </div>
+                    <EmployeeCell name={req.employeeName} employeeId={req.employeeId} avatar={req.employeeAvatar} />
                   </td>
                 )}
-                <td className="px-6 py-4">
-                  <p className="text-sm font-medium text-dark-text dark:text-gray-100 whitespace-nowrap">{formatRange(req.fromDate, req.toDate)}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{req.days} day{req.days > 1 ? 's' : ''}</p>
-                </td>
-                <td className="px-6 py-4 max-w-[280px]">
-                  <p className="text-sm text-dark-text dark:text-gray-100 truncate" title={req.reason}>{req.reason}</p>
-                  {req.workPlan && <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate" title={req.workPlan}>{req.workPlan}</p>}
-                </td>
                 <td className="px-6 py-4"><StatusBadge status={req.status} /></td>
                 <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 whitespace-nowrap">{req.requestedOn}</td>
                 <td className="px-6 py-4">
@@ -90,13 +74,15 @@ export default function RemoteRequestTable({
                             </button>
                           </>
                         )}
-                        <button
-                          title="Cancel request"
-                          onClick={() => onCancel(req)}
-                          className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:bg-white/10 hover:text-red-600 dark:text-red-400 cursor-pointer"
-                        >
-                          Cancel
-                        </button>
+                        {isEmployee && (
+                          <button
+                            title="Cancel request"
+                            onClick={() => onCancel(req)}
+                            className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:bg-white/10 hover:text-red-600 dark:text-red-400 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
@@ -113,38 +99,17 @@ export default function RemoteRequestTable({
           />
         )}
       </div>
-      {/* Pagination footer */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-6 py-4 border-t border-medium-gray">
-        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 sm:ml-auto">
-          <span className="whitespace-nowrap">Records per page:</span>
-          <div className="w-24">
-            <Select
-              value={String(perPage)}
-              onChange={(e) => onPerPageChange(Number(e.target.value))}
-              options={PER_PAGE_OPTIONS}
-            />
-          </div>
-        </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 tabular-nums">{rangeStart} - {rangeEnd} of {filteredCount}</p>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => onPageChange(Math.max(1, safePage - 1))}
-            disabled={safePage <= 1}
-            title="Previous page"
-            className="p-2 rounded-lg border border-medium-gray text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-blue-gray dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
-            disabled={safePage >= totalPages}
-            title="Next page"
-            className="p-2 rounded-lg border border-medium-gray text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:bg-blue-gray dark:hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      </div>
+      {/* Pagination footer — hidden automatically when everything fits on one page */}
+      <TablePagination
+        page={safePage}
+        totalPages={totalPages}
+        totalCount={filteredCount}
+        start={rangeStart}
+        end={rangeEnd}
+        perPage={perPage}
+        onPageChange={onPageChange}
+        onPerPageChange={onPerPageChange}
+      />
     </Card>
   );
 }

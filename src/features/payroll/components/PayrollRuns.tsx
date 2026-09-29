@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, Calculator, Download, Eye, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Calculator, CalendarClock, CheckCircle2, Download, Eye, Trash2, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import SearchBar from '@/components/ui/SearchBar';
 import Select from '@/components/ui/Select';
@@ -17,7 +17,11 @@ interface PayrollRunsProps {
   runError: string;
   runErrorKey: number;
   onDismissError: () => void;
-  onStart: () => void;
+  /** Called on the first click. When futureMonthWarning is shown, the
+   *  confirm button calls onStart({ confirmed: true }) to skip the guard. */
+  onStart: (opts?: { confirmed?: boolean }) => void;
+  futureMonthWarning: boolean;
+  onDismissFutureWarning: () => void;
   search: string;
   onSearchChange: (v: string) => void;
   monthOptions: { value: string; label: string }[];
@@ -28,20 +32,28 @@ interface PayrollRunsProps {
 }
 
 export default function PayrollRuns({
-  runs, newMonth, onNewMonthChange, newYear, onNewYearChange, runError, runErrorKey, onDismissError, onStart,
-  search, onSearchChange, monthOptions, yearOptions, onReview, onExport, onDeleteRequest,
+  runs, newMonth, onNewMonthChange, newYear, onNewYearChange,
+  runError, runErrorKey, onDismissError, onStart,
+  futureMonthWarning, onDismissFutureWarning,
+  search, onSearchChange, monthOptions, yearOptions,
+  onReview, onExport, onDeleteRequest,
 }: PayrollRunsProps) {
+  // Derive the selected month name for readable copy in the warning banner.
+  const selectedMonthLabel = monthOptions.find(o => o.value === newMonth)?.label ?? '';
+
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-medium-gray bg-blue-gray/40 p-5">
         <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light mb-1">Start a New Payroll Run</h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4">Select the payroll month — gross salary, allowances, deductions and approved leave/attendance are calculated automatically for every employee.</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4">
+          Select the payroll month — gross salary, allowances, deductions and approved leave/attendance are calculated automatically for every employee.
+        </p>
         <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
           <div className="sm:w-56">
             <Select
               label="Payroll Month"
               value={newMonth}
-              onChange={e => onNewMonthChange(e.target.value)}
+              onChange={e => { onNewMonthChange(e.target.value); onDismissFutureWarning(); }}
               options={monthOptions}
             />
           </div>
@@ -49,14 +61,59 @@ export default function PayrollRuns({
             <Select
               label="Year"
               value={newYear}
-              onChange={e => onNewYearChange(e.target.value)}
+              onChange={e => { onNewYearChange(e.target.value); onDismissFutureWarning(); }}
               options={yearOptions}
             />
           </div>
-          <Button variant="primary" onClick={onStart}>
+          <Button variant="primary" onClick={() => onStart()}>
             <Calculator size={16} /> Start New Run
           </Button>
         </div>
+
+        {/* ── Future-month advisory banner ──────────────────────────────── */}
+        {futureMonthWarning && (
+          <div className="mt-4 rounded-lg border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/30 p-4">
+            <div className="flex items-start gap-3">
+              <CalendarClock size={18} className="mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                  You are starting a payroll run for a future month
+                </p>
+                <p className="mt-1 text-xs text-amber-700 dark:text-amber-400/80">
+                  <strong>{selectedMonthLabel} {newYear}</strong> has not started yet. Attendance and leave data for
+                  this period will be empty — you can still create the draft now and update it before finalising.
+                  Do you want to proceed?
+                </p>
+                <div className="mt-3 flex items-center gap-2 flex-wrap">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => onStart({ confirmed: true })}
+                  >
+                    <CheckCircle2 size={14} /> Yes, Create Draft
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onDismissFutureWarning}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+              <button
+                onClick={onDismissFutureWarning}
+                title="Dismiss"
+                aria-label="Dismiss future month warning"
+                className="rounded p-0.5 hover:bg-amber-100 dark:hover:bg-amber-900/40 flex-shrink-0"
+              >
+                <X size={14} className="text-amber-600 dark:text-amber-400" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Error banner ──────────────────────────────────────────────── */}
         {runError && (
           <div key={runErrorKey} className="mt-3 flex items-start gap-2 rounded-lg border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/30 p-3 text-sm text-red-700 dark:text-red-400">
             <AlertTriangle size={15} className="mt-0.5 flex-shrink-0" />
@@ -90,14 +147,27 @@ export default function PayrollRuns({
                     Created {formatTs(run.createdOn)}{run.finalizedOn ? ` · Finalized ${formatTs(run.finalizedOn)}` : ''}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
+                {/* Fixed-width action strip — every slot is always present so rows
+                    stay pixel-aligned regardless of run status. The delete slot
+                    is invisible (aria-hidden) for non-Draft runs. */}
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <StatusBadge status={run.status} />
                   <Button variant="outline" size="sm" onClick={() => onReview(run.id)}>
                     <Eye size={14} /> {run.status === 'Finalized' ? 'View' : 'Review'}
                   </Button>
                   <button onClick={() => onExport(run)} title="Export payroll summary (PDF)" className="p-2 rounded-lg text-[#0F8B8D] hover:bg-blue-gray dark:hover:bg-white/10"><Download size={16} /></button>
-                  {run.status === 'Draft' && (
-                    <button onClick={() => onDeleteRequest(run)} title="Delete draft run" className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 dark:bg-red-950/30"><Trash2 size={16} /></button>
+                  {/* Delete slot — always occupies the same 36 × 36 px space */}
+                  {run.status === 'Draft' ? (
+                    <button
+                      onClick={() => onDeleteRequest(run)}
+                      title="Delete draft run"
+                      className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  ) : (
+                    /* Invisible placeholder keeps the row width identical */
+                    <span aria-hidden className="p-2 inline-flex w-9 h-9" />
                   )}
                 </div>
               </div>

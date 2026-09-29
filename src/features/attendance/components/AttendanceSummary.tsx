@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Clock, UserCheck, UserX, Sun } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -7,6 +8,8 @@ import Card from '@/components/ui/Card';
 import EmptyState from '@/components/ui/EmptyState';
 import Input from '@/components/ui/Input';
 import StatCard from '@/components/ui/StatCard';
+import { TablePagination } from '@/components/shared';
+import { paginate } from '@/utils/pagination';
 import type { AttendanceRecord } from '@/types';
 import { formatWorkHours } from '@/utils/date';
 import { aggregate, type AttendanceAggregate } from '../utils';
@@ -32,6 +35,16 @@ export default function AttendanceSummary({
   summaryCounts: AttendanceRecord[];
   summaryLabel: string;
 }) {
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const dates = useMemo(
+    () => Array.from(new Set(summaryCounts.map((r) => r.date))).sort().reverse(),
+    [summaryCounts],
+  );
+  useEffect(() => {
+    setPage(1);
+  }, [dates.length, summaryMode, viewDate]);
+  const { totalPages, safePage, start, end, rows: pagedDates } = paginate(dates, page, perPage);
   return (
     <>
       <Card padding="sm">
@@ -118,7 +131,7 @@ export default function AttendanceSummary({
               </tr>
             </thead>
             <tbody className="divide-y divide-medium-gray">
-              {Array.from(new Set(summaryCounts.map((r) => r.date))).sort().reverse().map((date) => {
+              {pagedDates.map((date) => {
                 const dayRecs = summaryCounts.filter((r) => r.date === date);
                 const dAgg = aggregate(dayRecs);
                 return (
@@ -141,6 +154,19 @@ export default function AttendanceSummary({
             </div>
           )}
         </div>
+        <TablePagination
+          page={safePage}
+          totalPages={totalPages}
+          totalCount={dates.length}
+          start={start}
+          end={end}
+          perPage={perPage}
+          onPageChange={setPage}
+          onPerPageChange={(n) => {
+            setPerPage(n);
+            setPage(1);
+          }}
+        />
       </Card>
     </>
   );

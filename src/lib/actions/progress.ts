@@ -9,7 +9,7 @@ import type { Database } from '@/lib/supabase/database.types';
 type ProgressEntryRow = Database['public']['Tables']['progress_entries']['Row'];
 
 interface ProgressEntryRowWithEmployee extends ProgressEntryRow {
-  employees?: { first_name: string | null; last_name: string | null } | null;
+  employees?: { first_name: string | null; last_name: string | null; avatar?: string | null } | null;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -22,7 +22,8 @@ export async function getProgressEntries(employeeId?: string): Promise<ProgressE
       *,
       employees:employee_id (
         first_name,
-        last_name
+        last_name,
+        avatar
       )
     `)
     .order('created_at', { ascending: false });
@@ -41,6 +42,7 @@ export async function getProgressEntries(employeeId?: string): Promise<ProgressE
     submissionDate: row.submission_date,
     employeeId: row.employee_id,
     employeeName: row.employees ? `${row.employees.first_name} ${row.employees.last_name}` : 'Unknown',
+    employeeAvatar: row.employees?.avatar ?? undefined,
     createdOn: row.created_on,
   }));
 }
@@ -74,7 +76,8 @@ export async function createProgressEntry(data: {
       *,
       employees:employee_id (
         first_name,
-        last_name
+        last_name,
+        avatar
       )
     `)
     .single();
@@ -90,6 +93,7 @@ export async function createProgressEntry(data: {
     submissionDate: r.submission_date,
     employeeId: r.employee_id,
     employeeName: r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : 'Unknown',
+    employeeAvatar: r.employees?.avatar ?? undefined,
     createdOn: r.created_on,
   };
 }

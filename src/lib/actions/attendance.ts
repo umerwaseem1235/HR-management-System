@@ -13,6 +13,7 @@ type AttendanceStatus = Database['public']['Tables']['attendance']['Row']['statu
 interface EmployeeNameJoin {
   first_name?: string | null;
   last_name?: string | null;
+  avatar?: string | null;
 }
 
 interface AttendanceRowWithEmployee {
@@ -120,6 +121,7 @@ function mapAttendance(db: AttendanceRowWithEmployee): AttendanceRecord {
     id: db.id,
     employeeId: db.employee_id,
     employeeName,
+    employeeAvatar: emp?.avatar ?? undefined,
     date: db.date,
     checkIn: db.check_in ? db.check_in.slice(0, 5) : '',
     checkOut: db.check_out ? db.check_out.slice(0, 5) : '',
@@ -140,7 +142,7 @@ function mapAttendance(db: AttendanceRowWithEmployee): AttendanceRecord {
 /* ------------------------------------------------------------------ */
 
 const ATTENDANCE_LIST_COLUMNS =
-  'id, employee_id, date, check_in, check_out, status, work_hours, overtime, notes, check_in_lat, check_in_lng, check_out_lat, check_out_lng, distance_from_office, employees(first_name, last_name)';
+  'id, employee_id, date, check_in, check_out, status, work_hours, overtime, notes, check_in_lat, check_in_lng, check_out_lat, check_out_lng, distance_from_office, employees(first_name, last_name, avatar)';
 
 export async function getAttendanceByDate(
   date: string,
@@ -270,7 +272,7 @@ export async function getAttendanceData(year: number, month: number) {
       .order('date', { ascending: true }),
     supabase
       .from('attendance_corrections')
-      .select('id, employee_id, date, requested_status, requested_check_in, requested_check_out, reason, status, employees(first_name, last_name)')
+      .select('id, employee_id, date, requested_status, requested_check_in, requested_check_out, reason, status, employees(first_name, last_name, avatar)')
       .order('created_at', { ascending: false }),
     supabase
       .from('holidays')
@@ -315,6 +317,7 @@ export async function getAttendanceData(year: number, month: number) {
         id: row.id,
         employeeId: row.employee_id,
         employeeName: emp ? `${emp.first_name || ''} ${emp.last_name || ''}`.trim() : 'Unknown',
+        employeeAvatar: emp?.avatar ?? undefined,
         date: row.date,
         currentStatus: '',
         requestedStatus: row.requested_status || '',
@@ -377,7 +380,7 @@ export async function createAttendanceRecord(
   const { data: row, error } = await supabase
     .from('attendance')
     .upsert(dbData, { onConflict: 'employee_id,date' })
-    .select('*, employees(first_name, last_name)')
+    .select('*, employees(first_name, last_name, avatar)')
     .single();
 
   if (error) throw new Error(error.message);
@@ -578,7 +581,7 @@ export async function selfCheckInOut(
       { employee_id: employeeId, date, ...updateData },
       { onConflict: 'employee_id,date' }
     )
-    .select('*, employees(first_name, last_name)')
+    .select('*, employees(first_name, last_name, avatar)')
     .single();
 
   if (error) throw new Error(error.message);
@@ -594,7 +597,7 @@ export async function getCorrections() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('attendance_corrections')
-    .select('id, employee_id, date, requested_status, requested_check_in, requested_check_out, reason, status, employees(first_name, last_name)')
+    .select('id, employee_id, date, requested_status, requested_check_in, requested_check_out, reason, status, employees(first_name, last_name, avatar)')
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   return ((data || []) as unknown as CorrectionRowWithEmployee[]).map((row) => {
@@ -607,6 +610,7 @@ export async function getCorrections() {
       id: row.id,
       employeeId: row.employee_id,
       employeeName,
+      employeeAvatar: emp?.avatar ?? undefined,
       date: row.date,
       currentStatus: '',
       requestedStatus: row.requested_status || '',
@@ -820,7 +824,7 @@ export async function checkInWithLocation(data: {
     const first = await supabase
       .from('attendance')
       .upsert(fullData, { onConflict: 'employee_id,date' })
-      .select('*, employees(first_name, last_name)')
+      .select('*, employees(first_name, last_name, avatar)')
       .single();
     row = first.data as unknown as AttendanceRowWithEmployee | null;
     upsertError = first.error;
@@ -830,7 +834,7 @@ export async function checkInWithLocation(data: {
       const retry = await supabase
         .from('attendance')
         .upsert(baseData, { onConflict: 'employee_id,date' })
-        .select('*, employees(first_name, last_name)')
+        .select('*, employees(first_name, last_name, avatar)')
         .single();
       row = retry.data as unknown as AttendanceRowWithEmployee | null;
       upsertError = retry.error;
@@ -954,7 +958,7 @@ export async function checkOutWithLocation(data: {
     const first = await supabase
       .from('attendance')
       .upsert(fullData, { onConflict: 'employee_id,date' })
-      .select('*, employees(first_name, last_name)')
+      .select('*, employees(first_name, last_name, avatar)')
       .single();
     row = first.data as unknown as AttendanceRowWithEmployee | null;
     upsertError = first.error;
@@ -963,7 +967,7 @@ export async function checkOutWithLocation(data: {
       const retry = await supabase
         .from('attendance')
         .upsert(baseData, { onConflict: 'employee_id,date' })
-        .select('*, employees(first_name, last_name)')
+        .select('*, employees(first_name, last_name, avatar)')
         .single();
       row = retry.data as unknown as AttendanceRowWithEmployee | null;
       upsertError = retry.error;

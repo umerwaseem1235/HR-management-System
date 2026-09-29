@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { LayoutDashboard } from "lucide-react";
+import { LayoutDashboard, ChevronDown } from "lucide-react";
 import { iconMap } from "./iconMap";
 
 interface SidebarNavItemProps {
@@ -75,9 +75,12 @@ export function SidebarNavItem({
           {name}
         </span>
         {hasSubItems && !compact && (
-          <span className={`transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`}>
-            ▶
-          </span>
+          <ChevronDown
+            size={14}
+            className={`ml-auto shrink-0 transition-transform duration-300 ease-in-out ${
+              isOpen ? "rotate-180 opacity-100" : "opacity-60"
+            }`}
+          />
         )}
         {badge && badge > 0 && (
           <span

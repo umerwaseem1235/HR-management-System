@@ -69,6 +69,7 @@ export interface AttendanceRecord {
   id: string;
   employeeId: string;
   employeeName: string;
+  employeeAvatar?: string;
   date: string;
   checkIn: string;
   checkOut: string;
@@ -190,6 +191,7 @@ export interface PerformanceReview {
   id: string;
   employeeId: string;
   employeeName: string;
+  employeeAvatar?: string;
   cycleId: string;
   cycleName: string;
   selfRating?: number;
@@ -206,6 +208,7 @@ export interface ProgressEntry {
   submissionDate: string;
   employeeId: string;
   employeeName: string;
+  employeeAvatar?: string;
   createdOn: string;
 }
 
@@ -213,6 +216,7 @@ export interface ExpenseClaim {
   id: string;
   employeeId: string;
   employeeName: string;
+  employeeAvatar?: string;
   category: string;
   amount: number;
   date: string;
@@ -274,6 +278,7 @@ export interface DailyWork {
   id: string;
   employeeId: string;
   employeeName: string;
+  employeeAvatar?: string;
   title: string;
   description: string;
   date: string;
@@ -290,6 +295,7 @@ export interface RemoteRequest {
   id: string;
   employeeId: string;
   employeeName: string;
+  employeeAvatar?: string;
   fromDate: string;
   toDate: string;
   days: number;

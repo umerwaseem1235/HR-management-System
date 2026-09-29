@@ -220,9 +220,13 @@ export async function getEmployees(): Promise<Employee[]> {
   const supabase = await createClient();
 
   // Single lean query: explicit columns (no avatar) + N:1 joins.
-  const { data, error } = await supabase
-    .from('employees')
-    .select(`
+  // Super-admin logins get an auto-linked employee row on first use —
+  // those must never appear in the employee module, so their user ids
+  // are resolved here and filtered out below.
+  const [{ data, error }, { data: superAdmins }] = await Promise.all([
+    supabase
+      .from('employees')
+      .select(`
       ${EMPLOYEE_LIST_COLUMNS},
       departments(name),
       designations(name),
@@ -230,13 +234,22 @@ export async function getEmployees(): Promise<Employee[]> {
       shifts(name),
       reporting_manager:employees(first_name, last_name)
     `)
-    .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }),
+    supabase.from('users').select('id').eq('role', 'super_admin'),
+  ]);
 
   if (error) {
     throw new Error(`Database query failed: ${error.message}`);
   }
-  
-  return (data || []).map((r) => mapEmployee(asEmployeeRow(r)));
+
+  const superAdminIds = new Set((superAdmins || []).map((u) => u.id));
+
+  return (data || [])
+    .filter((r) => {
+      const userId = (r as { user_id?: string | null }).user_id;
+      return !userId || !superAdminIds.has(userId);
+    })
+    .map((r) => mapEmployee(asEmployeeRow(r)));
 }
 
 export async function getEmployee(id: string): Promise<Employee> {
@@ -464,7 +477,21 @@ export async function updateEmployee(id: string, input: Partial<EmployeeInput>):
       const fullName = `${updatedRow.first_name ?? ''} ${updatedRow.last_name ?? ''}`.trim();
       if (fullName) usersPatch.name = fullName;
     }
-    if (input.email) usersPatch.email = input.email;
+    if (input.email) {
+      // Guard against the users_email_key unique constraint: if the new email
+      // already belongs to a *different* user row, reject early with a clear message
+      // instead of letting Postgres throw a cryptic duplicate-key error.
+      const { data: emailOwner } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', input.email)
+        .neq('id', updatedRow.user_id)
+        .maybeSingle();
+      if (emailOwner) {
+        throw new Error(`Email "${input.email}" is already in use by another account`);
+      }
+      usersPatch.email = input.email;
+    }
     if (Object.keys(usersPatch).length > 0) {
       const { error: usersError } = await supabase
         .from('users')
