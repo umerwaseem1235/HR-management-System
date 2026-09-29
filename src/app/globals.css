@@ -92,11 +92,12 @@ svg text {
   dominant-baseline: middle;
 }
 
-/* Ensure chart SVG doesn't inherit transitions from shell */
-svg {
-  transition: none !important;
-  animation: none !important;
-}
+/* NOTE: a blanket `svg { transition/animation: none !important }` rule used to
+   live here to stop chart-SVG compositing ghosting. This project has no SVG
+   chart library — the rule only froze every SVG loader/icon in the app
+   (login + verify buttons, table + button spinners, refresh icons), so it
+   was removed. If animated SVG charts are ever added, scope such a reset
+   to their container class instead of reviving the global rule. */
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {

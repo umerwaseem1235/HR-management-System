@@ -4,7 +4,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { createHoliday, deleteHoliday, getHolidays } from '@/lib/actions/attendance';
+import { cachedQuery, peekQuery, primeQuery } from '@/lib/query-cache';
 import type { Holiday } from '../types';
+
+export const HOLIDAYS_CACHE_KEY = 'holidays';
 
 export interface NewHolidayInput {
   name: string;
@@ -16,10 +19,12 @@ export interface NewHolidayInput {
 export function useHolidays() {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  // Stale-while-revalidate: a cached list paints instantly and revalidates
+  // silently — only a cold start (no cache) shows the loading state.
+  const [holidays, setHolidays] = useState<Holiday[]>(() => peekQuery<Holiday[]>(HOLIDAYS_CACHE_KEY) ?? []);
   const [holidayMsg, setHolidayMsg] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => peekQuery<Holiday[]>(HOLIDAYS_CACHE_KEY) === undefined);
   const [confirmDeleteHoliday, setConfirmDeleteHoliday] = useState<Holiday | null>(null);
 
   const isAdmin = user?.role === 'super_admin' || user?.role === 'hr_manager';
@@ -28,7 +33,7 @@ export function useHolidays() {
     let cancelled = false;
     (async () => {
       try {
-        const data = await getHolidays();
+        const data = await cachedQuery<Holiday[]>(HOLIDAYS_CACHE_KEY, getHolidays);
         if (!cancelled) setHolidays(data);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load holidays');
@@ -53,7 +58,11 @@ export function useHolidays() {
           type: input.type || 'Public',
           isRecurring: input.isRecurring,
         });
-        setHolidays((current) => [...current, newHoliday].sort((a, b) => a.date.localeCompare(b.date)));
+        setHolidays((current) => {
+          const next = [...current, newHoliday].sort((a, b) => a.date.localeCompare(b.date));
+          primeQuery(HOLIDAYS_CACHE_KEY, next);
+          return next;
+        });
         addNotification({
           title: 'New Holiday Announced',
           message: `${name} on ${date} (${input.type || 'Public'}) — notified to all employees.`,
@@ -89,7 +98,11 @@ export function useHolidays() {
   const handleDeleteHoliday = useCallback(async (id: string) => {
     try {
       await deleteHoliday(id);
-      setHolidays((current) => current.filter((x) => x.id !== id));
+      setHolidays((current) => {
+        const next = current.filter((x) => x.id !== id);
+        primeQuery(HOLIDAYS_CACHE_KEY, next);
+        return next;
+      });
     } catch (err: unknown) {
       setError(err instanceof Error && err.message ? err.message : 'Failed to delete holiday');
     }

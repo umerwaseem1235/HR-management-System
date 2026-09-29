@@ -73,7 +73,12 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
   const lookupFetchedRef = useRef(false);
 
   const fetchEmployees = useCallback(async () => {
-    setIsLoading(true);
+    // Stale-while-revalidate: a cached list paints instantly and revalidates
+    // silently — only a cold start (no cache) may show the loading state.
+    // This stops the table spinner flashing on every module switch.
+    if (peekQuery<Employee[]>(EMPLOYEES_CACHE_KEY) === undefined) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const data = await cachedQuery(EMPLOYEES_CACHE_KEY, getEmployees);
@@ -81,20 +86,23 @@ export function useEmployeesSupabase(): UseEmployeesSupabaseReturn {
 
       // The list query omits `avatar` for speed — fill photos in the
       // background and persist the merged list so remounts paint photos
-      // instantly instead of initials.
-      try {
-        const avatars = await getEmployeeAvatars(data.map((e) => e.id));
-        if (Object.keys(avatars).length > 0) {
-          setEmployees((prev) => {
-            const merged = prev.map((emp) =>
-              avatars[emp.id] ? { ...emp, avatar: avatars[emp.id] } : emp,
-            );
-            primeQuery(EMPLOYEES_CACHE_KEY, merged);
-            return merged;
-          });
+      // instantly instead of initials. Skipped when every row already
+      // carries a photo (i.e. the primed cache hit).
+      if (data.some((e) => !e.avatar)) {
+        try {
+          const avatars = await getEmployeeAvatars(data.map((e) => e.id));
+          if (Object.keys(avatars).length > 0) {
+            setEmployees((prev) => {
+              const merged = prev.map((emp) =>
+                avatars[emp.id] ? { ...emp, avatar: avatars[emp.id] } : emp,
+              );
+              primeQuery(EMPLOYEES_CACHE_KEY, merged);
+              return merged;
+            });
+          }
+        } catch (err) {
+          console.error('Failed to fetch avatars:', err);
         }
-      } catch (err) {
-        console.error('Failed to fetch avatars:', err);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
