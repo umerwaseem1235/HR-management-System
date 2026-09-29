@@ -168,12 +168,24 @@ export async function getCurrentUser(): Promise<{ user: User | null; error: stri
   return { user, error: null };
 }
 
-export async function updateProfile(data: { name: string; email: string; avatar?: string | null }): Promise<{ success: boolean; error?: string }> {
+export async function updateProfile(data: { name: string; email: string; avatar?: string | null }): Promise<{ success: boolean; error?: string; emailConfirmationRequired?: boolean }> {
   const supabase = await createClient();
   const { data: authData, error: userError } = await supabase.auth.getUser();
 
   if (userError || !authData.user) {
     return { success: false, error: 'Not authenticated' };
+  }
+
+  // Only super admins and HR managers may edit profiles self-service —
+  // employees cannot change their own name, email or photo here (HR owns
+  // their record). The UI hides the button; this rejects forged calls.
+  const { data: profileRow } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', authData.user.id)
+    .maybeSingle();
+  if (profileRow?.role !== 'super_admin' && profileRow?.role !== 'hr_manager') {
+    return { success: false, error: 'You do not have permission to edit this profile. Please contact HR.' };
   }
 
   // Update email in Auth if it changed
@@ -226,5 +238,18 @@ export async function updateProfile(data: { name: string; email: string; avatar?
     return { success: false, error: employeeError.message };
   }
 
-  return { success: true };
+  // Supabase applies an auth-email change only after both confirmation links
+  // are clicked — the tables above already carry the new address. Report
+  // whether the sign-in itself is still pending so the UI can say so instead
+  // of silently reloading. (On projects with email confirmation disabled the
+  // switch is immediate and this flag stays false.)
+  let emailConfirmationRequired = false;
+  const requestedEmail = (data.email ?? '').trim().toLowerCase();
+  if (requestedEmail) {
+    const { data: freshAuth } = await supabase.auth.getUser();
+    const liveEmail = (freshAuth.user?.email ?? '').trim().toLowerCase();
+    emailConfirmationRequired = liveEmail !== requestedEmail;
+  }
+
+  return { success: true, emailConfirmationRequired };
 }
