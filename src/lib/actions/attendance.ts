@@ -5,7 +5,7 @@ import { createClient as createServiceClient, type PostgrestError } from '@supab
 import { revalidatePath } from 'next/cache';
 import type { AttendanceRecord } from '@/lib/types';
 import type { Database } from '@/lib/supabase/database.types';
-import { isEarlyHalfDayCheckout } from '@/utils/date';
+import { companyDateStr, companyTimeStr, isEarlyHalfDayCheckout } from '@/utils/date';
 import { calculateDistance, getOfficeLocationConfig } from '@/lib/location';
 
 type AttendanceStatus = Database['public']['Tables']['attendance']['Row']['status'];
@@ -203,7 +203,7 @@ export async function getAllAttendance(
 /** Compute live attendance stats for a given date (defaults to today). */
 export async function getAttendanceStats(date?: string) {
   const supabase = await createClient();
-  const targetDate = date ?? new Date().toISOString().slice(0, 10);
+  const targetDate = date ?? companyDateStr();
 
   // Count-only queries in parallel — the old version downloaded every row
   // for the date and counted in JS.
@@ -246,7 +246,7 @@ export async function getAttendanceData(year: number, month: number) {
   const lastDay = new Date(year, month, 0).getDate();
   const start = `${year}-${String(month).padStart(2, '0')}-01`;
   const end = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = companyDateStr();
 
   const [
     employeesRes,
@@ -477,7 +477,7 @@ export async function autoCloseOpenAttendance(
     );
   }
   const svc = createServiceClient<Database>(url, secret);
-  const today = asOfDate ?? new Date().toISOString().slice(0, 10);
+  const today = asOfDate ?? companyDateStr();
 
   const { data: open, error: fetchErr } = await svc
     .from('attendance')
@@ -528,8 +528,9 @@ export async function selfCheckInOut(
   // rows are corrected even if the midnight scheduler hasn't run yet.
   await closeStaleOpenDays(supabase, employeeId, date);
 
-  const now = new Date();
-  const timeStr = now.toTimeString().slice(0, 5); // HH:MM
+  // Company wall time — the server clock is UTC, so `new Date()` here would
+  // stamp 5 hours behind (and break late/early rules built on office hours).
+  const timeStr = companyTimeStr(); // HH:MM
 
   // Day-close rule: once checked out, the day is locked — no re-check-in
   // (and no second checkout) via self-service. Corrections go through HR.
@@ -793,8 +794,8 @@ export async function checkInWithLocation(data: {
       return { success: false, error: 'You have already checked out for today. Check-in is closed for the day — please contact HR if this is a mistake.' };
     }
 
-    const now = new Date();
-    const checkInTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    // Company wall time — the server clock is UTC.
+    const checkInTime = companyTimeStr();
     const status: 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Holiday' | 'Weekend' = 'Present';
 
     // Lazy midnight rule: close this employee's older open days as Half Day.

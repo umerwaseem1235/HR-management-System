@@ -8,6 +8,36 @@ export function todayStr(): string {
   return toDateStr(new Date());
 }
 
+/** IANA zone every wall-clock stamp in this app is recorded in.
+ *  Server actions run on UTC clocks — stamping `new Date()` there once put
+ *  check-ins 5 hours behind. Always go through companyTimeStr/companyDateStr
+ *  on the server side. */
+export const COMPANY_TIME_ZONE = 'Asia/Karachi';
+
+/** "HH:MM" wall-clock time in the company zone. */
+export function companyTimeStr(at: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: COMPANY_TIME_ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(at);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '00';
+  // en-GB hour12:false yields "24" at midnight in some ICU builds.
+  const hour = get('hour') === '24' ? '00' : get('hour');
+  return `${hour}:${get('minute')}`;
+}
+
+/** "YYYY-MM-DD" in the company zone — the server-side "today". */
+export function companyDateStr(at: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: COMPANY_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(at);
+}
+
 /** "09:30" -> 570. Returns 0 for empty/invalid input. */
 export function timeToMinutes(t: string): number {
   if (!t) return 0;
