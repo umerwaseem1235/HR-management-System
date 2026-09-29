@@ -11,13 +11,12 @@ import { useRequireAuth, AuthLoadingFallback } from '../../../components/auth/Re
 import { useEmployeeDirectory } from '../../../hooks/useEmployeeDirectory';
 import ProfileHeader from '../../../components/profile/ProfileHeader';
 import ProfileInfo, { FieldRow } from '../../../components/profile/ProfileInfo';
-import { useRouter } from 'next/navigation';
 import EditProfileModal from '../../../components/profile/EditProfileModal';
 import { updateProfile } from '../../../lib/actions/auth';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import type { User as AuthUser } from '../../../lib/types';
 
-function EditProfileModalWrapper({ user, isOpen, onClose }: { user: any, isOpen: boolean, onClose: () => void }) {
-  const router = useRouter();
+function EditProfileModalWrapper({ user, isOpen, onClose }: { user: AuthUser, isOpen: boolean, onClose: () => void }) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const handleSave = async (values: { name: string; email: string }, photo: string | null) => {
@@ -53,6 +52,7 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const { findByUser } = useEmployeeDirectory();
   const { t } = useLanguage();
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
 
   useRequireAuth();
   if (!user) return <AuthLoadingFallback />;
@@ -70,8 +70,6 @@ export default function ProfilePage() {
     return <Badge variant={map[status] || 'neutral'} size="md">{status}</Badge>;
   };
 
-  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
-  
   // Fallback when no matching employee record exists: same layout, account data
   if (!employee) {
     return (
@@ -139,7 +137,7 @@ export default function ProfilePage() {
         <div className="overflow-hidden rounded-2xl border border-medium-gray/70 bg-white dark:bg-[#1b263b] shadow-[0_1px_2px_rgba(23,50,77,0.05),0_16px_44px_-20px_rgba(23,50,77,0.25)]">
           <ProfileHeader
             displayName={fullName}
-            avatarUrl={employee.avatar}
+            avatarUrl={user.avatar || employee.avatar}
             badges={
               <>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-teal/10 px-3 py-1 text-xs font-bold text-teal">

@@ -12,6 +12,10 @@ interface ProfileHeaderProps {
 }
 
 export default function ProfileHeader({ displayName, avatarUrl, badges, isActive }: ProfileHeaderProps) {
+  // Track the exact src that failed. Deriving "show photo" from it means a new
+  // or replaced photo (different src) automatically retries — no effect needed.
+  const [failedSrc, setFailedSrc] = React.useState<string | null>(null);
+
   return (
     <>
       {/* Slim gradient banner */}
@@ -23,7 +27,22 @@ export default function ProfileHeader({ displayName, avatarUrl, badges, isActive
         <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4">
           <div className="relative -mt-10 sm:-mt-12 shrink-0 self-start">
             <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center overflow-hidden rounded-full bg-primary text-xl sm:text-2xl font-bold text-white ring-4 ring-white dark:ring-[#1b263b] shadow-xl">
-              {avatarUrl ? (
+              {!avatarUrl || failedSrc === avatarUrl ? (
+                getInitials(displayName)
+              ) : /^(data:|blob:)/.test(avatarUrl) ? (
+                // Uploaded photos are base64/blob URLs — next/image handles
+                // these unreliably (falls back to initials), so render them
+                // with a plain <img>, same as the shared Avatar component.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarUrl}
+                  alt={displayName}
+                  width={96}
+                  height={96}
+                  onError={() => setFailedSrc(avatarUrl)}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
                 <NextImage
                   src={avatarUrl}
                   alt={displayName}
@@ -31,10 +50,9 @@ export default function ProfileHeader({ displayName, avatarUrl, badges, isActive
                   height={96}
                   unoptimized
                   loader={({ src }) => src}
+                  onError={() => setFailedSrc(avatarUrl)}
                   className="h-full w-full object-cover"
                 />
-              ) : (
-                getInitials(displayName)
               )}
             </div>
             <span

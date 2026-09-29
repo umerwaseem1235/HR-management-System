@@ -450,6 +450,30 @@ export async function updateEmployee(id: string, input: Partial<EmployeeInput>):
 
   if (error) throw new Error(error.message);
 
+  // Keep the account row in sync. The topbar/sidebar read users.name/email,
+  // while this flow writes employees — without this the two mirror rows drift
+  // (the profile page then shows a different name than the header).
+  const updatedRow = data as unknown as {
+    user_id?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+  };
+  if (updatedRow?.user_id && (input.firstName || input.lastName || input.email)) {
+    const usersPatch: { name?: string; email?: string } = {};
+    if (input.firstName || input.lastName) {
+      const fullName = `${updatedRow.first_name ?? ''} ${updatedRow.last_name ?? ''}`.trim();
+      if (fullName) usersPatch.name = fullName;
+    }
+    if (input.email) usersPatch.email = input.email;
+    if (Object.keys(usersPatch).length > 0) {
+      const { error: usersError } = await supabase
+        .from('users')
+        .update(usersPatch)
+        .eq('id', updatedRow.user_id);
+      if (usersError) throw new Error(`Employee updated but account sync failed: ${usersError.message}`);
+    }
+  }
+
   revalidatePath('/employees');
   revalidatePath(`/employees/${id}`);
 

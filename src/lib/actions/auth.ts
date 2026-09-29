@@ -198,5 +198,33 @@ export async function updateProfile(data: { name: string; email: string; avatar?
     return { success: false, error: updateError.message };
   }
 
+  // Keep the linked employee record in sync. The profile page, directory,
+  // and reports render first_name/last_name (and the topbar photo) from the
+  // employees table, so a name/email/photo change here must propagate —
+  // otherwise the UI keeps showing the stale values. RLS ("employees self
+  // update") allows every user to update their own row.
+  const [firstName, ...restName] = (data.name || '').trim().split(/\s+/);
+  const employeePatch: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    avatar?: string | null;
+  } = {
+    first_name: firstName || data.name,
+    last_name: restName.join(' ') || '',
+    email: data.email,
+  };
+  if (data.avatar !== undefined) {
+    employeePatch.avatar = data.avatar;
+  }
+  const { error: employeeError } = await supabase
+    .from('employees')
+    .update(employeePatch)
+    .eq('user_id', authData.user.id);
+
+  if (employeeError) {
+    return { success: false, error: employeeError.message };
+  }
+
   return { success: true };
 }
