@@ -40,7 +40,7 @@ export function MyAttendanceStats({
   monthLabel: string;
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
       <StatCard title="Present Days" value={presentDays} change={monthLabel} showDot={false} icon={<UserCheck size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} />
       <StatCard title="Absent Days" value={absentDays} change={monthLabel} showDot={false} icon={<UserX size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} />
       <StatCard title="Late Days" value={lateDays} change={monthLabel} showDot={false} icon={<Clock size={18} strokeWidth={1.6} className={ICON_CLASS} />} iconBg={ICON_BG} />

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ClipboardCheck, Gift, Clock, CheckCircle2, XCircle, ArrowUpRight, Briefcase, UserPlus, DollarSign } from 'lucide-react';
 import Card from '../ui/Card';
 import StatCard from '../ui/StatCard';
+import Select from '../ui/Select';
 import { EmployeeCell } from '../shared';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AttendanceChart, { TrendPoint } from './AttendanceChart';
@@ -130,11 +131,12 @@ export default function AdminDashboard() {
   const todayLabel = `${todayDate.toLocaleDateString('en-GB')}, ${todayDate.toLocaleDateString('en-US', { weekday: 'short' })}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Welcome header */}
       <AdminHeader welcomeName={welcomeName} todayLabel={todayLabel} />
 
-      {/* Stat Cards - responsive: wraps when sidebar is open / narrow screens */}
+      {/* Stat cards + quick stats — one shared grid so cards pair up on mobile
+          (Approvals sits beside Open Vacancies) and flow 5-per-row on desktop */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 2xl:gap-4">
         <div className="min-w-0">
           <StatCard
@@ -181,17 +183,14 @@ export default function AdminDashboard() {
             iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]"
           />
         </div>
-      </div>
 
-      {/* Quick Stats Row - responsive: wraps when sidebar is open / narrow screens */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 2xl:gap-4">
         <Card padding="none" hover className="min-w-0 overflow-hidden p-3 xl:p-4">
           <div className="flex items-center gap-2 xl:gap-3">
             <div className="shrink-0 bg-blue-50 dark:bg-blue-950/30 p-2 rounded-lg">
               <Briefcase size={18} className="text-teal" />
             </div>
             <div className="min-w-0">
-              <p className="text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{s.openVacancies}</p>
+              <p className="truncate text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{s.openVacancies}</p>
               <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Open Vacancies</p>
             </div>
           </div>
@@ -202,7 +201,7 @@ export default function AdminDashboard() {
               <UserPlus size={18} className="text-teal" />
             </div>
             <div className="min-w-0">
-              <p className="text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{s.newJoinersThisMonth}</p>
+              <p className="truncate text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{s.newJoinersThisMonth}</p>
               <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">New Joiners</p>
             </div>
           </div>
@@ -213,7 +212,7 @@ export default function AdminDashboard() {
               <Clock size={18} className="text-teal" />
             </div>
             <div className="min-w-0">
-              <p className="text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{s.lateToday}</p>
+              <p className="truncate text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{s.lateToday}</p>
               <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Late Today</p>
             </div>
           </div>
@@ -224,7 +223,7 @@ export default function AdminDashboard() {
               <DollarSign size={18} className="text-teal" />
             </div>
             <div className="min-w-0">
-              <p className="text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{payrollStatusValue}</p>
+              <p className="truncate text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{payrollStatusValue}</p>
               <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Payroll Status</p>
             </div>
           </div>
@@ -235,7 +234,7 @@ export default function AdminDashboard() {
               <ClipboardCheck size={18} className="text-teal" />
             </div>
             <div className="min-w-0">
-              <p className="text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{s.attendanceRate}%</p>
+              <p className="truncate text-base xl:text-lg font-bold leading-tight text-primary dark:text-blue-gray-light">{s.attendanceRate}%</p>
               <p className="truncate whitespace-nowrap text-[10px] xl:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Attendance Rate</p>
             </div>
           </div>
@@ -243,20 +242,22 @@ export default function AdminDashboard() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Attendance Trend */}
         <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light">Attendance Trend</h3>
-            <div className="flex items-center gap-2">
-              <select
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h3 className="min-w-0 truncate text-base font-semibold text-primary dark:text-blue-gray-light">Attendance Trend</h3>
+            <div className="w-28 shrink-0">
+              <Select
+                size="sm"
+                ariaLabel="Attendance trend range"
                 value={trendRange}
                 onChange={(e) => setTrendRange(e.target.value as 'week' | 'month')}
-                className="px-3 py-1.5 text-sm border border-medium-gray rounded-lg focus:border-teal focus:ring-2 focus:ring-teal/20 focus:outline-none"
-              >
-                <option value="week">Week</option>
-                <option value="month">Month</option>
-              </select>
+                options={[
+                  { value: 'week', label: 'Week' },
+                  { value: 'month', label: 'Month' },
+                ]}
+              />
             </div>
           </div>
           <AttendanceChart data={trendData} />
@@ -264,28 +265,28 @@ export default function AdminDashboard() {
 
         {/* Pending Leave Approvals */}
         <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light">Pending Leave Approvals</h3>
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h3 className="min-w-0 truncate text-base font-semibold text-primary dark:text-blue-gray-light">Pending Leave Approvals</h3>
             <button
               onClick={() => router.push('/leave')}
-              className="text-sm text-teal hover:underline font-medium flex items-center gap-1"
+              className="shrink-0 text-sm text-teal hover:underline font-medium flex items-center gap-1"
             >
               View All <ArrowUpRight size={14} />
             </button>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2.5 sm:space-y-3">
             {pendingLeaves.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm text-center py-8">No pending approvals</p>
             ) : (
               pendingLeaves.map(leave => (
-                <div key={leave.id} className="flex items-center justify-between p-4 rounded-lg bg-blue-gray/50 border border-medium-gray">
+                <div key={leave.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 rounded-lg bg-blue-gray/50 border border-medium-gray">
                   <EmployeeCell
                     name={leave.employeeName}
                     employeeId={leave.employeeId}
                     avatar={leave.employeeAvatar}
                     sub={`${leave.leaveType} · ${leave.startDate} to ${leave.endDate} · ${leave.days} day${leave.days > 1 ? 's' : ''}`}
                   />
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
                     <button
                       title="Approve"
                       onClick={() => setConfirmApproveLeave(leave)}
@@ -309,9 +310,9 @@ export default function AdminDashboard() {
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 items-stretch">
         {/* Department Headcount */}
-        <Card className="lg:col-span-2 !rounded-2xl !p-5 h-full flex flex-col">
+        <Card className="lg:col-span-2 !rounded-2xl !p-4 sm:!p-5 h-full flex flex-col">
           <div className="flex items-center justify-between pb-3 mb-2 border-b border-[#EDF2FA]">
             <div className="flex items-center gap-2">
               <span className="w-1 h-6 rounded-full bg-[#0B5CAD]" />

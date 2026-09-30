@@ -11,7 +11,7 @@ interface ExpenseStatsProps {
 
 export default function ExpenseStats({ pendingTotal, approvedCount, reimbursedCount }: ExpenseStatsProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
       <Card padding="sm">
         <div className="flex items-center gap-3">
           <div className="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA] p-2 rounded-lg shadow-md ring-1 ring-black/5"><DollarSign size={18} strokeWidth={1.6} className="text-teal" /></div>

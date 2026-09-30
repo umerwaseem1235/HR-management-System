@@ -115,7 +115,7 @@ export default function RunDetail({
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         <StatCard title="Total Gross" value={money(run.totalGross)} iconName="growth" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
         <StatCard title="Total Deductions" value={money(run.totalDeductions)} iconName="decline" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
         <StatCard title="Total Net Payable" value={money(run.totalNet)} iconName="payrollStatus" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import DatePicker from '@/components/ui/DatePicker';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { Upload, FileText, Download, Paperclip, X } from 'lucide-react';
@@ -55,7 +56,7 @@ export default function DocumentUploadModal(props: DocumentUploadModalProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select label="Document Type" value={docType} onChange={e => onDocTypeChange(e.target.value)}
               options={['Contract', 'ID', 'Legal', 'Policy', 'Certificate'].map(t => ({ value: t, label: t }))} required />
-            <Input label="Expiry Date (optional)" type="date" value={docExpiry} onChange={e => onDocExpiryChange(e.target.value)} />
+            <DatePicker label="Expiry Date (optional)" value={docExpiry} onChange={e => onDocExpiryChange(e.target.value)} />
           </div>
           <div>
             <label className="block text-sm font-medium text-dark-text dark:text-gray-100 mb-1.5">Attach Document</label>

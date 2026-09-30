@@ -372,21 +372,22 @@ export default function EmployeeDashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Welcome + Check In/Out */}
       <PageHeader
         title={`${t('dashboard.welcome')}, ${user?.name?.split(' ')[0]}! 👋`}
         actions={
           <>
             {checkInTime && (
-              <span className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mr-4">Checked in at {checkInTime}</span>
+              <span className="w-full sm:w-auto text-xs sm:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 sm:mr-4">Checked in at {checkInTime}</span>
             )}
             {!checkedIn ? (
               <Button
                 variant="primary"
                 onClick={handleCheckIn}
                 disabled={actionLoading}
-                className="min-w-[140px]"
+                size="sm"
+                className="sm:min-w-[140px]"
               >
                 {actionLoading ? (
                   <>
@@ -403,7 +404,8 @@ export default function EmployeeDashboard() {
                 variant="danger"
                 onClick={handleCheckOut}
                 disabled={actionLoading}
-                className="min-w-[140px]"
+                size="sm"
+                className="sm:min-w-[140px]"
               >
                 {actionLoading ? (
                   <>
@@ -447,7 +449,7 @@ export default function EmployeeDashboard() {
         monthLabel={monthSummary.monthLabel}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-stretch">
         {/* Leave Balances */}
         <EmployeeLeaveBalances balances={visibleLeaveBalances} />
 
@@ -455,7 +457,8 @@ export default function EmployeeDashboard() {
         <EmployeeProgress entries={progressEntries} monthLabel={monthSummary.monthLabel} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Hidden on mobile — Notifications + Recent Payslips show on lg screens and up only */}
+      <div className="hidden lg:grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Notifications */}
         <EmployeeNotifications notifications={employeeNotifs} />
 
@@ -465,20 +468,22 @@ export default function EmployeeDashboard() {
 
       {/* Office Location Info */}
       <Card className="border-medium-gray">
-        <div className="flex items-center gap-3 p-4">
-          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#E3EFFE] flex items-center justify-center">
-            <MapPin size={20} className="text-teal" />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-1 sm:p-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#E3EFFE] flex items-center justify-center">
+              <MapPin size={20} className="text-teal" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-primary dark:text-blue-gray-light text-sm sm:text-base">Office Location Check</p>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1 leading-relaxed">
+                Check-ins require you to be within <strong>{OFFICE_LOCATION.radiusMeters}m</strong> of the office.
+                Your location is verified on both your device and our servers for security.
+              </p>
+            </div>
           </div>
-          <div className="flex-1">
-            <p className="font-medium text-primary dark:text-blue-gray-light">Office Location Check</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
-              Check-ins require you to be within <strong>{OFFICE_LOCATION.radiusMeters}m</strong> of the office.
-              Your location is verified on both your device and our servers for security.
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Lat: {OFFICE_LOCATION.latitude.toFixed(6)}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Lng: {OFFICE_LOCATION.longitude.toFixed(6)}</p>
+          <div className="flex sm:flex-col gap-3 sm:gap-1 sm:text-right pl-[52px] sm:pl-0 shrink-0">
+            <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Lat: {OFFICE_LOCATION.latitude.toFixed(6)}</p>
+            <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Lng: {OFFICE_LOCATION.longitude.toFixed(6)}</p>
           </div>
         </div>
       </Card>

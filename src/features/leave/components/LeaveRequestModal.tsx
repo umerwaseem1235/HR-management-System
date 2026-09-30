@@ -3,6 +3,7 @@
 import { Send } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import DatePicker from '@/components/ui/DatePicker';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import Select from '@/components/ui/Select';
@@ -48,8 +49,8 @@ export function EditLeaveModal({
           options={[{ value: '', label: 'Select Leave Type' }, ...LEAVE_TYPES.map((lt) => ({ value: lt.name, label: lt.name }))]}
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="Start Date" type="date" value={editStart} onChange={(e) => setEditStart(e.target.value)} error={editErrors.editStart} />
-          <Input label="End Date" type="date" value={editEnd} onChange={(e) => setEditEnd(e.target.value)} error={editErrors.editEnd} />
+          <DatePicker label="Start Date" value={editStart} onChange={(e) => setEditStart(e.target.value)} error={editErrors.editStart} />
+          <DatePicker label="End Date" value={editEnd} onChange={(e) => setEditEnd(e.target.value)} error={editErrors.editEnd} />
         </div>
         <div>
           <label className="block text-sm font-medium text-dark-text dark:text-gray-100 mb-1.5">Reason</label>

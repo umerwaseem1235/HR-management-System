@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import EmptyState from '@/components/ui/EmptyState';
+import Select from '@/components/ui/Select';
 import { StatusBadge } from '@/components/shared';
 import type { DailyWork, ProgressEntry } from '@/types';
 import type { AttendanceDayRow, TabId } from '../types';
@@ -195,15 +196,15 @@ export default function ReportPreview({
         <div className="flex flex-col gap-3 border-t border-medium-gray bg-white dark:bg-[#1b263b] px-6 py-3 sm:flex-row sm:items-center sm:justify-end">
           <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
             <span>Records per page:</span>
-            <select
-              value={pageSize}
-              onChange={(e) => { onPageSizeChange(Number(e.target.value)); }}
-              className="rounded-lg border border-medium-gray bg-white dark:bg-[#1b263b] px-2 py-1.5 text-sm text-dark-text dark:text-gray-100 outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
-            >
-              {PAGE_SIZES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+            <div className="w-[76px] shrink-0">
+              <Select
+                size="sm"
+                ariaLabel="Records per page"
+                value={String(pageSize)}
+                onChange={(e) => { onPageSizeChange(Number(e.target.value)); }}
+                options={PAGE_SIZES.map((s) => ({ value: String(s), label: String(s) }))}
+              />
+            </div>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{start} - {end} of {rowCount}</p>
           <div className="flex items-center gap-1">

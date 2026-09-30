@@ -29,7 +29,7 @@ export default function RecruitmentView() {
       {r.success && <div className="flex items-center gap-2 rounded-xl border border-green-200 dark:border-green-800/60 bg-green-50 dark:bg-green-950/30 px-4 py-3 text-sm text-green-800"><CheckCircle2 size={16} /><span className="flex-1">{r.success}</span><button onClick={() => r.setSuccess('')} className="font-semibold hover:underline cursor-pointer">{t('action.close')}</button></div>}
       {r.jobsError && <div className="flex items-center gap-2 rounded-xl border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-800"><CheckCircle2 size={16} /><span className="flex-1">{r.jobsError}</span><button onClick={() => r.setJobsError('')} className="font-semibold hover:underline cursor-pointer">{t('action.close')}</button></div>}
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <StatCard title={t('recruitment.freePositions') || 'Free Positions'} value={r.jobs.filter(j => j.status === 'Open').reduce((s, j) => s + j.vacancies, 0)} iconName="openVacancies" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
         <StatCard title={t('recruitment.candidatesNoted') || 'Candidates Noted'} value={r.candidates.length} iconName="totalEmployees" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
         <StatCard title={t('recruitment.remindersLeft') || 'Reminders Left'} value={r.interviews.filter(i => i.status === 'Scheduled').length} iconName="onLeaveToday" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />

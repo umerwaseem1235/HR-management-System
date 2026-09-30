@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import DatePicker from '@/components/ui/DatePicker';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Modal from '@/components/ui/Modal';
@@ -133,7 +134,7 @@ export default function CandidateModal(props: CandidateModalProps) {
       <Modal isOpen={!!intModal} onClose={onCloseIntModal} title="Schedule Interview" size="sm">
         {intModal && <div className="space-y-4">
           <Select label="Candidate" value={intModal.candidateId} onChange={e => onIntModalChange({ candidateId: e.target.value })} options={candidates.map(c => ({ value: c.id, label: c.name }))} />
-          <div className="grid grid-cols-2 gap-3"><Input label="Date" type="date" value={intModal.date} onChange={e => onIntModalChange({ date: e.target.value })} /><Input label="Time" type="time" value={intModal.time} onChange={e => onIntModalChange({ time: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-3"><DatePicker label="Date" value={intModal.date} onChange={e => onIntModalChange({ date: e.target.value })} /><Input label="Time" type="time" value={intModal.time} onChange={e => onIntModalChange({ time: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-3"><Select label="Mode" value={intModal.mode} onChange={e => onIntModalChange({ mode: e.target.value })} options={INTERVIEW_MODES.map(m => ({ value: m, label: m }))} /><Input label="Round" value={intModal.round} onChange={e => onIntModalChange({ round: e.target.value })} /></div>
           <Select label="Interviewer (employee)" value={intModal.interviewer} onChange={e => onIntModalChange({ interviewer: e.target.value })} options={[{ value: '', label: 'Select employee interviewer…' }, ...employees.map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName} — ${e.designation}` }))]} />
           <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Selected employee will get a notification to take this interview.</p>
@@ -145,7 +146,7 @@ export default function CandidateModal(props: CandidateModalProps) {
       <Modal isOpen={!!offerModal} onClose={onCloseOfferModal} title="Record Offer" size="sm">
         {offerModal && <div className="space-y-4">
           <Input label="Salary (PKR/year)" type="number" value={offerModal.salary} onChange={e => onOfferModalChange({ salary: e.target.value })} />
-          <Input label="Joining Date" type="date" value={offerModal.joiningDate} onChange={e => onOfferModalChange({ joiningDate: e.target.value })} />
+          <DatePicker label="Joining Date" value={offerModal.joiningDate} onChange={e => onOfferModalChange({ joiningDate: e.target.value })} />
           <Input label="Notes" value={offerModal.notes} onChange={e => onOfferModalChange({ notes: e.target.value })} />
           <div className="flex justify-end gap-3"><Button variant="outline" onClick={onCloseOfferModal}>Cancel</Button><Button variant="primary" onClick={onSaveOffer}><FileText size={16} /> Save Offer</Button></div>
         </div>}
@@ -176,7 +177,7 @@ export default function CandidateModal(props: CandidateModalProps) {
             <Select label="Designation" value={convertModal.designation} onChange={e => onConvertModalChange({ designation: e.target.value })} options={DESIGNATIONS.map(d => ({ value: d, label: d }))} />
           </div>
           <Select label="Branch" value={convertModal.branch} onChange={e => onConvertModalChange({ branch: e.target.value })} options={BRANCHES.map(b => ({ value: b.name, label: b.name }))} />
-          <div className="grid grid-cols-2 gap-3"><Input label="Joining Date" type="date" value={convertModal.joiningDate} onChange={e => onConvertModalChange({ joiningDate: e.target.value })} /><Input label="Salary" type="number" value={convertModal.salary} onChange={e => onConvertModalChange({ salary: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-3"><DatePicker label="Joining Date" value={convertModal.joiningDate} onChange={e => onConvertModalChange({ joiningDate: e.target.value })} /><Input label="Salary" type="number" value={convertModal.salary} onChange={e => onConvertModalChange({ salary: e.target.value })} /></div>
           <div className="flex justify-end gap-3"><Button variant="outline" onClick={onCloseConvertModal}>Cancel</Button><Button variant="primary" onClick={onConvertToEmployee}><ArrowRight size={16} /> Convert</Button></div>
         </div>}
       </Modal>

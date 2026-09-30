@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import NextImage from 'next/image';
 import { ImagePlus, Trash2, UserPlus, Eye, EyeOff } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import DatePicker from '@/components/ui/DatePicker';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import Select from '@/components/ui/Select';
@@ -280,7 +281,7 @@ export default function EmployeeFormModal({
             <Input name="employeeCode" label="Employee ID" placeholder="Auto-generated if empty" defaultValue={getDefaultValue('employeeCode')} disabled={disabled} />
             <Input name="phone" label="Phone" type="tel" placeholder="03XXXXXXXX" defaultValue={getDefaultValue('phone')} disabled={disabled} />
             <Input name="email" label="Email" type="email" placeholder="name@company.com" defaultValue={getDefaultValue('email')} required disabled={disabled} onChange={(e) => syncLoginEmail(e.target.value, e.target.form)} />
-            <Input name="dateOfBirth" label="Date of Birth" type="date" defaultValue={getDefaultValue('dateOfBirth')} disabled={disabled} />
+            <DatePicker name="dateOfBirth" label="Date of Birth" defaultValue={getDefaultValue('dateOfBirth')} disabled={disabled} />
             <Input name="address" label="Address" placeholder="Street address" defaultValue={getDefaultValue('address')} className="sm:col-span-2" disabled={disabled} />
           </div>
         </div>
@@ -335,8 +336,8 @@ export default function EmployeeFormModal({
               required
               disabled={disabled}
             />
-            <Input name="joiningDate" label="Joining Date" type="date" defaultValue={getDefaultValue('joiningDate')} required disabled={disabled} />
-            <Input name="probationEndDate" label="Probation End Date" type="date" defaultValue={getDefaultValue('probationEndDate')} disabled={disabled} />
+            <DatePicker name="joiningDate" label="Joining Date" defaultValue={getDefaultValue('joiningDate')} required disabled={disabled} />
+            <DatePicker name="probationEndDate" label="Probation End Date" defaultValue={getDefaultValue('probationEndDate')} disabled={disabled} />
             <Select
               name="shiftId"
               label="Shift"

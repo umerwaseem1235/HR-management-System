@@ -43,6 +43,17 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
     if (notif.link) router.push(notif.link);
   };
 
+  const handleBellClick = () => {
+    // Mobile: dropdown panel is too cramped — go straight to the page.
+    if (window.matchMedia('(max-width: 639px)').matches) {
+      setShowNotifications(false);
+      router.push('/notifications');
+      return;
+    }
+    setShowNotifications(!showNotifications);
+    setShowUserMenu(false);
+  };
+
   return (
     <header className="sticky top-0 z-30 bg-white/95 shadow-[0_4px_24px_-12px_rgba(23,50,77,0.18)] backdrop-blur dark:bg-[#0f1b2e]/95 dark:shadow-black/30">
       <div className="flex flex-row rtl:flex-row-reverse h-16 items-center justify-between gap-3 px-4 lg:px-6">
@@ -69,17 +80,19 @@ export default function TopBar({ onMenuClick, title }: TopBarProps) {
             <NotificationBell
               unreadCount={unreadCount}
               open={showNotifications}
-              onToggle={() => { setShowNotifications(!showNotifications); setShowUserMenu(false); }}
+              onToggle={handleBellClick}
             />
 
             {showNotifications && (
-              <NotificationDropdown
-                notifications={notifications}
-                unreadCount={unreadCount}
-                onSelect={handleSelectNotification}
-                onViewAll={() => { setShowNotifications(false); router.push('/notifications'); }}
-                onMarkAllRead={() => notifications.filter(n => !n.read).forEach(n => markAsRead(n.id))}
-              />
+              <div className="hidden sm:block">
+                <NotificationDropdown
+                  notifications={notifications}
+                  unreadCount={unreadCount}
+                  onSelect={handleSelectNotification}
+                  onViewAll={() => { setShowNotifications(false); router.push('/notifications'); }}
+                  onMarkAllRead={() => notifications.filter(n => !n.read).forEach(n => markAsRead(n.id))}
+                />
+              </div>
             )}
           </div>
 

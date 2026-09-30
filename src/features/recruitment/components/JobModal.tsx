@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import DatePicker from '@/components/ui/DatePicker';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Modal from '@/components/ui/Modal';
@@ -42,7 +43,7 @@ export default function JobModal({
             <div><label className="block text-sm font-medium text-dark-text dark:text-gray-100 mb-1.5">Job Description</label>
               <textarea rows={3} value={jobModal.description} onChange={e => onJobModalChange({ description: e.target.value })} placeholder="Role summary…" className="w-full rounded-lg border border-medium-gray px-4 py-2.5 text-sm focus:border-teal focus:outline-none" /></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Closing Date" type="date" value={jobModal.closingDate} onChange={e => onJobModalChange({ closingDate: e.target.value })} />
+              <DatePicker label="Closing Date" value={jobModal.closingDate} onChange={e => onJobModalChange({ closingDate: e.target.value })} />
               <Select label="Status" value={jobModal.status} onChange={e => onJobModalChange({ status: e.target.value as Job['status'] })} options={['Open', 'On Hold', 'Closed'].map(s => ({ value: s, label: s }))} />
             </div>
             <div className="flex justify-end gap-3 pt-2 border-t border-medium-gray"><Button variant="outline" type="button" onClick={onClose} disabled={isSaving}>Cancel</Button><Button type="submit" loading={isSaving}><Briefcase size={16} /> {isSaving ? 'Saving…' : 'Save Note'}</Button></div>

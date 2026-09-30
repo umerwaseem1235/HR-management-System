@@ -3,7 +3,7 @@
 import { Printer, Search } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
-import Input from '@/components/ui/Input';
+import DatePicker from '@/components/ui/DatePicker';
 import SearchBar from '@/components/ui/SearchBar';
 import Select from '@/components/ui/Select';
 import type { Employee } from '@/types';
@@ -37,8 +37,8 @@ export default function ReportFilters({
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
           <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
-            <Input label="From" type="date" value={draftFrom} onChange={(e) => onDraftFromChange(e.target.value)} />
-            <Input label="To" type="date" value={draftTo} onChange={(e) => onDraftToChange(e.target.value)} />
+            <DatePicker label="From" value={draftFrom} onChange={(e) => onDraftFromChange(e.target.value)} />
+            <DatePicker label="To" value={draftTo} onChange={(e) => onDraftToChange(e.target.value)} />
           </div>
           {!isEmployee && (
             <div className="lg:w-48">

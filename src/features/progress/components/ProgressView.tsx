@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import Card from '@/components/ui/Card';
 import PageHeader from '@/components/ui/PageHeader';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import DatePicker from '@/components/ui/DatePicker';
 import SearchBar from '@/components/ui/SearchBar';
 import { Plus } from 'lucide-react';
 import ProgressList from './ProgressList';
@@ -40,15 +40,13 @@ export default function ProgressView() {
             className="flex-1"
           />
           <div className="grid grid-cols-2 gap-3 lg:w-auto">
-            <Input
-              type="date"
-              aria-label="From date"
+            <DatePicker
+              ariaLabel="From date"
               value={v.fromDate}
               onChange={(e) => { v.setFromDate(e.target.value); v.setPage(1); }}
             />
-            <Input
-              type="date"
-              aria-label="To date"
+            <DatePicker
+              ariaLabel="To date"
               value={v.toDate}
               onChange={(e) => { v.setToDate(e.target.value); v.setPage(1); }}
             />

@@ -3,10 +3,10 @@
 import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Card from '@/components/ui/Card';
+import DatePicker from '@/components/ui/DatePicker';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import SearchBar from '@/components/ui/SearchBar';
 import { Plus, House } from 'lucide-react';
@@ -96,8 +96,8 @@ export default function RemoteView() {
         {v.isEmployee ? (
           <div className="flex flex-col lg:flex-row gap-3 lg:items-end">
             <div className="grid grid-cols-2 gap-3 flex-1">
-              <Input label="From" type="date" value={v.fromFilter} onChange={(e) => { v.setFromFilter(e.target.value); v.setPage(1); }} />
-              <Input label="To" type="date" value={v.toFilter} onChange={(e) => { v.setToFilter(e.target.value); v.setPage(1); }} />
+              <DatePicker label="From" value={v.fromFilter} onChange={(e) => { v.setFromFilter(e.target.value); v.setPage(1); }} />
+              <DatePicker label="To" value={v.toFilter} onChange={(e) => { v.setToFilter(e.target.value); v.setPage(1); }} />
             </div>
             <div className="lg:w-52 shrink-0 lg:ml-auto">
               <Select label="Status" value={v.statusFilter} onChange={(e) => { v.setStatusFilter(e.target.value); v.setPage(1); }} options={STATUS_OPTIONS} />
@@ -106,8 +106,8 @@ export default function RemoteView() {
         ) : (
           <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
             <div className="grid grid-cols-2 gap-3 sm:max-w-md flex-1">
-              <Input label="From" type="date" value={v.fromFilter} onChange={(e) => { v.setFromFilter(e.target.value); v.setPage(1); }} />
-              <Input label="To" type="date" value={v.toFilter} onChange={(e) => { v.setToFilter(e.target.value); v.setPage(1); }} />
+              <DatePicker label="From" value={v.fromFilter} onChange={(e) => { v.setFromFilter(e.target.value); v.setPage(1); }} />
+              <DatePicker label="To" value={v.toFilter} onChange={(e) => { v.setToFilter(e.target.value); v.setPage(1); }} />
             </div>
             <div className="sm:w-52 shrink-0 sm:ml-auto">
               <Select label="Status" value={v.statusFilter} onChange={(e) => { v.setStatusFilter(e.target.value); v.setPage(1); }} options={STATUS_OPTIONS} />

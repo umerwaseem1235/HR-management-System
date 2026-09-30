@@ -2,6 +2,7 @@
 
 import { Paperclip, Send, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import DatePicker from '@/components/ui/DatePicker';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import Select from '@/components/ui/Select';
@@ -45,7 +46,7 @@ export default function ExpenseModal({
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Amount (PKR)" type="number" min="0" step="0.01" placeholder="0.00" value={amount} onChange={(e) => onAmountChange(e.target.value)} error={errors.amount} />
-          <Input label="Date" type="date" value={date} onChange={(e) => onDateChange(e.target.value)} error={errors.date} />
+          <DatePicker label="Date" value={date} onChange={(e) => onDateChange(e.target.value)} error={errors.date} />
         </div>
         <div>
           <label className="block text-sm font-medium text-dark-text dark:text-gray-100 mb-1.5">Description</label>

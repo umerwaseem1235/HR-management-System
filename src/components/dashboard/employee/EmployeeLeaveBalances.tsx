@@ -11,11 +11,11 @@ export default function EmployeeLeaveBalances({ balances }: { balances: LeaveBal
   return (
     <Card className="flex flex-col h-full">
       <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light mb-4">Leave Balances</h3>
-      <div className="grid grid-cols-1 gap-4 flex-1 content-start">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 flex-1 content-start">
         {balances.map(balance => {
           const isMonthly = balance.leaveType === 'Monthly Leave';
           return (
-            <div key={balance.leaveType} className="p-4 rounded-lg bg-blue-gray/50 border border-medium-gray">
+            <div key={balance.leaveType} className="p-3 sm:p-4 rounded-lg bg-blue-gray/50 border border-medium-gray">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium text-dark-text dark:text-gray-100">{balance.leaveType}</span>
                 <Badge variant={balance.remaining > 5 ? 'success' : balance.remaining > 0 ? 'warning' : 'danger'} size="sm">

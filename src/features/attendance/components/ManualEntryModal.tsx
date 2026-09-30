@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import DatePicker from '@/components/ui/DatePicker';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import Select from '@/components/ui/Select';
@@ -88,7 +89,7 @@ export default function ManualEntryModal({
               required
             />
           </div>
-          <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          <DatePicker label="Date" value={date} onChange={(e) => setDate(e.target.value)} required />
           <Select
             label="Status"
             value={status}

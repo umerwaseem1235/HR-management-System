@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
-import Input from '@/components/ui/Input';
+import MonthPicker from '@/components/ui/MonthPicker';
 import Modal from '@/components/ui/Modal';
 import PageHeader from '@/components/ui/PageHeader';
 import { EmployeeAvatar, StatusBadge } from '@/components/shared';
@@ -49,19 +49,13 @@ export default function ExpensesView() {
               <CalendarDays size={16} className="text-teal" /> Expense Month
             </div>
             <div className="sm:w-64 flex items-center gap-2">
-              <div className="relative flex-1">
-                <Input
-                  type="month"
-                  aria-label="Expense month"
+              <div className="flex-1">
+                <MonthPicker
+                  ariaLabel="Expense month"
                   value={e.expenseMonth === 'all' ? '' : e.expenseMonth}
-                  onChange={(ev) => e.setExpenseMonth(ev.target.value || 'all')}
-                  className={e.expenseMonth === 'all' ? 'text-transparent' : ''}
+                  onChange={(v) => e.setExpenseMonth(v || 'all')}
+                  placeholder="All months"
                 />
-                {e.expenseMonth === 'all' && (
-                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-gray-500">
-                    All months
-                  </span>
-                )}
               </div>
               {e.expenseMonth !== 'all' && (
                 <button

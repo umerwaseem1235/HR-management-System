@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import Select from '../ui/Select';
 
 /** Default page size everywhere: 10 rows, then next page. */
 export const TABLE_PAGE_SIZES = [10, 20, 50] as const;
@@ -52,18 +53,15 @@ export default function TablePagination({
     <div className="flex flex-col gap-3 border-t border-medium-gray bg-white dark:bg-[#1b263b] px-6 py-3 sm:flex-row sm:items-center sm:justify-end">
       <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
         <span className="whitespace-nowrap">Records per page:</span>
-        <select
-          value={perPage}
-          onChange={(e) => onPerPageChange(Number(e.target.value))}
-          aria-label="Records per page"
-          className="rounded-lg border border-medium-gray bg-white dark:bg-[#1b263b] px-2 py-1.5 text-sm text-dark-text dark:text-gray-100 outline-none focus:border-teal focus:ring-2 focus:ring-teal/20 cursor-pointer"
-        >
-          {TABLE_PAGE_SIZES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+        <div className="w-[76px] shrink-0">
+          <Select
+            size="sm"
+            ariaLabel="Records per page"
+            value={String(perPage)}
+            onChange={(e) => onPerPageChange(Number(e.target.value))}
+            options={TABLE_PAGE_SIZES.map((s) => ({ value: String(s), label: String(s) }))}
+          />
+        </div>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 tabular-nums">
         Showing {start}–{end} of {totalCount}

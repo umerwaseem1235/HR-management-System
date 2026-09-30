@@ -3,7 +3,7 @@
 import React from 'react';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import DatePicker from '@/components/ui/DatePicker';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { EmployeeAvatar, StatusBadge } from '@/components/shared';
 import { Plus, X, Check, Wifi } from 'lucide-react';
@@ -65,8 +65,8 @@ export default function RemoteRequestModal(props: RemoteRequestModalProps) {
             <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Requests are reviewed by your manager. Approved remote days count as present.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="From Date" type="date" value={fromDate} min={todayMin} onChange={(e) => onFromDateChange(e.target.value)} error={formErrors.fromDate} required />
-            <Input label="To Date" type="date" value={toDate} min={todayMin} onChange={(e) => onToDateChange(e.target.value)} error={formErrors.toDate} required />
+            <DatePicker label="From Date" value={fromDate} min={todayMin} onChange={(e) => onFromDateChange(e.target.value)} error={formErrors.fromDate} required />
+            <DatePicker label="To Date" value={toDate} min={todayMin} onChange={(e) => onToDateChange(e.target.value)} error={formErrors.toDate} required />
           </div>
           {requestedDays !== null && (
             <p className="text-xs font-medium text-teal bg-blue-gray/60 border border-medium-gray rounded-lg px-3 py-2">

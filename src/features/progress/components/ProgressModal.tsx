@@ -3,7 +3,7 @@
 import React, { useRef } from 'react';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import DatePicker from '@/components/ui/DatePicker';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import {
   Send, Trash2,
@@ -226,9 +226,8 @@ export default function ProgressModal(props: ProgressModalProps) {
             </datalist>
             {formErrors.projectName && <p className="mt-1 text-sm text-red-500">{formErrors.projectName}</p>}
           </div>
-          <Input
+          <DatePicker
             label="Date"
-            type="date"
             value={submissionDate}
             onChange={(e) => onSubmissionDateChange(e.target.value)}
             error={formErrors.submissionDate}

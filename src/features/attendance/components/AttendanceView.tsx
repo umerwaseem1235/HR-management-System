@@ -1,11 +1,11 @@
 'use client';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-import { CalendarDays, CheckCircle2, Trash2, UserPlus, XCircle, LogIn, LogOut } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Trash2, UserPlus, XCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
-import Input from '@/components/ui/Input';
+import DatePicker from '@/components/ui/DatePicker';
 import PageHeader from '@/components/ui/PageHeader';
 import SearchBar from '@/components/ui/SearchBar';
 import Tabs from '@/components/ui/Tabs';
@@ -58,7 +58,7 @@ export default function AttendanceView() {
           </div>
         )}
 
-        {/* Inline Check In / Check Out — compact, professional */}
+        {/* Today's status — info only (check in/out lives on the dashboard) */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-xl border border-medium-gray bg-white dark:bg-[#1b263b]">
           <div className="flex items-center gap-3">
             <EmployeeAvatar
@@ -73,34 +73,13 @@ export default function AttendanceView() {
             </div>
           </div>
 
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+          <span className={`inline-flex w-fit items-center px-2.5 py-1 rounded-full text-xs font-medium sm:ml-auto ${
             hasCheckedOut ? 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' :
             hasCheckedIn ? 'bg-amber-100 text-amber-700' :
             'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300'
           }`}>
             {hasCheckedOut ? 'Checked Out' : hasCheckedIn ? 'Checked In' : 'Not Checked In'}
           </span>
-
-          <div className="flex items-center gap-2 sm:ml-auto">
-            <Button
-              variant={hasCheckedIn ? 'outline' : 'primary'}
-              size="sm"
-              onClick={att.handleSelfCheckIn}
-              disabled={hasCheckedIn || att.loading}
-            >
-              <LogIn size={14} className="mr-1.5" />
-              Check In
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={att.handleSelfCheckOut}
-              disabled={!hasCheckedIn || hasCheckedOut || att.loading}
-            >
-              <LogOut size={14} className="mr-1.5" />
-              Check Out
-            </Button>
-          </div>
 
           {hasCheckedIn && todayRecord && (
             <div className="sm:hidden w-full pt-2 border-t border-medium-gray flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
@@ -189,8 +168,7 @@ export default function AttendanceView() {
           <Card padding="sm">
             <div className="flex flex-col sm:flex-row sm:items-end gap-3">
               <div className="sm:w-[200px] shrink-0">
-                <Input
-                  type="date"
+                <DatePicker
                   label="Date"
                   value={att.viewDate}
                   onChange={(e) => att.setViewDate(e.target.value)}

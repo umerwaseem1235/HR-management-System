@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Send } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import DatePicker from '@/components/ui/DatePicker';
 import Input from '@/components/ui/Input';
 import PageHeader from '@/components/ui/PageHeader';
 import Select from '@/components/ui/Select';
@@ -162,7 +163,7 @@ export default function LeaveRequestForm() {
           />
           {isHalf ? (
             <>
-              <Input label="Date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} error={errors.startDate} />
+              <DatePicker label="Date" value={startDate} onChange={(e) => setStartDate(e.target.value)} error={errors.startDate} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input label="From Time" type="time" value={fromTime} onChange={(e) => setFromTime(e.target.value)} error={errors.fromTime} />
                 <Input label="To Time" type="time" value={toTime} onChange={(e) => setToTime(e.target.value)} error={errors.toTime} />
@@ -176,8 +177,8 @@ export default function LeaveRequestForm() {
             </>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Start Date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} error={errors.startDate} />
-              <Input label="End Date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} error={errors.endDate} />
+              <DatePicker label="Start Date" value={startDate} onChange={(e) => setStartDate(e.target.value)} error={errors.startDate} />
+              <DatePicker label="End Date" value={endDate} onChange={(e) => setEndDate(e.target.value)} error={errors.endDate} />
             </div>
           )}
           <p className="text-xs leading-relaxed text-teal-800 bg-teal-50 dark:bg-teal-950/30 border border-teal-100 rounded-lg px-4 py-2.5">

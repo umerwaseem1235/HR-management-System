@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { CalendarDays, Download, Eye } from 'lucide-react';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import MonthPicker from '@/components/ui/MonthPicker';
 import Modal from '@/components/ui/Modal';
 import SearchBar from '@/components/ui/SearchBar';
 import { StatusBadge, EmployeeCell, TablePagination } from '@/components/shared';
@@ -37,19 +37,13 @@ export default function PayslipList({ slips, month, onMonthChange, search, onSea
           <CalendarDays size={16} className="text-[#0F8B8D]" /> Payroll Month
         </div>
         <div className="sm:w-64 flex items-center gap-2">
-          <div className="relative flex-1">
-            <Input
-              type="month"
-              aria-label="Payroll month"
+          <div className="flex-1">
+            <MonthPicker
+              ariaLabel="Payroll month"
               value={month === 'all' ? '' : month}
-              onChange={e => onMonthChange(e.target.value || 'all')}
-              className={month === 'all' ? 'text-transparent' : ''}
+              onChange={(v) => onMonthChange(v || 'all')}
+              placeholder="All months"
             />
-            {month === 'all' && (
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-gray-500">
-                All months
-              </span>
-            )}
           </div>
           {month !== 'all' && (
             <button

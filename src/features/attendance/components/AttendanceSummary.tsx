@@ -5,8 +5,9 @@ import { CalendarDays, Clock, UserCheck, UserX, Sun } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import DatePicker from '@/components/ui/DatePicker';
 import EmptyState from '@/components/ui/EmptyState';
-import Input from '@/components/ui/Input';
+import MonthPicker from '@/components/ui/MonthPicker';
 import StatCard from '@/components/ui/StatCard';
 import { TablePagination } from '@/components/shared';
 import { paginate } from '@/utils/pagination';
@@ -73,12 +74,20 @@ export default function AttendanceSummary({
             </Button>
           </div>
           <div className="lg:ml-auto lg:w-56">
-            <Input
-              type={summaryMode === 'monthly' ? 'month' : 'date'}
-              label="Period"
-              value={viewDate}
-              onChange={(e) => setViewDate(e.target.value)}
-            />
+            {summaryMode === 'monthly' ? (
+              <MonthPicker
+                label="Period"
+                ariaLabel="Period month"
+                value={viewDate.slice(0, 7)}
+                onChange={(v) => setViewDate(v)}
+              />
+            ) : (
+              <DatePicker
+                label="Period"
+                value={viewDate}
+                onChange={(e) => setViewDate(e.target.value)}
+              />
+            )}
           </div>
         </div>
       </Card>

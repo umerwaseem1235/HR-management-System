@@ -26,9 +26,9 @@ export default function EmployeeProgress({ entries, monthLabel }: EmployeeProgre
         <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light">My Progress</h3>
         <Badge variant="info" size="sm">{monthLabel}</Badge>
       </div>
-      <div className="space-y-3 flex-1 content-start">
+      <div className="space-y-2.5 sm:space-y-3 flex-1 content-start">
         {visible.map((entry) => (
-          <div key={entry.id} className="flex items-start gap-3 p-3 rounded-lg bg-blue-gray/50 border border-medium-gray">
+          <div key={entry.id} className="flex items-start gap-2.5 sm:gap-3 p-3 rounded-lg bg-blue-gray/50 border border-medium-gray">
             <div className="w-9 h-9 rounded-lg bg-[#E3EFFE] flex items-center justify-center shrink-0">
               <ClipboardList size={16} className="text-teal" />
             </div>

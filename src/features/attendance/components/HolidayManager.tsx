@@ -4,6 +4,7 @@ import { CalendarDays, Plus, Trash2 } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import DatePicker from '@/components/ui/DatePicker';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import type { Holiday } from '../types';
@@ -37,7 +38,7 @@ export default function HolidayManager({
         <form onSubmit={onAddHoliday} className={`mb-4 rounded-lg border border-dashed border-medium-gray bg-blue-gray-light p-4 ${readOnly ? 'hidden' : ''}`}>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Input name="holidayName" label="Holiday Name" placeholder="e.g. Independence Day" required />
-            <Input name="holidayDate" label="Date" type="date" required />
+            <DatePicker name="holidayDate" label="Date" required />
             <Select
               name="holidayType"
               label="Type"

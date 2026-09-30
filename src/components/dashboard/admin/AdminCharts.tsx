@@ -1,7 +1,7 @@
 'use client';
 
-import { ChevronDown } from 'lucide-react';
 import Card from '../../ui/Card';
+import Select from '../../ui/Select';
 import AttendanceChart from '../AttendanceChart';
 import type { TrendPoint } from '../dashboard-types';
 
@@ -16,16 +16,17 @@ export default function AdminCharts({ range, onRangeChange, data }: AdminChartsP
     <Card>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-semibold text-primary dark:text-blue-gray-light">Attendance Trend</h3>
-        <div className="relative">
-          <select
+        <div className="w-28 shrink-0">
+          <Select
+            size="sm"
+            ariaLabel="Attendance trend range"
             value={range}
             onChange={(e) => onRangeChange(e.target.value as 'week' | 'month')}
-            className="appearance-none rounded-full border border-medium-gray bg-white dark:bg-[#1b263b] pl-3.5 pr-9 py-1.5 text-xs font-semibold text-dark-text dark:text-gray-100 focus:border-teal focus:outline-none cursor-pointer"
-          >
-            <option value="week">Week</option>
-            <option value="month">Month</option>
-          </select>
-          <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+            options={[
+              { value: 'week', label: 'Week' },
+              { value: 'month', label: 'Month' },
+            ]}
+          />
         </div>
       </div>
       <AttendanceChart key={range} data={data} />

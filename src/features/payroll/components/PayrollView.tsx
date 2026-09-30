@@ -55,7 +55,7 @@ export default function PayrollView() {
       )}
 
       {isAdmin && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
           <StatCard title="Monthly Payroll" value={money(p.totalPayroll / 12)} iconName="payroll" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
           <StatCard title="Total Employees" value={p.employees.length} iconName="totalEmployees" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
           <StatCard title="Payroll Status" value={p.payrollStatus} iconName="payrollStatus" iconColor="#024fa7" iconBg="bg-gradient-to-br from-[#E3EFFE] to-[#C4DCFA]" />
