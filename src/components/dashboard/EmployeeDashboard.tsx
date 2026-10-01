@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { MapPin, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import PageHeader from '../ui/PageHeader';
 import Card from '../ui/Card';
 import EmployeeStats from './employee/EmployeeStats';
@@ -19,12 +19,6 @@ import { getEmployeeDashboardBundle } from '@/lib/actions/employee-dashboard';
 import { cachedQuery, peekStaleQuery, primeQuery } from '../../lib/query-cache';
 import { employeeDashboardKey, invalidateAttendanceCache } from '../../lib/attendance-cache';
 import type { LeaveBalance, Payslip, ProgressEntry } from '../../lib/types';
-
-const OFFICE_LOCATION = {
-  latitude: 32.17989,
-  longitude: 74.18584,
-  radiusMeters: 500,
-};
 
 interface DashboardBundle {
   balances: LeaveBalance[];
@@ -186,7 +180,7 @@ export default function EmployeeDashboard() {
               <p className="font-medium text-red-800">Check-in Failed</p>
               <p className="text-sm text-red-700 dark:text-red-400 mt-1">{actionError}</p>
               <p className="text-xs text-red-600 dark:text-red-400 mt-2">
-                You must be within {OFFICE_LOCATION.radiusMeters}m of the office to check in.
+                You must be within 500m of the office to check in.
               </p>
             </div>
           </div>
@@ -219,28 +213,6 @@ export default function EmployeeDashboard() {
         {/* Recent Payslips */}
         <EmployeePayslips payslips={slips} />
       </div>
-
-      {/* Office Location Info */}
-      <Card className="border-medium-gray">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-1 sm:p-4">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#E3EFFE] flex items-center justify-center">
-              <MapPin size={20} className="text-teal" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-primary dark:text-blue-gray-light text-sm sm:text-base">Office Location Check</p>
-              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1 leading-relaxed">
-                Check-ins require you to be within <strong>{OFFICE_LOCATION.radiusMeters}m</strong> of the office.
-                Your location is verified on both your device and our servers for security.
-              </p>
-            </div>
-          </div>
-          <div className="flex sm:flex-col gap-3 sm:gap-1 sm:text-right pl-[52px] sm:pl-0 shrink-0">
-            <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Lat: {OFFICE_LOCATION.latitude.toFixed(6)}</p>
-            <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Lng: {OFFICE_LOCATION.longitude.toFixed(6)}</p>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }
