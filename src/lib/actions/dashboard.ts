@@ -10,12 +10,12 @@ type PayrollRunRow = Database['public']['Tables']['payroll_runs']['Row'];
 
 type DashboardEmployeeSource = Pick<
   Database['public']['Tables']['employees']['Row'],
-  'id' | 'first_name' | 'last_name' | 'date_of_birth' | 'probation_end_date'
+  'id' | 'first_name' | 'last_name' | 'date_of_birth' | 'probation_end_date' | 'user_id'
 > & { departments?: { name: string | null } | null };
 
 type AttendanceTrendSource = Pick<Database['public']['Tables']['attendance']['Row'], 'date' | 'status'>;
 
-type EmployeeLean = Pick<Database['public']['Tables']['employees']['Row'], 'id' | 'status' | 'joining_date'>;
+type EmployeeLean = Pick<Database['public']['Tables']['employees']['Row'], 'id' | 'status' | 'joining_date' | 'user_id'>;
 
 interface AttendanceRowLean {
   employee_id: string;
@@ -35,15 +35,40 @@ interface RemoteRequestLean {
 }
 
 /**
+ * Super-admin logins get an auto-linked employee row on first use, but those
+ * rows must never appear in the employee module (see getEmployees()) — so the
+ * dashboard excludes them too, otherwise its counts disagree with the
+ * directory. Returns the user ids; empty when none exist.
+ */
+async function getSuperAdminUserIds(supabase: SupabaseClient<Database>): Promise<string[]> {
+  const { data } = await supabase.from('users').select('id').eq('role', 'super_admin');
+  return (data ?? []).map((u) => u.id);
+}
+
+/**
+ * Drops employee rows linked to super-admin logins from a count/list query
+ * while keeping unlinked rows (user_id IS NULL). A plain
+ * `.not('user_id', 'in', …)` would also drop NULL rows, so the NULL check is
+ * explicit. Empty id list → the query is returned untouched.
+ */
+function withoutSuperAdminLinkedRows<T extends { or: (filters: string) => T }>(
+  query: T,
+  superAdminIds: string[],
+): T {
+  if (superAdminIds.length === 0) return query;
+  return query.or(`user_id.is.null,user_id.not.in.(${superAdminIds.join(',')})`);
+}
+
+/**
  * Computes today's absent and on-leave counts from expected employees minus those accounted for.
- * Absent = expected employees (joined, not inactive) who have no attendance row today with a non-Absent status,
+ * Absent = expected employees (joined, not inactive, not super-admin-linked) who have no attendance row today with a non-Absent status,
  *          and are not on approved leave/remote covering today, minus weekends/holidays (no-shows not counted on non-working days).
  * Explicit 'Absent' rows are always counted.
  */
 async function computeAbsentAndLeaveStats(
   supabase: SupabaseClient<Database>,
   today: string,
-): Promise<{ absentToday: number; onLeaveToday: number }> {
+): Promise<{ absentToday: number; onLeaveToday: number; superAdminIds: string[] }> {
   // Weekend check: day 0 = Sunday, day 6 = Saturday (per existing codebase convention)
   const dayOfWeek = new Date(today + 'T00:00:00').getDay();
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
@@ -59,11 +84,11 @@ async function computeAbsentAndLeaveStats(
   const isNonWorkingDay = isWeekend || isHoliday;
 
   // Fetch data in parallel
-  const [expectedRes, rowsRes, approvedLeavesRes, approvedRemotesRes] = await Promise.all([
+  const [expectedRes, rowsRes, approvedLeavesRes, approvedRemotesRes, superAdminIds] = await Promise.all([
     // Expected employees: not Inactive, joined on or before today
     supabase
       .from('employees')
-      .select('id, status, joining_date')
+      .select('id, status, joining_date, user_id')
       .neq('status', 'Inactive')
       .lte('joining_date', today),
     // Today's attendance rows
@@ -82,10 +107,13 @@ async function computeAbsentAndLeaveStats(
       .eq('status', 'Approved')
       .lte('from_date', today)
       .gte('to_date', today),
+    // Super-admin-linked rows are hidden from the employee module — hide here too
+    getSuperAdminUserIds(supabase),
   ]);
 
+  const superAdminIdSet = new Set(superAdminIds);
   const expected = ((expectedRes.data ?? []) as EmployeeLean[])
-    .filter((e) => e.status !== 'Inactive')
+    .filter((e) => e.status !== 'Inactive' && !(e.user_id && superAdminIdSet.has(e.user_id)))
     .map((e) => e.id);
   const expectedSet = new Set(expected);
 
@@ -109,7 +137,7 @@ async function computeAbsentAndLeaveStats(
   if (isNonWorkingDay) {
     // On non-working days, only explicit 'Absent' rows count (HR manually marked)
     const absentToday = [...explicitAbsent].filter((id) => expectedSet.has(id)).length;
-    return { absentToday, onLeaveToday };
+    return { absentToday, onLeaveToday, superAdminIds };
   }
 
   // Working day: absent = expected employees not in accounted, not on approved leave/remote, but explicit Absent always counts
@@ -126,7 +154,7 @@ async function computeAbsentAndLeaveStats(
     }
   }
 
-  return { absentToday, onLeaveToday };
+  return { absentToday, onLeaveToday, superAdminIds };
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -134,8 +162,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const today = new Date().toISOString().split('T')[0];
   const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
 
-  // Compute derived absent/leave stats first (needs attendance/leave/remote rows)
-  const { absentToday, onLeaveToday } = await computeAbsentAndLeaveStats(supabase, today);
+  // Compute derived absent/leave stats first (needs attendance/leave/remote rows).
+  // Reuses its super-admin id list so the counts below match the employee module.
+  const { absentToday, onLeaveToday, superAdminIds } = await computeAbsentAndLeaveStats(supabase, today);
 
   // Execute remaining count queries in parallel
   const [
@@ -150,8 +179,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     { count: upcomingExits },
     { data: latestPayroll },
   ] = await Promise.all([
-    supabase.from('employees').select('*', { count: 'exact', head: true }),
-    supabase.from('employees').select('*', { count: 'exact', head: true }).eq('status', 'Active'),
+    withoutSuperAdminLinkedRows(supabase.from('employees').select('*', { count: 'exact', head: true }).neq('status', 'Inactive'), superAdminIds),
+    withoutSuperAdminLinkedRows(supabase.from('employees').select('*', { count: 'exact', head: true }).eq('status', 'Active'), superAdminIds),
     supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('date', today).eq('status', 'Present'),
     supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('date', today).eq('status', 'Late'),
     supabase.from('leave_requests').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
@@ -160,8 +189,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       () => ({ count: 0 }) as { count: number | null } // Graceful fallback if table doesn't exist
     ),
     supabase.from('jobs').select('vacancies').eq('status', 'Open'),
-    supabase.from('employees').select('*', { count: 'exact', head: true }).gte('joining_date', firstDayOfMonth),
-    supabase.from('employees').select('*', { count: 'exact', head: true }).eq('status', 'On Notice'),
+    withoutSuperAdminLinkedRows(supabase.from('employees').select('*', { count: 'exact', head: true }).gte('joining_date', firstDayOfMonth), superAdminIds),
+    withoutSuperAdminLinkedRows(supabase.from('employees').select('*', { count: 'exact', head: true }).eq('status', 'On Notice'), superAdminIds),
     supabase.from('payroll_runs').select('status').order('year', { ascending: false }).order('month_index', { ascending: false }).limit(1).maybeSingle(),
   ]);
 
@@ -241,8 +270,9 @@ export async function getDashboardData(): Promise<DashboardData> {
   start.setDate(start.getDate() - 30);
   const startStr = toDateString(start);
 
-  // Compute derived absent/leave stats first
-  const { absentToday, onLeaveToday } = await computeAbsentAndLeaveStats(supabase, today);
+  // Compute derived absent/leave stats first. Reuses its super-admin id
+  // list so every employee count below matches the employee module.
+  const { absentToday, onLeaveToday, superAdminIds } = await computeAbsentAndLeaveStats(supabase, today);
 
   // Resolve current user's linked employee id for their own check-in status
   const { data: authData } = await supabase.auth.getUser();
@@ -279,8 +309,8 @@ export async function getDashboardData(): Promise<DashboardData> {
     attendanceRes,
     myAttendanceRes,
   ] = await Promise.all([
-    supabase.from('employees').select('id', { count: 'exact', head: true }),
-    supabase.from('employees').select('id', { count: 'exact', head: true }).eq('status', 'Active'),
+    withoutSuperAdminLinkedRows(supabase.from('employees').select('id', { count: 'exact', head: true }).neq('status', 'Inactive'), superAdminIds),
+    withoutSuperAdminLinkedRows(supabase.from('employees').select('id', { count: 'exact', head: true }).eq('status', 'Active'), superAdminIds),
     supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today).eq('status', 'Present'),
     supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today).eq('status', 'Late'),
     supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'Pending'),
@@ -289,14 +319,16 @@ export async function getDashboardData(): Promise<DashboardData> {
       () => ({ count: 0 }) as { count: number | null }
     ),
     supabase.from('jobs').select('vacancies').eq('status', 'Open'),
-    supabase.from('employees').select('id', { count: 'exact', head: true }).gte('joining_date', firstDayOfMonth),
-    supabase.from('employees').select('id', { count: 'exact', head: true }).eq('status', 'On Notice'),
+    withoutSuperAdminLinkedRows(supabase.from('employees').select('id', { count: 'exact', head: true }).gte('joining_date', firstDayOfMonth), superAdminIds),
+    withoutSuperAdminLinkedRows(supabase.from('employees').select('id', { count: 'exact', head: true }).eq('status', 'On Notice'), superAdminIds),
     supabase.from('payroll_runs').select('status').order('year', { ascending: false }).order('month_index', { ascending: false }).limit(1).maybeSingle(),
     // Lean employee payload: only what dept chart + upcoming events need.
     // NOTE: employees has NO `department` text column — it is department_id FK.
+    // user_id is selected only to drop super-admin-linked rows (same rule as
+    // the employee module) — it is not exposed to the client type.
     supabase
       .from('employees')
-      .select('id, first_name, last_name, date_of_birth, probation_end_date, departments(name)')
+      .select('id, first_name, last_name, date_of_birth, probation_end_date, user_id, departments(name)')
       .order('first_name', { ascending: true }),
     // Bounded + pre-filtered trend window (Present/Late only, last 31 days).
     supabase
@@ -308,14 +340,17 @@ export async function getDashboardData(): Promise<DashboardData> {
     myAttendancePromise,
   ]);
 
-  const employees: DashboardEmployee[] = ((employeesRes.data ?? []) as unknown as DashboardEmployeeSource[]).map((e) => ({
-    id: e.id,
-    firstName: e.first_name ?? '',
-    lastName: e.last_name ?? '',
-    department: e.departments?.name ?? 'Unassigned',
-    dateOfBirth: e.date_of_birth ?? null,
-    probationEndDate: e.probation_end_date ?? null,
-  }));
+  const superAdminIdSet = new Set(superAdminIds);
+  const employees: DashboardEmployee[] = ((employeesRes.data ?? []) as unknown as DashboardEmployeeSource[])
+    .filter((e) => !e.user_id || !superAdminIdSet.has(e.user_id))
+    .map((e) => ({
+      id: e.id,
+      firstName: e.first_name ?? '',
+      lastName: e.last_name ?? '',
+      department: e.departments?.name ?? 'Unassigned',
+      dateOfBirth: e.date_of_birth ?? null,
+      probationEndDate: e.probation_end_date ?? null,
+    }));
 
   const openVacancies = (openJobsRes.data ?? []).reduce((sum: number, j: JobRow) => sum + (Number(j.vacancies) || 0), 0);
 
@@ -381,7 +416,10 @@ export async function getAttendanceTrend(days: number = 7): Promise<AttendanceTr
   const startStr = start.toISOString().slice(0, 10);
 
   const [{ count: totalActive }, { data: records }] = await Promise.all([
-    supabase.from('employees').select('*', { count: 'exact', head: true }).eq('status', 'Active'),
+    withoutSuperAdminLinkedRows(
+      supabase.from('employees').select('*', { count: 'exact', head: true }).eq('status', 'Active'),
+      await getSuperAdminUserIds(supabase),
+    ),
     supabase.from('attendance').select('date, status').gte('date', startStr),
   ]);
 

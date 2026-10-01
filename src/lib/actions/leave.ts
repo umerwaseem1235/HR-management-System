@@ -244,6 +244,16 @@ export async function ensureLinkedEmployee(
     .single();
   if (linked) return linked.id;
 
+  // Fetch user profile + role to generate a professional employee code
+  const { data: profile } = await supabase.from('users').select('name, email, role').eq('id', authUid).single();
+  const email: string = profile?.email || authUser.email || '';
+  const fullName: string = profile?.name || 'New Employee';
+  const userRole: string = profile?.role || 'employee';
+  if (!email) throw new Error('Cannot set up your employee record: login has no email.');
+
+  const [first, ...rest] = fullName.split(' ');
+  const joiningDate = new Date().toISOString().slice(0, 10);
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const secret = process.env.SUPABASE_SECRET_KEY;
   if (!url || !secret) {
@@ -253,13 +263,8 @@ export async function ensureLinkedEmployee(
   }
   const svc = createServiceClient<Database>(url, secret);
 
-  const { data: profile } = await svc.from('users').select('name, email').eq('id', authUid).single();
-  const email: string = profile?.email || authUser.email || '';
-  const fullName: string = profile?.name || 'New Employee';
-  if (!email) throw new Error('Cannot set up your employee record: login has no email.');
-  const [first, ...rest] = fullName.split(' ');
-  const joiningDate = new Date().toISOString().slice(0, 10);
-
+  // Generate a professional employee code based on role
+  const rolePrefix = userRole === 'super_admin' ? 'ADMIN' : userRole === 'hr_manager' ? 'HR' : 'EMP';
   const tryInsert = async (code: string) =>
     svc
       .from('employees')
@@ -275,8 +280,24 @@ export async function ensureLinkedEmployee(
       .select('id')
       .single();
 
+  // Find the next sequential number for this role prefix
+  const { data: existingCodes } = await svc
+    .from('employees')
+    .select('employee_code')
+    .like('employee_code', `${rolePrefix}%`);
+
+  let nextNum = 1;
+  if (existingCodes?.length) {
+    const nums = existingCodes
+      .map((e) => parseInt(e.employee_code.replace(rolePrefix, ''), 10))
+      .filter((n) => !isNaN(n));
+    if (nums.length) nextNum = Math.max(...nums) + 1;
+  }
+
+  const baseCode = `${rolePrefix}${String(nextNum).padStart(3, '0')}`;
+
   // employee_code / email are unique — retry once with a suffix on collision.
-  let created = await tryInsert(`CQ-${authUid.slice(0, 8).toUpperCase()}`);
+  let created = await tryInsert(baseCode);
   if (created.error && /duplicate|unique|already exists/i.test(created.error.message)) {
     const existing = await svc.from('employees').select('id, user_id').eq('email', email).single();
     const existingRow = existing.data;
@@ -289,7 +310,7 @@ export async function ensureLinkedEmployee(
       if (claimErr) throw new Error(`Could not link your employee record: ${claimErr.message}`);
       return existingRow.id as string;
     }
-    created = await tryInsert(`CQ-${authUid.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`);
+    created = await tryInsert(`${baseCode}-${Date.now().toString(36).toUpperCase()}`);
   }
   if (created.error || !created.data) {
     throw new Error(`Could not set up your employee record: ${created.error?.message || 'unknown error'}`);
