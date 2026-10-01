@@ -150,8 +150,10 @@ export default function DatePicker({
   const computePos = (): MenuPos => {
     const rect = triggerRef.current?.getBoundingClientRect();
     const top = (rect?.bottom ?? 0) + 6;
-    const left = Math.max(8, Math.min(rect?.left ?? 8, window.innerWidth - (rect?.width ?? 280) - 8));
-    const width = Math.max(rect?.width ?? 0, 280);
+    // Clamp with the MENU width (not the trigger width) so the popup never
+    // runs off the right edge when the field sits near it.
+    const width = Math.min(Math.max(rect?.width ?? 0, 280), window.innerWidth - 16);
+    const left = Math.max(8, Math.min(rect?.left ?? 8, window.innerWidth - width - 8));
     const openUp = top + 380 > window.innerHeight && (rect?.top ?? 0) > 400;
     return { top, bottom: window.innerHeight - (rect?.top ?? 0) + 6, left, width, openUp };
   };
@@ -217,6 +219,27 @@ export default function DatePicker({
     };
   }, [open ]);
 
+  // Measured flip: after the menu paints (and whenever the viewed month
+  // changes its row count), check the real height against the viewport and
+  // flip upward if it overflows but fits above the trigger. This guarantees
+  // the whole calendar is visible without scrolling at any zoom level.
+  useEffect(() => {
+    if (!open || !mounted) return;
+    const frame = requestAnimationFrame(() => {
+      const h = menuRef.current?.offsetHeight ?? 0;
+      if (!h) return;
+      const triggerTop = triggerRef.current?.getBoundingClientRect().top ?? 0;
+      setPos((p) => {
+        const overflows = p.top + h > window.innerHeight - 8;
+        const fitsAbove = triggerTop - h - 8 > 8;
+        if (!p.openUp && overflows && fitsAbove) return { ...p, openUp: true };
+        if (p.openUp && !fitsAbove && !overflows) return { ...p, openUp: false };
+        return p;
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [open, mounted, viewYear, viewMonth ]);
+
   const stepActive = (days: number) => {
     const base = activeKey || today;
     const next = shiftKey(base, days);
@@ -245,7 +268,8 @@ export default function DatePicker({
     else if (e.key === 'Tab') { closeMenu(); }
   };
 
-  // 6-row calendar grid for the viewed month (leading/trailing days included).
+  // Calendar grid for the viewed month — only as many week rows as needed
+  // (4–6), so short months don't force empty space that overflows small screens.
   const cells: DayCell[] = (() => {
     const first = new Date(viewYear, viewMonth - 1, 1).getDay();
     const dim = new Date(viewYear, viewMonth, 0).getDate();
@@ -259,7 +283,7 @@ export default function DatePicker({
     }
     for (let d = 1; d <= dim; d++) out.push({ key: toKey(viewYear, viewMonth, d), day: d, inMonth: true });
     let next = 1;
-    while (out.length % 7 !== 0 || out.length < 42) {
+    while (out.length % 7 !== 0) {
       const m = viewMonth === 12 ? 1 : viewMonth + 1;
       const y = viewMonth === 12 ? viewYear + 1 : viewYear;
       out.push({ key: toKey(y, m, next), day: next, inMonth: false });
@@ -341,7 +365,7 @@ export default function DatePicker({
                   '--menu-width': `${pos.width}px`,
                 } as React.CSSProperties
               }
-              className={`fixed inset-x-3 bottom-3 z-[70] overflow-hidden rounded-2xl bg-white dark:bg-[#1b263b] shadow-2xl ring-1 ring-black/10 sm:inset-x-auto sm:w-[var(--menu-width)] sm:rounded-xl sm:left-[var(--menu-left)] ${
+              className={`fixed inset-x-3 bottom-3 z-[70] max-h-[calc(100dvh-16px)] overflow-y-auto rounded-2xl bg-white dark:bg-[#1b263b] shadow-2xl ring-1 ring-black/10 sm:inset-x-auto sm:w-[var(--menu-width)] sm:rounded-xl sm:left-[var(--menu-left)] ${
                 pos.openUp ? 'sm:top-auto sm:bottom-[var(--menu-bottom)]' : 'sm:bottom-auto sm:top-[var(--menu-top)]'
               }`}
             >

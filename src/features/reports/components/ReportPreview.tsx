@@ -193,6 +193,8 @@ export default function ReportPreview({
           )}
         </div>
 
+        {/* Pagination footer — only when data exceeds one page (e.g. > pageSize rows). */}
+        {totalPages > 1 && (
         <div className="flex flex-col gap-3 border-t border-medium-gray bg-white dark:bg-[#1b263b] px-6 py-3 sm:flex-row sm:items-center sm:justify-end">
           <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
             <span>Records per page:</span>
@@ -232,6 +234,7 @@ export default function ReportPreview({
             </button>
           </div>
         </div>
+        )}
       </Card>
 
       {/* Print document (browser Print → Save as PDF) */}

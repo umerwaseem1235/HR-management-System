@@ -101,8 +101,10 @@ export default function Select({
   const computePos = (): MenuPos => {
     const rect = triggerRef.current?.getBoundingClientRect();
     const top = (rect?.bottom ?? 0) + 6;
-    const left = Math.max(8, Math.min(rect?.left ?? 8, window.innerWidth - (rect?.width ?? 200) - 8));
-    const width = Math.max(rect?.width ?? 0, 200);
+    // Clamp with the MENU width (not the trigger width) so the popup never
+    // runs off the right edge when the field sits near it.
+    const width = Math.min(Math.max(rect?.width ?? 0, 200), window.innerWidth - 16);
+    const left = Math.max(8, Math.min(rect?.left ?? 8, window.innerWidth - width - 8));
     const openUp = top + 264 > window.innerHeight && (rect?.top ?? 0) > 280;
     return { top, bottom: window.innerHeight - (rect?.top ?? 0) + 6, left, width, openUp };
   };

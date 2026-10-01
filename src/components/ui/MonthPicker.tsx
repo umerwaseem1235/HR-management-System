@@ -94,8 +94,10 @@ export default function MonthPicker({
   const computePos = (): MenuPos => {
     const rect = triggerRef.current?.getBoundingClientRect();
     const top = (rect?.bottom ?? 0) + 6;
-    const left = Math.max(8, Math.min(rect?.left ?? 8, window.innerWidth - (rect?.width ?? 240) - 8));
-    const width = Math.max(rect?.width ?? 0, 240);
+    // Clamp with the MENU width (not the trigger width) so the popup never
+    // runs off the right edge when the field sits near it.
+    const width = Math.min(Math.max(rect?.width ?? 0, 240), window.innerWidth - 16);
+    const left = Math.max(8, Math.min(rect?.left ?? 8, window.innerWidth - width - 8));
     const openUp = top + 340 > window.innerHeight && (rect?.top ?? 0) > 360;
     return { top, bottom: window.innerHeight - (rect?.top ?? 0) + 6, left, width, openUp };
   };

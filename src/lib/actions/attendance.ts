@@ -5,7 +5,7 @@ import { createClient as createServiceClient, type PostgrestError } from '@supab
 import { revalidatePath } from 'next/cache';
 import type { AttendanceRecord } from '@/lib/types';
 import type { Database } from '@/lib/supabase/database.types';
-import { companyDateStr, companyTimeStr, isEarlyHalfDayCheckout } from '@/utils/date';
+import { companyDateStr, companyTimeStr, isEarlyHalfDayCheckout, effectiveAttendanceStatus } from '@/utils/date';
 import { calculateDistance, getOfficeLocationConfig } from '@/lib/location';
 
 type AttendanceStatus = Database['public']['Tables']['attendance']['Row']['status'];
@@ -117,6 +117,18 @@ function mapAttendance(db: AttendanceRowWithEmployee): AttendanceRecord {
     ? `${emp.first_name || ''} ${emp.last_name || ''}`.trim()
     : '';
 
+  // Missing-checkout → Half Day rule: a past day with a check-in but no
+  // check-out reads as 'Half Day' (half leave) even if the midnight
+  // cron / lazy close hasn't rewritten the stored row yet. Today stays
+  // 'Present'/'Late' while the employee may still be in the office.
+  const effectiveStatus = effectiveAttendanceStatus(
+    db.date,
+    db.check_in,
+    db.check_out,
+    db.status,
+  ) as AttendanceRecord['status'];
+  const storedHours = db.work_hours != null ? Number(db.work_hours) || 0 : 0;
+
   return {
     id: db.id,
     employeeId: db.employee_id,
@@ -125,8 +137,8 @@ function mapAttendance(db: AttendanceRowWithEmployee): AttendanceRecord {
     date: db.date,
     checkIn: db.check_in ? db.check_in.slice(0, 5) : '',
     checkOut: db.check_out ? db.check_out.slice(0, 5) : '',
-    status: db.status,
-    workHours: db.work_hours != null ? Number(db.work_hours) || 0 : 0,
+    status: effectiveStatus,
+    workHours: effectiveStatus === 'Half Day' && storedHours <= 0 ? 4 : storedHours,
     overtime: db.overtime != null ? Number(db.overtime) || 0 : 0,
     notes: db.notes ?? undefined,
     checkInLat: db.check_in_lat ?? undefined,
@@ -135,6 +147,42 @@ function mapAttendance(db: AttendanceRowWithEmployee): AttendanceRecord {
     checkOutLng: db.check_out_lng ?? undefined,
     distanceFromOffice: db.distance_from_office ?? undefined,
   };
+}
+
+/**
+ * Best-effort persistence for the missing-checkout rule.
+ *
+ * `mapAttendance` already corrects the display, but stats counts and
+ * payroll read the stored `status` — so whenever a read batch contains
+ * stale open rows (past date, check-in set, no check-out, still
+ * Present/Late), flip them to 'Half Day' in the DB. Failures are
+ * swallowed (e.g. RLS) because the display fallback already covers them.
+ */
+async function healStaleOpenRows(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  rows: Array<{ id: string; date: string; check_in: string | null; check_out: string | null; status: string }>,
+  today: string,
+): Promise<number> {
+  const staleIds = rows
+    .filter(
+      (r) =>
+        r.date < today &&
+        r.check_in != null &&
+        r.check_out == null &&
+        (r.status === 'Present' || r.status === 'Late'),
+    )
+    .map((r) => r.id);
+  if (!staleIds.length) return 0;
+  try {
+    const { error } = await supabase
+      .from('attendance')
+      .update({ status: 'Half Day', work_hours: 4 })
+      .in('id', staleIds)
+      .in('status', ['Present', 'Late']);
+    return error ? 0 : staleIds.length;
+  } catch {
+    return 0;
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -155,7 +203,13 @@ export async function getAttendanceByDate(
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data || []).map((row) => mapAttendance(row as AttendanceRowWithEmployee));
+  const rows = (data || []) as unknown as AttendanceRowWithEmployee[];
+  await healStaleOpenRows(
+    supabase,
+    rows as unknown as Array<{ id: string; date: string; check_in: string | null; check_out: string | null; status: string }>,
+    companyDateStr(),
+  );
+  return rows.map((row) => mapAttendance(row));
 }
 
 export async function getAttendanceByEmployee(
@@ -177,7 +231,13 @@ export async function getAttendanceByEmployee(
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return (data || []).map((row) => mapAttendance(row as AttendanceRowWithEmployee));
+  const rows = (data || []) as unknown as AttendanceRowWithEmployee[];
+  await healStaleOpenRows(
+    supabase,
+    rows as unknown as Array<{ id: string; date: string; check_in: string | null; check_out: string | null; status: string }>,
+    companyDateStr(),
+  );
+  return rows.map((row) => mapAttendance(row));
 }
 
 export async function getAllAttendance(
@@ -197,13 +257,37 @@ export async function getAllAttendance(
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return (data || []).map((row) => mapAttendance(row as AttendanceRowWithEmployee));
+  const rows = (data || []) as unknown as AttendanceRowWithEmployee[];
+  await healStaleOpenRows(
+    supabase,
+    rows as unknown as Array<{ id: string; date: string; check_in: string | null; check_out: string | null; status: string }>,
+    companyDateStr(),
+  );
+  return rows.map((row) => mapAttendance(row));
 }
 
 /** Compute live attendance stats for a given date (defaults to today). */
 export async function getAttendanceStats(date?: string) {
   const supabase = await createClient();
   const targetDate = date ?? companyDateStr();
+  const today = companyDateStr();
+
+  // Missing-checkout → Half Day: a past date left open overnight must not
+  // count as Present. Heal the stored rows first so counts are correct even
+  // when the midnight cron never ran (local dev / missing CRON_SECRET).
+  if (targetDate < today) {
+    try {
+      await supabase
+        .from('attendance')
+        .update({ status: 'Half Day', work_hours: 4 })
+        .eq('date', targetDate)
+        .not('check_in', 'is', null)
+        .is('check_out', null)
+        .in('status', ['Present', 'Late']);
+    } catch {
+      // RLS / offline — fall through to the JS adjustment below.
+    }
+  }
 
   // Count-only queries in parallel — the old version downloaded every row
   // for the date and counted in JS.
@@ -212,17 +296,35 @@ export async function getAttendanceStats(date?: string) {
     { count: absentToday },
     { count: lateToday },
     { count: onLeaveToday },
+    staleOpen,
   ] = await Promise.all([
     supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', targetDate).eq('status', 'Present'),
     supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', targetDate).eq('status', 'Absent'),
     supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', targetDate).eq('status', 'Late'),
     supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', targetDate).eq('status', 'Leave'),
+    // Backstop when the heal update above was blocked (RLS): count rows the
+    // display layer already treats as Half Day so Present isn't overstated.
+    targetDate < today
+      ? supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', targetDate).not('check_in', 'is', null).is('check_out', null).in('status', ['Present', 'Late'])
+      : Promise.resolve({ count: 0 as number | null }),
   ]);
 
+  const staleCount = staleOpen?.count ?? 0;
+  // If the heal didn't persist (rows still Present/Late), shift them out of
+  // Present/Late in the returned numbers to match the displayed Half Day.
+  // When heal succeeded staleCount is already 0, so this is a no-op.
+  let present = presentToday ?? 0;
+  let late = lateToday ?? 0;
+  if (staleCount > 0 && targetDate < today) {
+    const shiftFromPresent = Math.min(present, staleCount);
+    present -= shiftFromPresent;
+    late = Math.max(0, late - (staleCount - shiftFromPresent));
+  }
+
   return {
-    presentToday: presentToday ?? 0,
+    presentToday: present,
     absentToday: absentToday ?? 0,
-    lateToday: lateToday ?? 0,
+    lateToday: late,
     onLeaveToday: onLeaveToday ?? 0,
   };
 }
@@ -303,6 +405,15 @@ export async function getAttendanceData(year: number, month: number) {
     }
   }
 
+  // Persist the missing-checkout → Half Day flip for any stale open rows in
+  // this month so counts/payroll stay correct even if the cron never ran.
+  // Display is already corrected by mapAttendance; this is best-effort.
+  await healStaleOpenRows(
+    supabase,
+    ((recordsRes.data ?? []) as unknown as Array<{ id: string; date: string; check_in: string | null; check_out: string | null; status: string }>),
+    today,
+  );
+
   return {
     employees: ((employeesRes.data ?? []) as Array<{ id: string; first_name: string; last_name: string; email: string }>).map((e) => ({
       id: e.id,
@@ -362,13 +473,30 @@ export async function createAttendanceRecord(
   data: AttendanceFormInput,
 ): Promise<AttendanceRecord> {
   const supabase = await createClient();
+  // Server-side enforcement of the missing-checkout rule so HR manual
+  // entries for past dates can't stay 'Present' with no check-out.
+  let status = data.status;
+  const checkInVal = data.checkIn ?? data.check_in ?? null;
+  const checkOutVal = data.checkOut ?? data.check_out ?? null;
+  if (
+    data.date < companyDateStr() &&
+    checkInVal &&
+    !checkOutVal &&
+    (status === 'Present' || status === 'Late')
+  ) {
+    status = 'Half Day';
+  }
+  let workHoursVal = data.workHours ?? data.work_hours ?? 0;
+  if (status === 'Half Day' && !(Number(workHoursVal) > 0)) {
+    workHoursVal = 4;
+  }
   const dbData: Database['public']['Tables']['attendance']['Insert'] = {
     employee_id: (data.employeeId || data.employee_id) as string,
     date: data.date,
-    check_in: data.checkIn ?? data.check_in ?? null,
-    check_out: data.checkOut ?? data.check_out ?? null,
-    status: data.status,
-    work_hours: data.workHours ?? data.work_hours ?? 0,
+    check_in: checkInVal,
+    check_out: checkOutVal,
+    status,
+    work_hours: workHoursVal,
     overtime: data.overtime ?? 0,
     notes: data.notes ?? null,
     check_in_lat: data.checkInLat ?? data.check_in_lat ?? null,
@@ -399,6 +527,34 @@ export async function updateAttendanceRecord(
   },
 ) {
   const supabase = await createClient();
+  // Load the row's date so the missing-checkout rule can apply to past days
+  // edited to have a check-in but no check-out.
+  let rowDate: string | null = null;
+  try {
+    const { data: existing } = await supabase
+      .from('attendance')
+      .select('date, check_in, check_out, status')
+      .eq('id', id)
+      .maybeSingle();
+    rowDate = (existing as { date?: string } | null)?.date ?? null;
+    const effCheckIn = data.checkIn !== undefined ? data.checkIn || null : (existing as { check_in?: string | null } | null)?.check_in ?? null;
+    const effCheckOut = data.checkOut !== undefined ? data.checkOut || null : (existing as { check_out?: string | null } | null)?.check_out ?? null;
+    const effStatus = (data.status ?? (existing as { status?: string } | null)?.status ?? '') as string;
+    if (
+      rowDate &&
+      rowDate < companyDateStr() &&
+      effCheckIn &&
+      !effCheckOut &&
+      (effStatus === 'Present' || effStatus === 'Late')
+    ) {
+      data = { ...data, status: 'Half Day' };
+      if (!(Number(data.workHours) > 0)) {
+        data = { ...data, workHours: 4 };
+      }
+    }
+  } catch {
+    // Best-effort only — fall through to the plain update.
+  }
   const dbData: Database['public']['Tables']['attendance']['Update'] = {};
   if (data.checkIn !== undefined) dbData.check_in = data.checkIn || null;
   if (data.checkOut !== undefined) dbData.check_out = data.checkOut || null;

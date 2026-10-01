@@ -182,3 +182,23 @@ export function applyEarlyCheckoutRule(checkOut: string, chosenStatus: string): 
   if (['Absent', 'Leave', 'Holiday', 'Weekend'].includes(chosenStatus)) return chosenStatus;
   return resolveEarlyCheckoutStatus(checkOut).isHalfDay ? 'Half Day' : chosenStatus;
 }
+
+/** Missing-checkout → Half Day rule for form submits.
+ *  A past working day with a check-in but no check-out is half leave
+ *  (e.g. checked in 30-09-2026, never checked out, edited/viewed later).
+ *  Today is excluded — the employee may still check out. */
+export function applyMissingCheckoutRule(
+  date: string,
+  checkIn: string,
+  checkOut: string,
+  chosenStatus: string,
+  today?: string,
+): string {
+  if (!date || !checkIn || checkOut) return chosenStatus;
+  if (['Absent', 'Leave', 'Holiday', 'Weekend', 'Half Day'].includes(chosenStatus)) {
+    return chosenStatus;
+  }
+  if (chosenStatus !== 'Present' && chosenStatus !== 'Late') return chosenStatus;
+  const todayStr = today ?? new Date().toISOString().slice(0, 10);
+  return date < todayStr ? 'Half Day' : chosenStatus;
+}

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/server';
 import type { AttendanceRecord } from '@/lib/types';
 import type { Database } from '@/lib/supabase/database.types';
+import { effectiveAttendanceStatus } from '@/utils/date';
 
 type EmployeeRow = Database['public']['Tables']['employees']['Row'];
 type AttendanceRow = Database['public']['Tables']['attendance']['Row'];
@@ -36,6 +37,13 @@ export async function getReportEmployees(): Promise<ReportEmployeeOption[]> {
 }
 
 function mapAttendance(db: AttendanceRowWithEmployee): AttendanceRecord {
+  const effectiveStatus = effectiveAttendanceStatus(
+    db.date,
+    db.check_in,
+    db.check_out,
+    db.status,
+  ) as AttendanceRecord['status'];
+  const storedHours = db.work_hours != null ? Number(db.work_hours) || 0 : 0;
   return {
     id: db.id,
     employeeId: db.employee_id,
@@ -44,8 +52,8 @@ function mapAttendance(db: AttendanceRowWithEmployee): AttendanceRecord {
     date: db.date,
     checkIn: db.check_in ?? '',
     checkOut: db.check_out ?? '',
-    status: db.status,
-    workHours: db.work_hours ?? 0,
+    status: effectiveStatus,
+    workHours: effectiveStatus === 'Half Day' && storedHours <= 0 ? 4 : storedHours,
     overtime: db.overtime ?? 0,
     notes: db.notes ?? undefined,
   };

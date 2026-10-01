@@ -111,3 +111,36 @@ export function isEarlyHalfDayCheckout(
 ): boolean {
   return minutesEarly(checkOut, standardEnd) >= thresholdMinutes;
 }
+
+/** A day left "open" overnight: checked in but never checked out.
+ *  Such rows are created as 'Present' on check-in and must flip to
+ *  'Half Day' (half leave) once the date is in the past — the employee
+ *  never completed the day. `today` defaults to the company calendar date
+ *  so server and client agree on the boundary. */
+export function isMissingCheckoutHalfDay(
+  date: string,
+  checkIn: string | null | undefined,
+  checkOut: string | null | undefined,
+  status: string | null | undefined,
+  today: string = companyDateStr(),
+): boolean {
+  if (!date || !checkIn || checkOut) return false;
+  if (status !== 'Present' && status !== 'Late') return false;
+  return date < today;
+}
+
+/** Effective display/persisted status for a row: a stale open day reads as
+ *  'Half Day' even if the midnight cron / lazy close hasn't updated the DB
+ *  yet (e.g. checked in 30-09-2026, no checkout, viewed on 01-10-2026). */
+export function effectiveAttendanceStatus(
+  date: string,
+  checkIn: string | null | undefined,
+  checkOut: string | null | undefined,
+  status: string,
+  today: string = companyDateStr(),
+): string {
+  if (isMissingCheckoutHalfDay(date, checkIn, checkOut, status, today)) {
+    return 'Half Day';
+  }
+  return status;
+}

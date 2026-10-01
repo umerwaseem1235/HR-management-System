@@ -7,7 +7,7 @@ import { useLeave } from '@/contexts/LeaveContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { timeToMinutes, toDateStr, todayStr } from '@/utils/date';
 import type { CorrectionHistoryEntry, CorrectionRequest, Holiday } from '../types';
-import { aggregate, calcWorkHours, DEFAULT_LATE_RULE, resolveLateStatus, applyEarlyCheckoutRule, type LateArrivalRule } from '../utils';
+import { aggregate, calcWorkHours, DEFAULT_LATE_RULE, resolveLateStatus, applyEarlyCheckoutRule, applyMissingCheckoutRule, type LateArrivalRule } from '../utils';
 import { createAuditLog, getAuditLogsByModule } from '@/lib/actions/audit';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -532,9 +532,11 @@ export function useAttendance() {
       if (!emp) return;
 
       // Apply the late-arrival rule so manual entries respect it, then the
-      // early-checkout rule (15+ min before off time = Half Day / half leave).
+      // early-checkout rule (15+ min before off time = Half Day / half leave),
+      // then the missing-checkout rule (past day, in but no out = Half Day).
       const lateAdjusted = applyLateRule(values.checkIn, values.status);
-      const finalStatus = applyEarlyCheckoutRule(values.checkOut, lateAdjusted);
+      const earlyAdjusted = applyEarlyCheckoutRule(values.checkOut, lateAdjusted);
+      const finalStatus = applyMissingCheckoutRule(values.date, values.checkIn, values.checkOut, earlyAdjusted);
       const workHours = calcWorkHours(
         values.checkIn,
         values.checkOut,
@@ -582,16 +584,18 @@ export function useAttendance() {
       },
     ) => {
       // Apply the late-arrival rule so edits respect it, then the
-      // early-checkout rule (15+ min before off time = Half Day / half leave).
+      // early-checkout rule (15+ min before off time = Half Day / half leave),
+      // then the missing-checkout rule (past day, in but no out = Half Day).
       const lateAdjusted = applyLateRule(values.checkIn, values.status);
-      const finalStatus = applyEarlyCheckoutRule(values.checkOut, lateAdjusted);
+      const earlyAdjusted = applyEarlyCheckoutRule(values.checkOut, lateAdjusted);
+      // Capture the pre-edit snapshot for the correction-history audit trail
+      const before = attendRecords.find((r) => r.id === id);
+      const finalStatus = applyMissingCheckoutRule(before?.date ?? todayStr(), values.checkIn, values.checkOut, earlyAdjusted);
       const workHours = calcWorkHours(
         values.checkIn,
         values.checkOut,
         finalStatus,
       );
-      // Capture the pre-edit snapshot for the correction-history audit trail
-      const before = attendRecords.find((r) => r.id === id);
       try {
         await updateAttendanceRecord(id, {
           checkIn: values.checkIn,
