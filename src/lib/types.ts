@@ -271,6 +271,9 @@ export interface DashboardStats {
   upcomingExits: number;
   payrollStatus: string;
   attendanceRate: number;
+  /** Current user's check-in state for today (admin/HR self attendance). */
+  myCheckedIn?: boolean;
+  myCheckInTime?: string | null;
 }
 
 export type DailyWorkStatus = 'Submitted' | 'Approved' | 'Needs Revision';

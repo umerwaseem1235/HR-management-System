@@ -54,6 +54,10 @@ import { getEmployees } from '@/lib/actions/employees';
 import { cachedQuery, peekStaleQuery, primeQuery } from '@/lib/query-cache';
 import {
   ATTENDANCE_STATS_KEY,
+  ATTENDANCE_ALL_KEY,
+  ATTENDANCE_CORRECTIONS_KEY,
+  ATTENDANCE_HOLIDAYS_KEY,
+  AUDIT_LOGS_ATTENDANCE_KEY,
   currentMonthPrefix,
   employeeAttendanceKey,
   invalidateAttendanceViews,
@@ -164,11 +168,11 @@ export function useAttendance() {
           const [empData, attData, corrData, histData, holData, statsData] =
             await Promise.all([
               cachedQuery('employees', getEmployees),
-              getAllAttendance(year, month),
-              getCorrections(),
-              getAuditLogsByModule('Attendance'),
-              getHolidays(),
-              getAttendanceStats(),
+              cachedQuery(ATTENDANCE_ALL_KEY, () => getAllAttendance(year, month)),
+              cachedQuery(ATTENDANCE_CORRECTIONS_KEY, getCorrections),
+              cachedQuery(AUDIT_LOGS_ATTENDANCE_KEY, () => getAuditLogsByModule('Attendance')),
+              cachedQuery(ATTENDANCE_HOLIDAYS_KEY, getHolidays),
+              cachedQuery(ATTENDANCE_STATS_KEY, getAttendanceStats),
             ]);
           if (cancelled) return;
           setEmployees(empData);

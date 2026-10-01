@@ -94,6 +94,18 @@ export function formatDayMonYear(dateStr: string): string {
 /** Office off (day-end) time used by the early-checkout rule. */
 export const OFFICE_END_TIME = '18:00';
 
+/** Checking in at or after this time counts as Absent for the day. */
+export const ABSENT_AFTER_CHECKIN_TIME = '12:00';
+
+/** True when a check-in time is late enough to count the day as Absent. */
+export function isAbsentCheckIn(
+  checkIn: string | null | undefined,
+  cutoff: string = ABSENT_AFTER_CHECKIN_TIME,
+): boolean {
+  if (!checkIn) return false;
+  return timeToMinutes(checkIn) >= timeToMinutes(cutoff);
+}
+
 /** Checking out this many minutes (or more) before off time = Half Day (half leave). */
 export const EARLY_CHECKOUT_HALF_DAY_MINUTES = 15;
 

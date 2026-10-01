@@ -107,6 +107,10 @@ export default function AdminDashboard() {
   }, [employees]);
   const maxDeptCount = Math.max(1, ...deptCounts.map((d) => d.count));
 
+  // Current user's check-in state from the cached dashboard payload
+  const myCheckedIn = stats?.myCheckedIn ?? false;
+  const myCheckInTime = stats?.myCheckInTime ?? null;
+
   // Upcoming events from live data: birthdays + probation endings in next 30 days
   const upcomingEvents = useMemo(() => {
     const out: { type: string; name: string; date: string; icon: typeof Gift }[] = [];
@@ -149,6 +153,8 @@ export default function AdminDashboard() {
         actions={
           <SelfCheckInOut
             employeeId={employeeId}
+            initialCheckedIn={myCheckedIn}
+            initialCheckInTime={myCheckInTime}
             onStatusChange={() => {
               setActionError(null);
               void refresh();

@@ -244,6 +244,26 @@ export async function getDashboardData(): Promise<DashboardData> {
   // Compute derived absent/leave stats first
   const { absentToday, onLeaveToday } = await computeAbsentAndLeaveStats(supabase, today);
 
+  // Resolve current user's linked employee id for their own check-in status
+  const { data: authData } = await supabase.auth.getUser();
+  const authUid = authData.user?.id ?? '';
+  const { data: linked } = await supabase
+    .from('employees')
+    .select('id')
+    .eq('user_id', authUid)
+    .maybeSingle();
+  const myEmployeeId = linked?.id ?? null;
+
+  // Fetch current user's today attendance row if linked
+  const myAttendancePromise = myEmployeeId
+    ? supabase
+        .from('attendance')
+        .select('check_in, check_out')
+        .eq('employee_id', myEmployeeId as string)
+        .eq('date', today)
+        .maybeSingle()
+    : Promise.resolve({ data: null });
+
   const [
     totalEmployeesRes,
     activeEmployeesRes,
@@ -257,6 +277,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     latestPayrollRes,
     employeesRes,
     attendanceRes,
+    myAttendanceRes,
   ] = await Promise.all([
     supabase.from('employees').select('id', { count: 'exact', head: true }),
     supabase.from('employees').select('id', { count: 'exact', head: true }).eq('status', 'Active'),
@@ -284,6 +305,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       .gte('date', startStr)
       .lte('date', today)
       .in('status', ['Present', 'Late']),
+    myAttendancePromise,
   ]);
 
   const employees: DashboardEmployee[] = ((employeesRes.data ?? []) as unknown as DashboardEmployeeSource[]).map((e) => ({
@@ -319,6 +341,11 @@ export async function getDashboardData(): Promise<DashboardData> {
   const lateToday = lateTodayRes.count ?? 0;
   const presentCount = presentToday + lateToday;
 
+  // Current user's check-in state for today
+  const myAttendance = myAttendanceRes.data as { check_in: string | null; check_out: string | null } | null;
+  const myCheckedIn = !!myAttendance?.check_in && !myAttendance?.check_out;
+  const myCheckInTime = myAttendance?.check_in ? myAttendance.check_in.slice(0, 5) : null;
+
   // Same label semantics as getPayrollStatus(): Pending | In Process | Finalized
   const latestStatus: string | null = (latestPayrollRes.data as PayrollRunRow | null)?.status ?? null;
   const payrollStatus = !latestStatus ? 'Pending' : latestStatus === 'Finalized' ? 'Finalized' : 'In Process';
@@ -337,6 +364,8 @@ export async function getDashboardData(): Promise<DashboardData> {
     upcomingExits: upcomingExitsRes.count ?? 0,
     payrollStatus,
     attendanceRate: activeEmployees > 0 ? Math.round((presentCount / activeEmployees) * 100) : 0,
+    myCheckedIn,
+    myCheckInTime,
   };
 
   return { stats, employees, attendanceTrend };

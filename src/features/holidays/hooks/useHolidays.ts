@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { createHoliday, deleteHoliday, getHolidays } from '@/lib/actions/attendance';
 import { cachedQuery, peekQuery, primeQuery } from '@/lib/query-cache';
+import { invalidateQuery, ATTENDANCE_HOLIDAYS_KEY } from '@/lib/attendance-cache';
 import type { Holiday } from '../types';
 
 export const HOLIDAYS_CACHE_KEY = 'holidays';
@@ -63,6 +64,7 @@ export function useHolidays() {
           primeQuery(HOLIDAYS_CACHE_KEY, next);
           return next;
         });
+        invalidateQuery(ATTENDANCE_HOLIDAYS_KEY);
         addNotification({
           title: 'New Holiday Announced',
           message: `${name} on ${date} (${input.type || 'Public'}) — notified to all employees.`,
@@ -103,6 +105,7 @@ export function useHolidays() {
         primeQuery(HOLIDAYS_CACHE_KEY, next);
         return next;
       });
+      invalidateQuery(ATTENDANCE_HOLIDAYS_KEY);
     } catch (err: unknown) {
       setError(err instanceof Error && err.message ? err.message : 'Failed to delete holiday');
     }

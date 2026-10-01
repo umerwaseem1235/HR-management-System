@@ -1,5 +1,5 @@
 import type { AttendanceRecord } from '@/types';
-import { timeToMinutes, EARLY_CHECKOUT_HALF_DAY_MINUTES } from '@/utils/date';
+import { timeToMinutes, isAbsentCheckIn, EARLY_CHECKOUT_HALF_DAY_MINUTES } from '@/utils/date';
 
 export const STANDARD_START = '09:00';
 export const STANDARD_END = '18:00';
@@ -23,7 +23,7 @@ export const DEFAULT_LATE_RULE: LateArrivalRule = {
   enabled: true,
 };
 
-export type AutoStatus = 'Present' | 'Late' | 'Half Day';
+export type AutoStatus = 'Present' | 'Late' | 'Half Day' | 'Absent';
 
 export function resolveLateStatus(
   checkIn: string,
@@ -33,6 +33,9 @@ export function resolveLateStatus(
   const inMin = checkIn ? timeToMinutes(checkIn) : 0;
   const startMin = timeToMinutes(standardStart);
   const minutesLate = inMin ? Math.max(0, inMin - startMin) : 0;
+  // Company policy: checking in at/after noon counts as Absent for the day,
+  // regardless of the late-rule configuration.
+  if (inMin && isAbsentCheckIn(checkIn)) return { status: 'Absent', minutesLate };
   if (!rule.enabled || !inMin) return { status: 'Present', minutesLate };
   if (minutesLate <= rule.graceMinutes) return { status: 'Present', minutesLate };
   if (minutesLate > rule.halfDayAfterMinutes) return { status: 'Half Day', minutesLate };

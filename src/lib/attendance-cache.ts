@@ -1,4 +1,5 @@
 import { invalidateQuery } from './query-cache';
+export { invalidateQuery } from './query-cache';
 
 /**
  * Shared cache keys linking the employee attendance module and the employee
@@ -9,6 +10,10 @@ import { invalidateQuery } from './query-cache';
  */
 
 export const ATTENDANCE_STATS_KEY = 'attendance:stats';
+export const ATTENDANCE_ALL_KEY = 'attendance:all';
+export const ATTENDANCE_CORRECTIONS_KEY = 'attendance:corrections';
+export const ATTENDANCE_HOLIDAYS_KEY = 'attendance:holidays';
+export const AUDIT_LOGS_ATTENDANCE_KEY = 'audit:attendance';
 
 export function currentMonthPrefix(d: Date = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -33,6 +38,7 @@ export function invalidateAttendanceCache(employeeId?: string): void {
   if (employeeId) invalidateQuery(employeeAttendanceKey(employeeId, prefix));
   invalidateQuery(employeeAttendanceKey('all', prefix));
   invalidateQuery(ATTENDANCE_STATS_KEY);
+  invalidateQuery(ATTENDANCE_ALL_KEY);
 }
 
 /** After a check-in/out on the dashboard: the attendance module must refetch. */
@@ -44,5 +50,21 @@ export function invalidateDashboardCache(employeeId: string): void {
  *  module and the dashboard re-fetch on the next visit. */
 export function invalidateAttendanceViews(employeeId?: string): void {
   invalidateAttendanceCache(employeeId);
+  invalidateAdminAttendanceCache();
   if (employeeId) invalidateDashboardCache(employeeId);
+}
+
+/** Invalidate admin-specific attendance caches (corrections, holidays, audit). */
+export function invalidateAdminAttendanceCache(): void {
+  invalidateQuery(ATTENDANCE_CORRECTIONS_KEY);
+  invalidateQuery(ATTENDANCE_HOLIDAYS_KEY);
+  invalidateQuery(AUDIT_LOGS_ATTENDANCE_KEY);
+}
+
+/** Invalidate ALL attendance-related caches. */
+export function invalidateAllAttendanceCaches(): void {
+  invalidateAttendanceCache();
+  invalidateAdminAttendanceCache();
+  invalidateQuery(ATTENDANCE_STATS_KEY);
+  invalidateQuery(AUDIT_LOGS_ATTENDANCE_KEY);
 }

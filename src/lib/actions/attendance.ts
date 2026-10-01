@@ -5,7 +5,7 @@ import { createClient as createServiceClient, type PostgrestError } from '@supab
 import { revalidatePath } from 'next/cache';
 import type { AttendanceRecord } from '@/lib/types';
 import type { Database } from '@/lib/supabase/database.types';
-import { companyDateStr, companyTimeStr, isEarlyHalfDayCheckout, effectiveAttendanceStatus } from '@/utils/date';
+import { companyDateStr, companyTimeStr, isAbsentCheckIn, isEarlyHalfDayCheckout, effectiveAttendanceStatus } from '@/utils/date';
 import { calculateDistance, getOfficeLocationConfig } from '@/lib/location';
 import { ensureLinkedEmployee } from './leave';
 
@@ -491,6 +491,14 @@ export async function createAttendanceRecord(
   let status = data.status;
   const checkInVal = data.checkIn ?? data.check_in ?? null;
   const checkOutVal = data.checkOut ?? data.check_out ?? null;
+  // Company policy: checking in at/after noon counts as Absent for the day.
+  if (
+    checkInVal &&
+    (status === 'Present' || status === 'Late' || status === 'Half Day') &&
+    isAbsentCheckIn(checkInVal)
+  ) {
+    status = 'Absent';
+  }
   if (
     data.date < companyDateStr() &&
     checkInVal &&
@@ -564,6 +572,16 @@ export async function updateAttendanceRecord(
       if (!(Number(data.workHours) > 0)) {
         data = { ...data, workHours: 4 };
       }
+    }
+    // Company policy: checking in at/after noon counts as Absent for the day.
+    // Runs last so it wins over the Half Day flip above (Absent is stronger).
+    const postHealStatus = (data.status ?? effStatus) as string;
+    if (
+      effCheckIn &&
+      (postHealStatus === 'Present' || postHealStatus === 'Late' || postHealStatus === 'Half Day') &&
+      isAbsentCheckIn(effCheckIn)
+    ) {
+      data = { ...data, status: 'Absent' };
     }
   } catch {
     // Best-effort only — fall through to the plain update.
@@ -731,8 +749,19 @@ export async function selfCheckInOut(
   const updateData: Database['public']['Tables']['attendance']['Update'] = {};
   if (action === 'check_in') {
     updateData.check_in = timeStr;
-    // If no record exists, set status to Present
-    if (!existing) updateData.status = 'Present';
+    // Company policy: checking in at/after noon counts as Absent for the day.
+    // New rows default to Absent/Present by the cutoff; an existing
+    // Present/Late row re-stamped after noon flips to Absent. Explicit
+    // non-attendance statuses (Leave/Holiday/Weekend/Absent) are untouched.
+    const currentStatus = (existing?.status as string) || 'Present';
+    if (!existing) {
+      updateData.status = isAbsentCheckIn(timeStr) ? 'Absent' : 'Present';
+    } else if (
+      (currentStatus === 'Present' || currentStatus === 'Late') &&
+      isAbsentCheckIn(timeStr)
+    ) {
+      updateData.status = 'Absent';
+    }
   } else {
     updateData.check_out = timeStr;
     // Early-checkout → Half Day rule: leaving 15+ min before the office
@@ -990,8 +1019,10 @@ export async function checkInWithLocation(data: {
     }
 
     // Company wall time — the server clock is UTC.
+    // Company policy: checking in at/after noon counts as Absent for the day.
     const checkInTime = companyTimeStr();
-    const status: 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Holiday' | 'Weekend' = 'Present';
+    const status: 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Leave' | 'Holiday' | 'Weekend' =
+      isAbsentCheckIn(checkInTime) ? 'Absent' : 'Present';
 
     // Lazy midnight rule: close this employee's older open days as Half Day.
     await closeStaleOpenDays(supabase, employeeId, data.date);
