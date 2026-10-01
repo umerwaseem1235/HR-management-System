@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { LogIn, LogOut, MapPin, AlertCircle, Loader2 } from 'lucide-react';
-import Button from '../ui/Button';
+import { MapPin, AlertCircle } from 'lucide-react';
 import PageHeader from '../ui/PageHeader';
 import Card from '../ui/Card';
 import EmployeeStats from './employee/EmployeeStats';
@@ -10,12 +9,12 @@ import EmployeeLeaveBalances from './employee/EmployeeLeaveBalances';
 import EmployeeProgress from './employee/EmployeeProgress';
 import EmployeeNotifications from './employee/EmployeeNotifications';
 import EmployeePayslips from './employee/EmployeePayslips';
+import SelfCheckInOut from '../../features/attendance/components/SelfCheckInOut';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 import { useEmployeeDirectory } from '../../hooks/useEmployeeDirectory';
-import { checkInWithLocation, checkOutWithLocation } from '@/lib/actions/attendance';
 import { getEmployeeDashboardBundle } from '@/lib/actions/employee-dashboard';
 import { cachedQuery, peekStaleQuery, primeQuery } from '../../lib/query-cache';
 import { employeeDashboardKey, invalidateAttendanceCache } from '../../lib/attendance-cache';
@@ -65,7 +64,6 @@ export default function EmployeeDashboard() {
     () => cachedBundle?.checkInTime ?? null,
   );
   const [, setLocationError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   // Mount-guard deferred to the next frame so no setState runs
@@ -154,192 +152,27 @@ export default function EmployeeDashboard() {
   const lastPayslipLabel = lastSlip ? `${lastSlip.month} ${lastSlip.year}` : 'No payslip yet';
   const workedDisplay = Number.isInteger(monthSummary.worked) ? monthSummary.worked : monthSummary.worked.toFixed(1);
 
-  const toFriendlyError = (err: unknown, fallback: string) => {
-    const msg = err instanceof Error ? err.message : fallback;
-    if (/Minified React error #441|Server Components render/i.test(msg)) {
-      return 'Check-in could not be saved (server error). Most common cause: the location columns are missing in the database. Please run supabase/migrations/007_attendance_location.sql in Supabase, then try again.';
-    }
-    return msg || fallback;
-  };
-
-  const getCurrentPosition = (): Promise<GeolocationPosition> => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocation is not supported by your browser'));
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      });
-    });
-  };
-
-  const handleCheckIn = async () => {
-    setActionLoading(true);
-    setActionError(null);
-    setLocationError(null);
-
-    try {
-      const position = await getCurrentPosition();
-      const { latitude, longitude } = position.coords;
-
-      const today = new Date().toISOString().split('T')[0];
-      const checkInTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-
-      const eid = employeeId || user?.id || '';
-      if (!eid) {
-        setActionError('Unable to identify employee. Please refresh and try again.');
-        setActionLoading(false);
-        return;
-      }
-
-      const result = await checkInWithLocation({
-        employeeId: eid,
-        date: today,
-        checkIn: checkInTime,
-        latitude,
-        longitude,
-      });
-
-      if (result.success) {
-        setCheckedIn(true);
-        setCheckInTime(checkInTime);
-        setLocationError(null);
-        primeBundle({ checkedIn: true, checkInTime });
-      } else {
-        setActionError(result.error || 'Check-in failed');
-      }
-    } catch (err) {
-      if (err instanceof GeolocationPositionError) {
-        switch (err.code) {
-          case err.PERMISSION_DENIED:
-            setActionError('Location permission denied. Please enable location access to check in.');
-            break;
-          case err.POSITION_UNAVAILABLE:
-            setActionError('Location information is unavailable. Please try again.');
-            break;
-          case err.TIMEOUT:
-            setActionError('Location request timed out. Please try again.');
-            break;
-          default:
-            setActionError('An unknown error occurred while getting location.');
-        }
-      } else {
-        setActionError(toFriendlyError(err, 'Check-in failed. Please try again.'));
-      }
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleCheckOut = async () => {
-    setActionLoading(true);
-    setActionError(null);
-    setLocationError(null);
-
-    try {
-      const position = await getCurrentPosition();
-      const { latitude, longitude } = position.coords;
-
-      const today = new Date().toISOString().split('T')[0];
-      const checkOutTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-
-      const eid = employeeId || user?.id || '';
-      if (!eid) {
-        setActionError('Unable to identify employee. Please refresh and try again.');
-        setActionLoading(false);
-        return;
-      }
-
-      const result = await checkOutWithLocation({
-        employeeId: eid,
-        date: today,
-        checkOut: checkOutTime,
-        latitude,
-        longitude,
-      });
-
-      if (result.success) {
-        setCheckedIn(false);
-        setCheckInTime(null);
-        setLocationError(null);
-        primeBundle({ checkedIn: false, checkInTime: null });
-      } else {
-        setActionError(result.error || 'Check-out failed');
-      }
-    } catch (err) {
-      if (err instanceof GeolocationPositionError) {
-        switch (err.code) {
-          case err.PERMISSION_DENIED:
-            setActionError('Location permission denied. Please enable location access to check out.');
-            break;
-          case err.POSITION_UNAVAILABLE:
-            setActionError('Location information is unavailable. Please try again.');
-            break;
-          case err.TIMEOUT:
-            setActionError('Location request timed out. Please try again.');
-            break;
-          default:
-            setActionError('An unknown error occurred while getting location.');
-        }
-      } else {
-        setActionError(toFriendlyError(err, 'Check-out failed. Please try again.'));
-      }
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Welcome + Check In/Out */}
+      {/* Welcome + Check In/Out (shared controls — same UX as the admin side) */}
       <PageHeader
         title={`${t('dashboard.welcome')}, ${user?.name?.split(' ')[0]}! 👋`}
         actions={
-          <>
-            {checkInTime && (
-              <span className="w-full sm:w-auto text-xs sm:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 sm:mr-4">Checked in at {checkInTime}</span>
-            )}
-            {!checkedIn ? (
-              <Button
-                variant="primary"
-                onClick={handleCheckIn}
-                disabled={actionLoading}
-                size="sm"
-                className="sm:min-w-[140px]"
-              >
-                {actionLoading ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" /> Verifying...
-                  </>
-                ) : (
-                  <>
-                    <LogIn size={16} /> Check In
-                  </>
-                )}
-              </Button>
-            ) : (
-              <Button
-                variant="danger"
-                onClick={handleCheckOut}
-                disabled={actionLoading}
-                size="sm"
-                className="sm:min-w-[140px]"
-              >
-                {actionLoading ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" /> Verifying...
-                  </>
-                ) : (
-                  <>
-                    <LogOut size={16} /> Check Out
-                  </>
-                )}
-              </Button>
-            )}
-          </>
+          <SelfCheckInOut
+            employeeId={employeeId}
+            initialCheckedIn={checkedIn}
+            initialCheckInTime={checkInTime}
+            onStatusChange={(nextCheckedIn, nextCheckInTime) => {
+              setCheckedIn(nextCheckedIn);
+              setCheckInTime(nextCheckInTime);
+              setLocationError(null);
+              primeBundle({ checkedIn: nextCheckedIn, checkInTime: nextCheckInTime });
+            }}
+            onError={(msg) => {
+              setActionError(msg);
+              if (!msg) setLocationError(null);
+            }}
+          />
         }
       />
 

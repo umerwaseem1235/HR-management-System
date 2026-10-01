@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/server';
 import type { DashboardStats } from '@/lib/types';
 import type { Database } from '@/lib/supabase/database.types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 type JobRow = Pick<Database['public']['Tables']['jobs']['Row'], 'vacancies'>;
 type PayrollRunRow = Database['public']['Tables']['payroll_runs']['Row'];
@@ -14,18 +15,133 @@ type DashboardEmployeeSource = Pick<
 
 type AttendanceTrendSource = Pick<Database['public']['Tables']['attendance']['Row'], 'date' | 'status'>;
 
+type EmployeeLean = Pick<Database['public']['Tables']['employees']['Row'], 'id' | 'status' | 'joining_date'>;
+
+interface AttendanceRowLean {
+  employee_id: string;
+  status: string;
+}
+
+interface LeaveRequestLean {
+  employee_id: string;
+  start_date: string;
+  end_date: string;
+}
+
+interface RemoteRequestLean {
+  employee_id: string;
+  from_date: string;
+  to_date: string;
+}
+
+/**
+ * Computes today's absent and on-leave counts from expected employees minus those accounted for.
+ * Absent = expected employees (joined, not inactive) who have no attendance row today with a non-Absent status,
+ *          and are not on approved leave/remote covering today, minus weekends/holidays (no-shows not counted on non-working days).
+ * Explicit 'Absent' rows are always counted.
+ */
+async function computeAbsentAndLeaveStats(
+  supabase: SupabaseClient<Database>,
+  today: string,
+): Promise<{ absentToday: number; onLeaveToday: number }> {
+  // Weekend check: day 0 = Sunday, day 6 = Saturday (per existing codebase convention)
+  const dayOfWeek = new Date(today + 'T00:00:00').getDay();
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+  // Holiday check
+  const { data: holidays } = await supabase
+    .from('holidays')
+    .select('date, is_recurring');
+  const isHoliday = (holidays ?? []).some(
+    (h) => h.date === today || (h.is_recurring && h.date.slice(5) === today.slice(5)),
+  );
+
+  const isNonWorkingDay = isWeekend || isHoliday;
+
+  // Fetch data in parallel
+  const [expectedRes, rowsRes, approvedLeavesRes, approvedRemotesRes] = await Promise.all([
+    // Expected employees: not Inactive, joined on or before today
+    supabase
+      .from('employees')
+      .select('id, status, joining_date')
+      .neq('status', 'Inactive')
+      .lte('joining_date', today),
+    // Today's attendance rows
+    supabase.from('attendance').select('employee_id, status').eq('date', today),
+    // Approved leave requests covering today
+    supabase
+      .from('leave_requests')
+      .select('employee_id')
+      .eq('status', 'Approved')
+      .lte('start_date', today)
+      .gte('end_date', today),
+    // Approved remote work requests covering today
+    supabase
+      .from('remote_requests')
+      .select('employee_id')
+      .eq('status', 'Approved')
+      .lte('from_date', today)
+      .gte('to_date', today),
+  ]);
+
+  const expected = ((expectedRes.data ?? []) as EmployeeLean[])
+    .filter((e) => e.status !== 'Inactive')
+    .map((e) => e.id);
+  const expectedSet = new Set(expected);
+
+  const rows = (rowsRes.data ?? []) as AttendanceRowLean[];
+  const explicitAbsent = new Set(rows.filter((r) => r.status === 'Absent').map((r) => r.employee_id));
+  // Accounted: any row today whose status is NOT 'Absent' (Present, Late, Half Day, Leave, Holiday, Weekend)
+  const accounted = new Set(rows.filter((r) => r.status !== 'Absent').map((r) => r.employee_id));
+
+  const approvedLeaveIds = new Set(
+    ((approvedLeavesRes.data ?? []) as LeaveRequestLean[]).map((l) => l.employee_id),
+  );
+  const approvedRemoteIds = new Set(
+    ((approvedRemotesRes.data ?? []) as RemoteRequestLean[]).map((r) => r.employee_id),
+  );
+
+  // On leave today = attendance 'Leave' rows ∪ approved leave requests (distinct employees)
+  const leaveRowIds = new Set(rows.filter((r) => r.status === 'Leave').map((r) => r.employee_id));
+  const onLeaveSet = new Set([...leaveRowIds, ...approvedLeaveIds]);
+  const onLeaveToday = [...onLeaveSet].filter((id) => expectedSet.has(id)).length;
+
+  if (isNonWorkingDay) {
+    // On non-working days, only explicit 'Absent' rows count (HR manually marked)
+    const absentToday = [...explicitAbsent].filter((id) => expectedSet.has(id)).length;
+    return { absentToday, onLeaveToday };
+  }
+
+  // Working day: absent = expected employees not in accounted, not on approved leave/remote, but explicit Absent always counts
+  let absentToday = 0;
+  for (const id of expected) {
+    const isExplicitAbsent = explicitAbsent.has(id);
+    const isAccounted = accounted.has(id);
+    const isOnLeave = approvedLeaveIds.has(id);
+    const isRemote = approvedRemoteIds.has(id);
+    if (isExplicitAbsent) {
+      absentToday++;
+    } else if (!isAccounted && !isOnLeave && !isRemote) {
+      absentToday++;
+    }
+  }
+
+  return { absentToday, onLeaveToday };
+}
+
 export async function getDashboardStats(): Promise<DashboardStats> {
   const supabase = await createClient();
   const today = new Date().toISOString().split('T')[0];
   const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
 
-  // Execute ALL count queries in a single Promise.all — eliminates sequential waterfalls
+  // Compute derived absent/leave stats first (needs attendance/leave/remote rows)
+  const { absentToday, onLeaveToday } = await computeAbsentAndLeaveStats(supabase, today);
+
+  // Execute remaining count queries in parallel
   const [
     { count: totalEmployees },
     { count: activeEmployees },
     { count: presentToday },
-    { count: absentToday },
-    { count: onLeaveToday },
     { count: lateToday },
     { count: pendingLeaveApprovals },
     expenseResult,
@@ -37,8 +153,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     supabase.from('employees').select('*', { count: 'exact', head: true }),
     supabase.from('employees').select('*', { count: 'exact', head: true }).eq('status', 'Active'),
     supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('date', today).eq('status', 'Present'),
-    supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('date', today).eq('status', 'Absent'),
-    supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('date', today).eq('status', 'Leave'),
     supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('date', today).eq('status', 'Late'),
     supabase.from('leave_requests').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
     supabase.from('expense_claims').select('*', { count: 'exact', head: true }).eq('status', 'Pending').then(
@@ -63,8 +177,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     totalEmployees: totalEmployees || 0,
     activeEmployees: activeEmployees || 0,
     presentToday: presentToday || 0,
-    absentToday: absentToday || 0,
-    onLeaveToday: onLeaveToday || 0,
+    absentToday,
+    onLeaveToday,
     lateToday: lateToday || 0,
     pendingLeaveApprovals: pendingLeaveApprovals || 0,
     pendingExpenseApprovals,
@@ -127,12 +241,13 @@ export async function getDashboardData(): Promise<DashboardData> {
   start.setDate(start.getDate() - 30);
   const startStr = toDateString(start);
 
+  // Compute derived absent/leave stats first
+  const { absentToday, onLeaveToday } = await computeAbsentAndLeaveStats(supabase, today);
+
   const [
     totalEmployeesRes,
     activeEmployeesRes,
     presentTodayRes,
-    absentTodayRes,
-    onLeaveTodayRes,
     lateTodayRes,
     pendingLeaveRes,
     pendingExpenseRes,
@@ -146,8 +261,6 @@ export async function getDashboardData(): Promise<DashboardData> {
     supabase.from('employees').select('id', { count: 'exact', head: true }),
     supabase.from('employees').select('id', { count: 'exact', head: true }).eq('status', 'Active'),
     supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today).eq('status', 'Present'),
-    supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today).eq('status', 'Absent'),
-    supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today).eq('status', 'Leave'),
     supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('date', today).eq('status', 'Late'),
     supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'Pending'),
     supabase.from('expense_claims').select('id', { count: 'exact', head: true }).eq('status', 'Pending').then(
@@ -214,8 +327,8 @@ export async function getDashboardData(): Promise<DashboardData> {
     totalEmployees: totalEmployeesRes.count ?? 0,
     activeEmployees,
     presentToday,
-    absentToday: absentTodayRes.count ?? 0,
-    onLeaveToday: onLeaveTodayRes.count ?? 0,
+    absentToday,
+    onLeaveToday,
     lateToday,
     pendingLeaveApprovals: pendingLeaveRes.count ?? 0,
     pendingExpenseApprovals: (pendingExpenseRes as { count: number | null }).count ?? 0,

@@ -7,6 +7,7 @@ import type { AttendanceRecord } from '@/lib/types';
 import type { Database } from '@/lib/supabase/database.types';
 import { companyDateStr, companyTimeStr, isEarlyHalfDayCheckout, effectiveAttendanceStatus } from '@/utils/date';
 import { calculateDistance, getOfficeLocationConfig } from '@/lib/location';
+import { ensureLinkedEmployee } from './leave';
 
 type AttendanceStatus = Database['public']['Tables']['attendance']['Row']['status'];
 
@@ -102,6 +103,18 @@ function getMonthDateRange(year: number, month: number): { start: string; end: s
   const start = `${year}-${String(month).padStart(2, '0')}-01`;
   const end = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
   return { start, end };
+}
+
+/**
+ * Ensures an employee record exists for the current authenticated user.
+ * Single source of truth lives in `./leave` (`ensureLinkedEmployee`, with
+ * email-claim handling for seed/demo rows); this alias keeps attendance
+ * call sites readable and avoids a divergent duplicate.
+ */
+async function ensureEmployeeRecord(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<string> {
+  return ensureLinkedEmployee(supabase);
 }
 
 /* ------------------------------------------------------------------ */
@@ -671,18 +684,36 @@ export async function selfCheckInOut(
 ): Promise<AttendanceRecord> {
   const supabase = await createClient();
 
+  // Resolve employeeId: if the passed ID doesn't exist as an employee,
+  // try to find by user_id (auth user id), or auto-create for current auth user.
+  let resolvedEmployeeId = employeeId;
+  const { data: byId } = await supabase.from('employees').select('id').eq('id', employeeId).maybeSingle();
+  if (!byId) {
+    const { data: byUser } = await supabase.from('employees').select('id').eq('user_id', employeeId).maybeSingle();
+    if (byUser) {
+      resolvedEmployeeId = byUser.id;
+    } else {
+      // Auto-create employee record for current auth user (self check-in/out)
+      try {
+        resolvedEmployeeId = await ensureEmployeeRecord(supabase);
+      } catch (e) {
+        throw new Error(e instanceof Error ? e.message : 'Unable to identify your employee record. Please contact HR.');
+      }
+    }
+  }
+
   // Get existing record for today (upsert uses onConflict: employee_id,date)
   const { data: existing } = await supabase
     .from('attendance')
     .select('*')
-    .eq('employee_id', employeeId)
+    .eq('employee_id', resolvedEmployeeId)
     .eq('date', date)
     .single();
 
   // Lazy midnight rule: close this employee's older open days as Half Day
   // first, so a missed checkout never blocks a fresh check-in and stale
   // rows are corrected even if the midnight scheduler hasn't run yet.
-  await closeStaleOpenDays(supabase, employeeId, date);
+  await closeStaleOpenDays(supabase, resolvedEmployeeId, date);
 
   // Company wall time — the server clock is UTC, so `new Date()` here would
   // stamp 5 hours behind (and break late/early rules built on office hours).
@@ -735,7 +766,7 @@ export async function selfCheckInOut(
   const { data, error } = await supabase
     .from('attendance')
     .upsert(
-      { employee_id: employeeId, date, ...updateData },
+      { employee_id: resolvedEmployeeId, date, ...updateData },
       { onConflict: 'employee_id,date' }
     )
     .select('*, employees(first_name, last_name, avatar)')
@@ -929,14 +960,22 @@ export async function checkInWithLocation(data: {
     }
 
     // Resolve to a real employees.id (callers sometimes pass the auth user id).
-    let employeeId = data.employeeId;
+    // If neither matches, auto-create the linked record for the current
+    // login so HR / admin users without one can still check in.
+    let employeeId: string | null = null;
     const { data: byId } = await supabase.from('employees').select('id').eq('id', data.employeeId).maybeSingle();
-    if (!byId) {
+    if (byId) {
+      employeeId = data.employeeId;
+    } else {
       const { data: byUser } = await supabase.from('employees').select('id').eq('user_id', data.employeeId).maybeSingle();
-      if (byUser) employeeId = byUser.id;
+      employeeId = byUser?.id ?? null;
     }
     if (!employeeId) {
-      return { success: false, error: 'Employee record not found. Please contact HR.' };
+      try {
+        employeeId = await ensureEmployeeRecord(supabase);
+      } catch (e) {
+        return { success: false, error: e instanceof Error ? e.message : 'Employee record not found. Please contact HR.' };
+      }
     }
 
     // Day-close rule: once checked out, check-in is closed for the day.
@@ -1047,11 +1086,21 @@ export async function checkOutWithLocation(data: {
       return { success: false, error: 'Unable to identify employee. Please sign in again and try.' };
     }
 
-    let employeeId = data.employeeId;
+    let employeeId: string | null = null;
     const { data: byId } = await supabase.from('employees').select('id').eq('id', data.employeeId).maybeSingle();
-    if (!byId) {
+    if (byId) {
+      employeeId = data.employeeId;
+    } else {
       const { data: byUser } = await supabase.from('employees').select('id').eq('user_id', data.employeeId).maybeSingle();
-      if (byUser) employeeId = byUser.id;
+      employeeId = byUser?.id ?? null;
+    }
+    // If still not found, auto-create an employee record for the current auth user
+    if (!employeeId) {
+      try {
+        employeeId = await ensureEmployeeRecord(supabase);
+      } catch (e) {
+        return { success: false, error: e instanceof Error ? e.message : 'Employee record not found. Please contact HR.' };
+      }
     }
 
     const { data: existing } = await supabase
@@ -1149,4 +1198,46 @@ export async function checkOutWithLocation(data: {
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Check-out failed. Please try again.' };
   }
+}
+
+export interface MyCheckInStatus {
+  /** Linked employees.id, or null when this login has no employee record yet. */
+  employeeId: string | null;
+  checkedIn: boolean;
+  checkInTime: string | null;
+}
+
+/**
+ * Lean "am I checked in today?" lookup for dashboard headers (all roles).
+ * Read-only: never auto-creates an employee record — the first check-in
+ * creates it via `ensureLinkedEmployee`. HR/admin users get the same
+ * check-in/out treatment as employees once linked.
+ */
+export async function getMyCheckInStatus(date?: string): Promise<MyCheckInStatus> {
+  const supabase = await createClient();
+  const targetDate = date ?? companyDateStr();
+
+  const { data: authData } = await supabase.auth.getUser();
+  const authUid = authData.user?.id;
+  if (!authUid) return { employeeId: null, checkedIn: false, checkInTime: null };
+
+  const { data: linked } = await supabase
+    .from('employees')
+    .select('id')
+    .eq('user_id', authUid)
+    .maybeSingle();
+  if (!linked) return { employeeId: null, checkedIn: false, checkInTime: null };
+
+  const { data: row } = await supabase
+    .from('attendance')
+    .select('check_in, check_out')
+    .eq('employee_id', linked.id)
+    .eq('date', targetDate)
+    .maybeSingle();
+  const r = row as { check_in: string | null; check_out: string | null } | null;
+  return {
+    employeeId: linked.id,
+    checkedIn: !!r?.check_in && !r?.check_out,
+    checkInTime: r?.check_in ? r.check_in.slice(0, 5) : null,
+  };
 }

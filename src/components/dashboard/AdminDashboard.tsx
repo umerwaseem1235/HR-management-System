@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ClipboardCheck, Gift, Clock, CheckCircle2, XCircle, ArrowUpRight, Briefcase, UserPlus, DollarSign } from 'lucide-react';
+import { AlertCircle, ClipboardCheck, Gift, Clock, CheckCircle2, XCircle, ArrowUpRight, Briefcase, UserPlus, DollarSign } from 'lucide-react';
 import Card from '../ui/Card';
 import StatCard from '../ui/StatCard';
 import Select from '../ui/Select';
@@ -10,9 +10,11 @@ import { EmployeeCell } from '../shared';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import AttendanceChart, { TrendPoint } from './AttendanceChart';
 import AdminHeader from './admin/AdminHeader';
+import SelfCheckInOut from '../../features/attendance/components/SelfCheckInOut';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLeave } from '../../contexts/LeaveContext';
 import { useDashboard } from '../../contexts/DashboardContext';
+import { useEmployeeDirectory } from '../../hooks/useEmployeeDirectory';
 import type { DashboardStats, LeaveRequest } from '../../lib/types';
 import type { DashboardEmployee } from '../../lib/actions/dashboard';
 
@@ -37,7 +39,15 @@ export default function AdminDashboard() {
   const { leaveRequests, updateLeaveStatus } = useLeave();
   // Cached at the app root: switching modules and coming back is instant and
   // does not re-run the dashboard query.
-  const { data, ensureLoaded } = useDashboard();
+  const { data, ensureLoaded, refresh } = useDashboard();
+  const { findByUser } = useEmployeeDirectory();
+  // Same resolution as the employee side: linked id first, directory match as
+  // fallback (legacy logins without a linked employee id). The server
+  // auto-creates the linked record on first check-in, so HR counts as an
+  // employee for attendance from then on.
+  const directoryEmployee = useMemo(() => findByUser(user), [findByUser, user]);
+  const employeeId = user?.employeeId || directoryEmployee?.id || '';
+  const [actionError, setActionError] = useState<string | null>(null);
   const employees = data?.employees ?? EMPTY_EMPLOYEES;
   const stats = data?.stats ?? null;
   const trendWeek = useMemo(() => data?.attendanceTrend.slice(-7) ?? [], [data]);
@@ -132,8 +142,38 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Welcome header */}
-      <AdminHeader welcomeName={welcomeName} todayLabel={todayLabel} />
+      {/* Welcome header + self check-in/out (same as the employee side) */}
+      <AdminHeader
+        welcomeName={welcomeName}
+        todayLabel={todayLabel}
+        actions={
+          <SelfCheckInOut
+            employeeId={employeeId}
+            onStatusChange={() => {
+              setActionError(null);
+              void refresh();
+            }}
+            onError={setActionError}
+          />
+        }
+      />
+
+      {actionError && (
+        <Card className="border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/30">
+          <div className="flex items-start gap-3 p-4">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 dark:bg-red-950/40 flex items-center justify-center">
+              <AlertCircle size={18} className="text-red-600 dark:text-red-400" />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-red-800">Check-in Failed</p>
+              <p className="text-sm text-red-700 dark:text-red-400 mt-1">{actionError}</p>
+              <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                You must be within 500m of the office to check in.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Stat cards + quick stats — one shared grid so cards pair up on mobile
           (Approvals sits beside Open Vacancies) and flow 5-per-row on desktop */}
