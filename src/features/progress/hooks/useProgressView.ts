@@ -60,7 +60,14 @@ export function useProgressView() {
         if (toDate && e.submissionDate > toDate) return false;
         return true;
       })
-      .sort((a, b) => (a.submissionDate < b.submissionDate ? -1 : a.submissionDate > b.submissionDate ? 1 : 0));
+      // Newest first: latest submission date on top. Entries sharing a date fall
+      // back to the newest created row so the order stays stable across renders.
+      .sort((a, b) => {
+        if (a.submissionDate !== b.submissionDate) {
+          return a.submissionDate < b.submissionDate ? 1 : -1;
+        }
+        return (b.createdOn || '').localeCompare(a.createdOn || '');
+      });
   }, [visible, query, fromDate, toDate]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));

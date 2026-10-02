@@ -9,7 +9,7 @@ import type { Database } from '@/lib/supabase/database.types';
 type ProgressEntryRow = Database['public']['Tables']['progress_entries']['Row'];
 
 interface ProgressEntryRowWithEmployee extends ProgressEntryRow {
-  employees?: { first_name: string | null; last_name: string | null; avatar?: string | null } | null;
+  employees?: { first_name: string | null; last_name: string | null; avatar?: string | null; employee_code?: string | null } | Array<{ first_name: string | null; last_name: string | null; avatar?: string | null; employee_code?: string | null }> | null;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -23,7 +23,8 @@ export async function getProgressEntries(employeeId?: string): Promise<ProgressE
       employees:employee_id (
         first_name,
         last_name,
-        avatar
+        avatar,
+        employee_code
       )
     `)
     .order('created_at', { ascending: false });
@@ -35,16 +36,20 @@ export async function getProgressEntries(employeeId?: string): Promise<ProgressE
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  return ((data ?? []) as unknown as ProgressEntryRowWithEmployee[]).map((row: ProgressEntryRowWithEmployee) => ({
-    id: row.id,
-    projectName: row.project_name,
-    description: row.description || '',
-    submissionDate: row.submission_date,
-    employeeId: row.employee_id,
-    employeeName: row.employees ? `${row.employees.first_name} ${row.employees.last_name}` : 'Unknown',
-    employeeAvatar: row.employees?.avatar ?? undefined,
-    createdOn: row.created_on,
-  }));
+  return ((data ?? []) as unknown as ProgressEntryRowWithEmployee[]).map((row: ProgressEntryRowWithEmployee) => {
+    const emp = Array.isArray(row.employees) ? row.employees[0] : row.employees;
+    return {
+      id: row.id,
+      projectName: row.project_name,
+      description: row.description || '',
+      submissionDate: row.submission_date,
+      employeeId: row.employee_id,
+      employeeCode: emp?.employee_code ?? undefined,
+      employeeName: emp ? `${emp.first_name} ${emp.last_name}` : 'Unknown',
+      employeeAvatar: emp?.avatar ?? undefined,
+      createdOn: row.created_on,
+    };
+  });
 }
 
 export async function createProgressEntry(data: {
@@ -77,7 +82,8 @@ export async function createProgressEntry(data: {
       employees:employee_id (
         first_name,
         last_name,
-        avatar
+        avatar,
+        employee_code
       )
     `)
     .single();
@@ -86,14 +92,16 @@ export async function createProgressEntry(data: {
   revalidatePath('/progress');
 
   const r = row as unknown as ProgressEntryRowWithEmployee;
+  const emp = Array.isArray(r.employees) ? r.employees[0] : r.employees;
   return {
     id: r.id,
     projectName: r.project_name,
     description: r.description || '',
     submissionDate: r.submission_date,
     employeeId: r.employee_id,
-    employeeName: r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : 'Unknown',
-    employeeAvatar: r.employees?.avatar ?? undefined,
+    employeeCode: emp?.employee_code ?? undefined,
+    employeeName: emp ? `${emp.first_name} ${emp.last_name}` : 'Unknown',
+    employeeAvatar: emp?.avatar ?? undefined,
     createdOn: r.created_on,
   };
 }

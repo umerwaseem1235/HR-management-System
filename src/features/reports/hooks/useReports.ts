@@ -55,8 +55,10 @@ function toDayRow(r: AttendanceRecord): AttendanceDayRow {
   return {
     date: r.date,
     weekday,
-    clockIn: r.checkIn || '—',
-    clockOut: r.checkOut || '—',
+    employeeId: r.employeeId,
+    employeeCode: r.employeeCode,
+    employeeName: r.employeeName,
+    employeeAvatar: r.employeeAvatar,
     hours: formatHours(r.checkIn, r.checkOut, r.workHours),
     status: (r.status as AttendanceDayRow['status']) ?? 'Present',
   };
@@ -213,6 +215,9 @@ export function useReports() {
 
   const attendanceRows = useMemo(() => {
     const q = query.trim().toLowerCase();
+    // Safety net: the report is scoped to one employee, so a record missing its
+    // code (e.g. a join that came back empty) still displays EMPxxx correctly.
+    const scopeCode = scopeEmployee?.employeeCode || undefined;
     return attendanceRecords
       .filter((r) => {
         if (scopeId && r.employeeId !== scopeId && r.employeeName.toLowerCase() !== scopeName.toLowerCase()) return false;
@@ -220,18 +225,21 @@ export function useReports() {
         if (to && r.date > to) return false;
         return true;
       })
-      .map(toDayRow)
+      .map((rec) => toDayRow(scopeCode && !rec.employeeCode ? { ...rec, employeeCode: scopeCode } : rec))
       .filter((r) => {
-        if (q && !`${r.date} ${r.weekday} ${r.status} ${r.clockIn} ${r.clockOut}`.toLowerCase().includes(q)) return false;
+        if (q && !`${r.date} ${r.weekday} ${r.status} ${r.employeeName ?? ''} ${r.employeeCode ?? ''}`.toLowerCase().includes(q)) return false;
         return true;
       })
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
-  }, [attendanceRecords, scopeId, scopeName, from, to, query]);
+  }, [attendanceRecords, scopeId, scopeName, scopeEmployee, from, to, query]);
 
   /* ---- Progress rows (real entries from ProgressContext / DB) ---- */
   const progressRows = useMemo(() => {
     const q = query.trim().toLowerCase();
     const scope = scopeName.trim().toLowerCase();
+    // Same safety net as attendance: backfill a missing code from the scoped
+    // employee so the column never falls back to a raw UUID.
+    const scopeCode = scopeEmployee?.employeeCode || undefined;
     return progressEntries
       .filter((e) => {
         if (scopeId || scope) {
@@ -241,11 +249,12 @@ export function useReports() {
         }
         if (from && e.submissionDate < from) return false;
         if (to && e.submissionDate > to) return false;
-        if (q && !`${e.employeeName} ${e.projectName} ${stripHtml(e.description)} ${e.submissionDate}`.toLowerCase().includes(q)) return false;
+        if (q && !`${e.employeeName} ${e.employeeCode ?? ''} ${e.projectName} ${stripHtml(e.description)} ${e.submissionDate}`.toLowerCase().includes(q)) return false;
         return true;
       })
+      .map((e) => (scopeCode && !e.employeeCode ? { ...e, employeeCode: scopeCode } : e))
       .sort((a, b) => (a.submissionDate < b.submissionDate ? -1 : a.submissionDate > b.submissionDate ? 1 : 0));
-  }, [progressEntries, scopeId, scopeName, from, to, query]);
+  }, [progressEntries, scopeId, scopeName, scopeEmployee, from, to, query]);
 
   /* ---- Task rows (daily work, real DB) ---- */
   const taskRows = useMemo(() => {
@@ -310,17 +319,17 @@ export function useReports() {
             sectionTitle: 'RECORDS — FULL DETAIL',
             cols: [
               { label: '#', width: 12, align: 'center' },
-              { label: 'Date & Day', width: 44, align: 'left' },
-              { label: 'Clock In', width: 24, align: 'center' },
-              { label: 'Clock Out', width: 24, align: 'center' },
-              { label: 'Hours', width: 26, align: 'center' },
-              { label: 'Status', width: 52, align: 'center' },
+              { label: 'Employee ID', width: 28, align: 'left' },
+              { label: 'Employee', width: 36, align: 'left' },
+              { label: 'Date & Day', width: 40, align: 'left' },
+              { label: 'Hours', width: 24, align: 'center' },
+              { label: 'Status', width: 42, align: 'center' },
             ],
             rows: attendanceRows.map((r, i) => [
               String(i + 1),
+              r.employeeCode ?? r.employeeId ?? '-',
+              r.employeeName || scopeName,
               `${slash(r.date)} · ${r.weekday.slice(0, 3)}`,
-              r.clockIn,
-              r.clockOut,
               r.hours,
               r.status,
             ]),
@@ -331,7 +340,7 @@ export function useReports() {
             fileSlug: 'progress-report',
             eyebrow: `Progress · ${todayLabel()}`,
             title: 'Progress Report',
-            subtitle: 'Daily progress updates with project and notes',
+            subtitle: 'Daily progress updates by employee and project',
             meta: `${range} · ${scopeName} · ${progressRows.length} entries`,
             kpis: [
               { label: 'Entries', value: String(progressRows.length) },
@@ -341,16 +350,16 @@ export function useReports() {
             ],
             sectionTitle: 'ENTRIES — FULL DETAIL',
             cols: [
-              { label: 'Date', width: 28, align: 'center' },
-              { label: 'Employee', width: 38, align: 'left' },
-              { label: 'Project', width: 42, align: 'left' },
-              { label: 'Note', width: 74, align: 'left' },
+              { label: 'Employee ID', width: 28, align: 'left' },
+              { label: 'Employee', width: 42, align: 'left' },
+              { label: 'Date', width: 34, align: 'center' },
+              { label: 'Project', width: 78, align: 'left' },
             ],
             rows: progressRows.map((e) => [
-              dash(e.submissionDate),
+              e.employeeCode ?? e.employeeId,
               e.employeeName,
+              dash(e.submissionDate),
               e.projectName,
-              stripHtml(e.description) || '-',
             ]),
           });
         } else {

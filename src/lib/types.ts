@@ -68,6 +68,7 @@ export interface Branch {
 export interface AttendanceRecord {
   id: string;
   employeeId: string;
+  employeeCode?: string;
   employeeName: string;
   employeeAvatar?: string;
   date: string;
@@ -207,6 +208,7 @@ export interface ProgressEntry {
   /** ISO date (YYYY-MM-DD) shown as submission date */
   submissionDate: string;
   employeeId: string;
+  employeeCode?: string;
   employeeName: string;
   employeeAvatar?: string;
   createdOn: string;

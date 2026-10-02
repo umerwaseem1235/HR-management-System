@@ -98,24 +98,24 @@ export default function ReportsView() {
       <Modal isOpen={!!r.viewDay} onClose={() => r.setViewDay(null)} title={r.viewDay ? `Attendance — ${slash(r.viewDay.date)}` : 'Attendance'}>
         {r.viewDay && (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-lg bg-blue-gray/60 border border-medium-gray px-4 py-3">
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Clock In</p>
-                <p className="font-semibold text-green-600 dark:text-green-400">{r.viewDay.clockIn}</p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-lg bg-blue-gray/60 border border-medium-gray px-4 py-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Employee</p>
+                  <p className="font-medium text-dark-text dark:text-gray-100">{r.viewDay.employeeName || r.scopeName || '—'}</p>
+                </div>
+                <div className="rounded-lg bg-blue-gray/60 border border-medium-gray px-4 py-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Employee ID</p>
+                  <p className="font-medium text-dark-text dark:text-gray-100">{r.viewDay.employeeCode ?? r.viewDay.employeeId ?? '—'}</p>
+                </div>
+                <div className="rounded-lg bg-blue-gray/60 border border-medium-gray px-4 py-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Working Hours</p>
+                  <p className="font-semibold text-primary dark:text-blue-gray-light">{r.viewDay.hours}</p>
+                </div>
+                <div className="rounded-lg bg-blue-gray/60 border border-medium-gray px-4 py-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Status</p>
+                  <StatusBadge status={r.viewDay.status} />
+                </div>
               </div>
-              <div className="rounded-lg bg-blue-gray/60 border border-medium-gray px-4 py-3">
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Clock Out</p>
-                <p className="font-semibold text-orange-600">{r.viewDay.clockOut}</p>
-              </div>
-              <div className="rounded-lg bg-blue-gray/60 border border-medium-gray px-4 py-3">
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Working Hours</p>
-                <p className="font-semibold text-primary dark:text-blue-gray-light">{r.viewDay.hours}</p>
-              </div>
-              <div className="rounded-lg bg-blue-gray/60 border border-medium-gray px-4 py-3">
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Status</p>
-                <StatusBadge status={r.viewDay.status} />
-              </div>
-            </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{r.viewDay.weekday} · {r.scopeName}</p>
           </div>
         )}

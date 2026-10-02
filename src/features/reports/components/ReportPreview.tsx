@@ -4,13 +4,19 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye } from 'luc
 import Card from '@/components/ui/Card';
 import EmptyState from '@/components/ui/EmptyState';
 import Select from '@/components/ui/Select';
-import { StatusBadge } from '@/components/shared';
+import { EmployeeCell, StatusBadge } from '@/components/shared';
 import type { DailyWork, ProgressEntry } from '@/types';
 import type { AttendanceDayRow, TabId } from '../types';
-import { PRINT_STATUS_COLOR, PAGE_SIZES, slash, stripHtml } from '../hooks/useReports';
+import { PRINT_STATUS_COLOR, PAGE_SIZES, slash } from '../hooks/useReports';
 
 const actionBtn =
   'p-1.5 rounded-lg bg-blue-gray text-[#0F8B8D] hover:bg-medium-gray cursor-pointer';
+
+/** "2026-09-28" -> weekday name; empty string when the date is invalid. */
+function weekdayOf(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  return isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { weekday: 'long' });
+}
 
 interface ReportPreviewProps {
   tab: TabId;
@@ -59,9 +65,9 @@ export default function ReportPreview({
               <thead>
                 <tr className="bg-blue-gray border-b border-medium-gray">
                   <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">#</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Employee ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Employee</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Date & Day</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Clock In</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Clock Out</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Working Hours</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Actions</th>
@@ -72,12 +78,17 @@ export default function ReportPreview({
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={`skeleton-${i}`} className="animate-pulse">
                       <td className="px-6 py-4"><div className="h-4 w-8 rounded bg-blue-gray" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-14 rounded bg-blue-gray" /></td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-blue-gray" />
+                          <div className="h-4 w-24 rounded bg-blue-gray" />
+                        </div>
+                      </td>
                       <td className="px-6 py-4">
                         <div className="h-4 w-24 rounded bg-blue-gray" />
                         <div className="mt-1.5 h-3 w-16 rounded bg-blue-gray" />
                       </td>
-                      <td className="px-6 py-4"><div className="h-4 w-14 rounded bg-blue-gray" /></td>
-                      <td className="px-6 py-4"><div className="h-4 w-14 rounded bg-blue-gray" /></td>
                       <td className="px-6 py-4"><div className="h-4 w-16 rounded bg-blue-gray" /></td>
                       <td className="px-6 py-4"><div className="h-6 w-20 rounded-full bg-blue-gray" /></td>
                       <td className="px-6 py-4"><div className="h-8 w-8 rounded-lg bg-blue-gray" /></td>
@@ -87,12 +98,12 @@ export default function ReportPreview({
                   attPage.map((r, i) => (
                   <tr key={r.date} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
                     <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{(safePage - 1) * pageSize + i + 1}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-dark-text dark:text-gray-100 whitespace-nowrap">{r.employeeCode ?? r.employeeId ?? '—'}</td>
+                    <td className="px-6 py-4"><EmployeeCell name={r.employeeName || scopeName || '—'} employeeId={r.employeeId} avatar={r.employeeAvatar} size="sm" /></td>
                     <td className="px-6 py-4">
                       <p className="text-sm font-medium text-dark-text dark:text-gray-100">{r.date}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{r.weekday}</p>
                     </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-green-600 dark:text-green-400">{r.clockIn}</td>
-                    <td className="px-6 py-4 text-sm font-semibold text-orange-600">{r.clockOut}</td>
                     <td className="px-6 py-4 text-sm text-dark-text dark:text-gray-100">{r.hours}</td>
                     <td className="px-6 py-4"><StatusBadge status={r.status} /></td>
                     <td className="px-6 py-4">
@@ -112,10 +123,10 @@ export default function ReportPreview({
               <thead>
                 <tr className="bg-blue-gray border-b border-medium-gray">
                   <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">#</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Employee Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Employee ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Employee</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Date & Day</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Project</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Progress Note</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-primary dark:text-blue-gray-light uppercase">Actions</th>
                 </tr>
               </thead>
@@ -123,12 +134,13 @@ export default function ReportPreview({
                 {progPage.map((e, i) => (
                   <tr key={e.id} className="hover:bg-blue-gray dark:hover:bg-white/10/50">
                     <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{(safePage - 1) * pageSize + i + 1}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-dark-text dark:text-gray-100 whitespace-nowrap">{e.employeeName || '—'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 whitespace-nowrap">{slash(e.submissionDate)}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-dark-text dark:text-gray-100 whitespace-nowrap">{e.projectName}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300 max-w-md">
-                      <p className="line-clamp-3">{stripHtml(e.description)}</p>
+                    <td className="px-6 py-4 text-sm font-medium text-dark-text dark:text-gray-100 whitespace-nowrap">{e.employeeCode ?? e.employeeId}</td>
+                    <td className="px-6 py-4"><EmployeeCell name={e.employeeName || scopeName || '—'} employeeId={e.employeeId} avatar={e.employeeAvatar} size="sm" /></td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm font-medium text-dark-text dark:text-gray-100">{slash(e.submissionDate)}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{weekdayOf(e.submissionDate)}</p>
                     </td>
+                    <td className="px-6 py-4 text-sm font-medium text-dark-text dark:text-gray-100 whitespace-nowrap">{e.projectName}</td>
                     <td className="px-6 py-4">
                       <button
                         type="button"
@@ -250,7 +262,7 @@ export default function ReportPreview({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
             <thead>
               <tr>
-                {['Sr#', 'Date & Day', 'Clock In', 'Clock Out', 'Working Hours', 'Status'].map((h) => (
+                {['Sr#', 'Employee ID', 'Employee', 'Date & Day', 'Working Hours', 'Status'].map((h) => (
                   <th key={h} style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left' }}>{h}</th>
                 ))}
               </tr>
@@ -259,9 +271,9 @@ export default function ReportPreview({
               {attendanceRows.map((r, i) => (
                 <tr key={r.date}>
                   <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{i + 1}</td>
+                  <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{r.employeeCode ?? r.employeeId ?? '—'}</td>
+                  <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{r.employeeName || scopeName || '—'}</td>
                   <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{r.date}<br />{r.weekday}</td>
-                  <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{r.clockIn}</td>
-                  <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{r.clockOut}</td>
                   <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{r.hours}</td>
                   <td style={{ border: '1px solid #333', padding: '4px 6px', color: PRINT_STATUS_COLOR[r.status], fontWeight: 700 }}>{r.status}</td>
                 </tr>
@@ -273,7 +285,7 @@ export default function ReportPreview({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
             <thead>
               <tr>
-                {['Sr#', 'Date', 'Employee Name', 'Project Title', 'Progress Note'].map((h) => (
+                {['Sr#', 'Employee ID', 'Employee', 'Date & Day', 'Project'].map((h) => (
                   <th key={h} style={{ border: '1px solid #333', padding: '4px 6px', textAlign: 'left' }}>{h}</th>
                 ))}
               </tr>
@@ -282,10 +294,10 @@ export default function ReportPreview({
               {progressRows.map((e, i) => (
                 <tr key={e.id}>
                   <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{i + 1}</td>
-                  <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{slash(e.submissionDate)}</td>
+                  <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{e.employeeCode ?? e.employeeId}</td>
                   <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{e.employeeName}</td>
+                  <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{slash(e.submissionDate)}<br />{weekdayOf(e.submissionDate)}</td>
                   <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{e.projectName}</td>
-                  <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{stripHtml(e.description)}</td>
                 </tr>
               ))}
             </tbody>

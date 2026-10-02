@@ -69,7 +69,7 @@ export default function ExpensesView() {
               )}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 sm:ml-auto">
-              {e.visibleExpenses.length} claim{e.visibleExpenses.length !== 1 ? 's' : ''} · {e.expensePeriodLabel} · $
+              {e.visibleExpenses.length} claim{e.visibleExpenses.length !== 1 ? 's' : ''} · {e.expensePeriodLabel} · PKR
               {e.visibleExpenses.reduce((s, x) => s + x.amount, 0).toLocaleString()} total
             </p>
           </div>
