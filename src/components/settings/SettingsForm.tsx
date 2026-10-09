@@ -5,7 +5,8 @@ import Input from '../ui/Input';
 import Button from '../ui/Button';
 import { Save } from 'lucide-react';
 import { COMPANY_DEFAULTS, type CompanySettings } from '@/lib/company-settings';
-import { getCompanySettings, saveCompanySettings } from '@/lib/actions/settings';
+import { saveCompanySettings } from '@/lib/actions/settings';
+import { getCompanySettings } from '@/lib/data/reads';
 import { createResourceCache } from '@/lib/resource-cache';
 
 // Module scope survives navigation, so returning to /settings paints the

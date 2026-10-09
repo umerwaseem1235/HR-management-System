@@ -11,11 +11,13 @@ import Button from '@/components/ui/Button';
 import { StatusBadge } from '@/components/shared';
 import { Mail, Phone, MapPin, Calendar, Edit, ArrowLeft } from 'lucide-react';
 import { LEAVE_TYPES } from '@/lib/constants';
-import { getEmployee } from '@/lib/actions/employees';
-import { getAttendanceByEmployee } from '@/lib/actions/attendance';
-import { getLeaveBalances } from '@/lib/actions/leave';
-import { getPayslips } from '@/lib/actions/payroll';
-import { getDocuments } from '@/lib/actions/documents';
+import {
+  getEmployee,
+  getAttendanceByEmployee,
+  getLeaveBalances,
+  getPayslips,
+  getDocuments,
+} from '@/lib/data/reads';
 import type { AttendanceRecord, Employee, LeaveBalance, Payslip } from '@/lib/types';
 import type { DocumentRecord } from '@/lib/actions/documents';
 import EmployeeFormModal from './EmployeeFormModal';

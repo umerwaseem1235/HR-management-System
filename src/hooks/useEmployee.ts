@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getEmployeeByUserId } from '@/lib/actions/employees';
+import { getEmployeeByUserId } from '@/lib/data/reads';
 import { cachedQuery, peekStaleQuery } from '@/lib/query-cache';
 import type { Employee, User } from '../lib/types';
 

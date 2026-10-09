@@ -3,7 +3,8 @@ import { useEmployee } from '@/hooks/useEmployee';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/client';
 import { DocumentItem } from '../types';
-import { createDocument, deleteDocument, getDocumentDownloadUrl, getDocuments } from '@/lib/actions/documents';
+import { createDocument, deleteDocument } from '@/lib/actions/documents';
+import { getDocumentDownloadUrl, getDocuments } from '@/lib/data/reads';
 import { cachedQuery, invalidateQuery, peekStaleQuery } from '@/lib/query-cache';
 
 const DOCUMENTS_BUCKET = 'documents';

@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo, ReactNode } from 'react';
 import { DailyWork, DailyWorkStatus } from '../lib/types';
-import { getDailyWork, createDailyWork, updateDailyWork as updateDailyWorkAction, deleteDailyWork as deleteDailyWorkAction, updateDailyWorkStatus as updateDailyWorkStatusAction } from '@/lib/actions/daily-work';
+import { createDailyWork, updateDailyWork as updateDailyWorkAction, deleteDailyWork as deleteDailyWorkAction, updateDailyWorkStatus as updateDailyWorkStatusAction } from '@/lib/actions/daily-work';
+import { getDailyWork } from '@/lib/data/reads';
 
 export interface NewWorkInput {
   employeeId: string;

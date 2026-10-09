@@ -30,12 +30,6 @@ import {
   createJob,
   deleteCandidate as deleteCandidateAction,
   deleteJob as deleteJobAction,
-  getCandidateHistory,
-  getCandidates,
-  getInterviews,
-  getJobs,
-  getOffers,
-  getRecruitmentData,
   saveOffer as saveOfferAction,
   scheduleInterview as scheduleInterviewAction,
   updateCandidate,
@@ -45,8 +39,18 @@ import {
   updateOfferStatus,
   upsertOffer,
 } from '@/lib/actions/recruitment';
-import { getDepartments, getBranches } from '@/lib/actions/settings';
-import { uploadCvFile, removeCvFile, getCvDownloadUrl } from '@/lib/actions/cv-storage';
+import {
+  getCandidateHistory,
+  getCandidates,
+  getInterviews,
+  getJobs,
+  getOffers,
+  getRecruitmentData,
+  getDepartments,
+  getBranches,
+  getCvDownloadUrl,
+} from '@/lib/data/reads';
+import { uploadCvFile, removeCvFile } from '@/lib/actions/cv-storage';
 import { CandidateExt, Interview, Offer, SOURCES, STAGES, today } from '../types';
 import { createResourceCache } from '@/lib/resource-cache';
 import type { RecruitmentData } from '@/lib/actions/recruitment';

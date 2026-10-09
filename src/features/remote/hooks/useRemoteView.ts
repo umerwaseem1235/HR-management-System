@@ -3,7 +3,7 @@ import { useEmployeeDirectory } from '@/hooks/useEmployeeDirectory';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRemote } from '@/contexts/RemoteContext';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { getHrAdminUserIds, getEmployeeUserId } from '@/lib/actions/notifications';
+import { getHrAdminUserIds, getEmployeeUserId } from '@/lib/data/reads';
 import { todayStr } from '@/utils/date';
 import type { RemoteRequest } from '@/types';
 import {

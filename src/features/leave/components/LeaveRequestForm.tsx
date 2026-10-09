@@ -14,7 +14,7 @@ import { useEmployeeDirectory } from '@/hooks/useEmployeeDirectory';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeave } from '@/contexts/LeaveContext';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { getHrAdminUserIds } from '@/lib/actions/notifications';
+import { getHrAdminUserIds } from '@/lib/data/reads';
 import { diffInDaysInclusive } from '../utils';
 
 function timeToMinutes(t: string): number | null {

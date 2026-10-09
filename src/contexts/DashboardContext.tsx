@@ -11,7 +11,8 @@ import React, {
   ReactNode,
 } from 'react';
 import { useAuth } from './AuthContext';
-import { getDashboardData, type DashboardData } from '@/lib/actions/dashboard';
+import { type DashboardData } from '@/lib/actions/dashboard';
+import { getDashboardData } from '@/lib/data/reads';
 
 interface DashboardContextType {
   /** Latest dashboard payload, or `null` before the first load resolves. */

@@ -8,7 +8,8 @@ import { useNotifications } from '@/contexts/NotificationContext';
 import { timeToMinutes, toDateStr, todayStr } from '@/utils/date';
 import type { CorrectionHistoryEntry, CorrectionRequest, Holiday } from '../types';
 import { aggregate, calcWorkHours, DEFAULT_LATE_RULE, resolveLateStatus, applyEarlyCheckoutRule, applyMissingCheckoutRule, type LateArrivalRule } from '../utils';
-import { createAuditLog, getAuditLogsByModule } from '@/lib/actions/audit';
+import { createAuditLog } from '@/lib/actions/audit';
+import { getAuditLogsByModule } from '@/lib/data/reads';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -37,20 +38,22 @@ function mapAuditToHistory(logs: { id: string; userName: string; action: string;
 
 // ── Supabase server actions ──────────────────────────────────────────
 import {
-  getAllAttendance,
-  getAttendanceByEmployee,
-  getAttendanceStats,
   createAttendanceRecord,
   updateAttendanceRecord,
-  getCorrections,
   updateCorrectionStatus,
-  getHolidays,
   createHoliday,
   deleteHoliday,
   deleteAttendanceRecord,
   selfCheckInOut,
 } from '@/lib/actions/attendance';
-import { getEmployees } from '@/lib/actions/employees';
+import {
+  getAllAttendance,
+  getAttendanceByEmployee,
+  getAttendanceStats,
+  getCorrections,
+  getHolidays,
+} from '@/lib/data/reads';
+import { getEmployees } from '@/lib/data/reads';
 import { cachedQuery, peekStaleQuery, primeQuery } from '@/lib/query-cache';
 import {
   ATTENDANCE_STATS_KEY,

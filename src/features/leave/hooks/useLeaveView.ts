@@ -7,7 +7,7 @@ import type { LeaveRequest } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeave } from '@/contexts/LeaveContext';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { getEmployeeUserId } from '@/lib/actions/notifications';
+import { getEmployeeUserId } from '@/lib/data/reads';
 import { diffInDaysInclusive } from '../utils';
 
 export function useLeaveView() {

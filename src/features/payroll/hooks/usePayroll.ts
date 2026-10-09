@@ -12,11 +12,8 @@ import type { PayrollRun, PayrollLineItem, SalaryComponent, EmployeeMonthlyLeave
 // NOTE: jspdf (~350KB) is intentionally NOT imported here. PDF helpers are
 // dynamically imported inside exportRun/downloadSlip so the heavy library
 // loads only when the user actually exports — never on page render.
-import { getLeaveRequests } from '@/lib/actions/leave';
-import { getAllAttendance } from '@/lib/actions/attendance';
+import { getLeaveRequests, getAllAttendance, getPayrollData, getPayrollRuns, getPayrollRun, getPayslips, getSalaryComponents } from '@/lib/data/reads';
 import {
-  getPayrollData,
-  getPayrollRuns, getPayrollRun, getPayslips, getSalaryComponents,
   createPayrollRun, createSalaryComponent, updateSalaryComponent, deleteSalaryComponent,
   updatePayrollRunStatus, updatePayrollItem, updatePayrollRunTotals,
   finalizePayrollRun, unlockPayrollRun, deletePayrollRun,

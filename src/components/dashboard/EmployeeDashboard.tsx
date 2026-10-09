@@ -15,7 +15,7 @@ import { useNotifications } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 import { useEmployeeDirectory } from '../../hooks/useEmployeeDirectory';
-import { getEmployeeDashboardBundle } from '@/lib/actions/employee-dashboard';
+import { getEmployeeDashboardBundle } from '@/lib/data/reads';
 import { cachedQuery, peekStaleQuery, primeQuery } from '../../lib/query-cache';
 import { employeeDashboardKey, invalidateAttendanceCache } from '../../lib/attendance-cache';
 import type { LeaveBalance, Payslip, ProgressEntry } from '../../lib/types';

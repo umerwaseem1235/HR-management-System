@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo, ReactNode } from 'react';
 import { ExpenseClaim } from '../lib/types';
-import { getExpenseClaims, createExpenseClaim, updateExpenseStatus as updateExpenseStatusAction, deleteExpenseClaim as deleteExpenseClaimAction, updateExpenseClaim as updateExpenseClaimAction } from '@/lib/actions/expenses';
+import { createExpenseClaim, updateExpenseStatus as updateExpenseStatusAction, deleteExpenseClaim as deleteExpenseClaimAction, updateExpenseClaim as updateExpenseClaimAction } from '@/lib/actions/expenses';
+import { getExpenseClaims } from '@/lib/data/reads';
 
 export interface NewExpenseInput {
   employeeId: string;

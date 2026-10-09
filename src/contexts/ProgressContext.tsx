@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo, ReactNode } from 'react';
 import { ProgressEntry } from '../lib/types';
-import { getProgressEntries, createProgressEntry, updateProgressEntry as updateProgressEntryAction, deleteProgressEntry as deleteProgressEntryAction } from '@/lib/actions/progress';
+import { createProgressEntry, updateProgressEntry as updateProgressEntryAction, deleteProgressEntry as deleteProgressEntryAction } from '@/lib/actions/progress';
+import { getProgressEntries } from '@/lib/data/reads';
 
 export interface NewProgressInput {
   projectName: string;

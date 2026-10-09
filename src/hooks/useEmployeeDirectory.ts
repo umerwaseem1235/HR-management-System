@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { getEmployees } from '@/lib/actions/employees';
+import { getEmployees } from '@/lib/data/reads';
 import { cachedQuery, peekStaleQuery } from '@/lib/query-cache';
 import type { Employee, User } from '@/lib/types';
 

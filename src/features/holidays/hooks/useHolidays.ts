@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { createHoliday, deleteHoliday, getHolidays } from '@/lib/actions/attendance';
+import { createHoliday, deleteHoliday } from '@/lib/actions/attendance';
+import { getHolidays } from '@/lib/data/reads';
 import { cachedQuery, peekQuery, primeQuery } from '@/lib/query-cache';
 import { invalidateQuery, ATTENDANCE_HOLIDAYS_KEY } from '@/lib/attendance-cache';
 import type { Holiday } from '../types';

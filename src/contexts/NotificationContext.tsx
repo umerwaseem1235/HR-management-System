@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback, ReactNode } from 'react';
 import { Notification } from '../lib/types';
-import { getNotifications, markAsRead as markAsReadAction, markAllAsRead as markAllAsReadAction, createNotification as createNotificationAction } from '@/lib/actions/notifications';
+import { markAsRead as markAsReadAction, markAllAsRead as markAllAsReadAction, createNotification as createNotificationAction } from '@/lib/actions/notifications';
+import { getNotifications } from '@/lib/data/reads';
 import { useAuth } from './AuthContext';
 
 interface NotificationContextType {

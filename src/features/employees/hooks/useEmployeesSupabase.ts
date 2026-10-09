@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Employee } from '@/lib/types';
-import { getEmployee, getEmployees, getEmployeeAvatars, getLookupData } from '@/lib/actions/employees';
+import { getEmployee, getEmployees, getEmployeeAvatars, getLookupData } from '@/lib/data/reads';
 import { cachedQuery, invalidateQuery, peekQuery, primeQuery } from '@/lib/query-cache';
 
 export const EMPLOYEES_CACHE_KEY = 'employees';

@@ -6,7 +6,8 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
-import { getLateArrivalRule, saveLateArrivalRule } from '@/lib/actions/settings';
+import { saveLateArrivalRule } from '@/lib/actions/settings';
+import { getLateArrivalRule } from '@/lib/data/reads';
 import { STANDARD_START, addMinutes, formatDuration } from '../utils';
 
 export interface LateRuleState {

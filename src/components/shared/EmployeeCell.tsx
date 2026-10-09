@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Avatar from '@/components/ui/Avatar';
-import { getEmployeeAvatars } from '@/lib/actions/employees';
+import { getEmployeeAvatars } from '@/lib/data/reads';
 
 /**
  * Module-level avatar cache — one bulk/one-per-employee fetch per session,

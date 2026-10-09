@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo, ReactNode } from 'react';
 import { RemoteRequest, RemoteRequestStatus } from '../lib/types';
-import { getRemoteRequests, createRemoteRequest, updateRemoteStatus as updateRemoteStatusAction, deleteRemoteRequest as deleteRemoteRequestAction } from '@/lib/actions/remote';
+import { createRemoteRequest, updateRemoteStatus as updateRemoteStatusAction, deleteRemoteRequest as deleteRemoteRequestAction } from '@/lib/actions/remote';
+import { getRemoteRequests } from '@/lib/data/reads';
 
 export interface NewRemoteInput {
   employeeId: string;
